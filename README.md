@@ -226,79 +226,365 @@ Parsing y utilidades
 
 -------------------------------------------------------------------------------
 
-Ejemplos avanzados (con explicaciones paso a paso)
------------------------------------------------
+Ejemplos
 
-1) Sweep de frecuencia y guardado a CSV
+Esta sección recoge ejemplos exhaustivos y documentados de todo lo que puedes hacer con `levalib` y el EVAL-ADMX2001. Cada ejemplo incluye: objetivo, explicación paso a paso, código y qué esperar como salida. Se cubren mediciones individuales, lecturas de temperatura, DCR/Vdc/Idc, sweeps (frecuencia, magnitud, offset), calibración completa, control GPIO, parsing, caching, logging, performance, guardado a CSV y graficado.
+
+Nota sobre formatos de respuesta: el firmware del ADMX2001 puede variar. Los ejemplos muestran patrones habituales y cómo adaptar el parseo si el formato difiere.
+
+A. Medición simple y parseo (paso a paso)
+
+Objetivo: realizar una medición de impedancia a una frecuencia concreta y obtener los valores numéricos (R, X, |Z|, fase).
+
+Código:
 
 ```python
 from lib.levalib import ADMX2001
-import csv
 
 PORT = '/dev/ttyUSB0'
 
 with ADMX2001(PORT) as dev:
-    dev.sweep_frequency(100, 100000)  # 100 Hz a 100 kHz
-    dev.sweep_scale('log')
-    dev.sweep_points(50)
-    raw = dev.sweep_run()
+  # 1) Configurar la frecuencia deseada (ej. 1 kHz)
+  dev.set_frequency(1000)
 
-    # raw puede ser una lista de líneas. Aquí hacemos un parse sencillo asumiendo 'freq, mag, phase' por línea
-    rows = []
-    for line in raw:
-        if ',' in line:
-            parts = [p.strip() for p in line.split(',')]
-            rows.append(parts)
+  # 2) Ajustar magnitud y promedios (opcional)
+  dev.set_magnitude(0.5)  # 0.5 V
+  dev.set_average(10)     # 10 promedios
 
-    with open('sweep.csv', 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(['freq', 'magnitude', 'phase'])
-        writer.writerows(rows)
+  # 3) Ejecutar la medición en bruto
+  raw = dev.measure_impedance()
 
-    print('Sweep guardado en sweep.csv')
+  # 4) Parsear el resultado a valores numéricos
+  parsed = dev.parse_impedance_result(raw)
+
+  if parsed['success']:
+    print('Resistencia (R):', parsed['resistance'])
+    print('Reactancia (X):', parsed['reactance'])
+    print('|Z|:', parsed['magnitude'])
+    print('Fase (°):', parsed['phase_degrees'])
+  else:
+    print('No se pudo parsear la medición. Raw response:')
+    print(parsed.get('raw_response'))
 ```
 
-Explicación para dummies:
-- El dispositivo puede devolver las líneas en distintos formatos según firmware. Aquí asumimos que cada línea tiene `freq, magnitude, phase`. Si tu firmware devuelve otro formato, ajusta el parseo.
+Qué buscar en la salida:
+- Si `parsed['success']` es True, tendrás campos numéricos listos para usar.
+- Si no, inspecciona `raw` o `parsed['raw_response']` para ajustar el parser.
 
-2) Calibración rápida
+B. `quick_impedance_measurement` — flujo todo en uno
+
+Objetivo: ejemplo recomendado para uso interactivo — configura, mide, parsea y obtiene temperatura en una sola llamada.
+
+Código:
+
+```python
+from lib.levalib import ADMX2001
+
+with ADMX2001('/dev/ttyUSB0') as dev:
+  result = dev.quick_impedance_measurement(10000)  # 10 kHz
+
+  imp = result['impedance']
+  temp = result['temperature']
+
+  if imp['success']:
+    print(f"Impedancia: |Z|={imp['magnitude']:.3f} Ω, fase={imp['phase_degrees']:.2f}° @ {imp.get('frequency_hz', 'N/A')} Hz")
+  else:
+    print('Error en impedancia:', imp.get('error'))
+
+  if temp['success']:
+    print(f"Temperatura interna: {temp['temperature_celsius']:.2f} °C")
+  else:
+    print('Error leyendo temperatura:', temp.get('error'))
+```
+
+Notas:
+- `quick_impedance_measurement` hace varias llamadas internas (`set_frequency`, `magnitude 1`, `setgain auto`, `average 10`, `measure_impedance`, `get_temperature`). Revisa `measurement_info` en el resultado para metadatos.
+
+C. Lectura de temperatura y parseo (detallado)
+
+Objetivo: obtener la temperatura interna y usarla para decisiones (p. ej. evitar mediciones críticas si la temperatura es alta).
 
 ```python
 with ADMX2001('/dev/ttyUSB0') as dev:
-    print('Inicia calibración open...')
-    dev.calibrate_open()
-    input('Conecta short y presiona Enter para calibrate short...')
-    dev.calibrate_short()
-    input('Conecta carga conocida y presiona Enter para calibrate load...')
-    dev.calibrate_load(100.0, 0.0)  # ejemplo: 100 ohm, 0 reactancia
-    dev.calibrate_commit()
-    print('Calibración guardada')
+  raw_temp = dev.get_temperature()
+  temp_parsed = dev.parse_temperature_result(raw_temp)
+  if temp_parsed['success']:
+    t_c = temp_parsed['temperature_celsius']
+    print(f"Temperatura: {t_c:.2f} °C")
+    if t_c > 60:
+      print('Advertencia: temperatura alta — esperar a estabilizar antes de mediciones críticas')
+  else:
+    print('No se pudo parsear temperatura. Raw:', raw_temp)
 ```
 
-Explicación:
-- La calibración mejora la exactitud. `calibrate_commit()` guarda los coeficientes en la memoria del dispositivo.
+D. Medidas DC: DCR, Vdc, Idc
 
-3) Detección de tipo de componente (R/L/C) básica
+Objetivo: ejemplos para medir resistencia DC, voltaje DC y corriente DC.
 
 ```python
 with ADMX2001('/dev/ttyUSB0') as dev:
-    freqs = [100, 1000, 10000]
-    results = []
-    for f in freqs:
-        r = dev.quick_impedance_measurement(f)
-        if r['impedance']['success']:
-            results.append((f, r['impedance']['phase_degrees']))
+  dcr = dev.measure_dcr()
+  vdc = dev.measure_vdc()
+  idc = dev.measure_idc()
 
-    # Regla simple: phase > +45 -> inductivo; phase < -45 -> capacitivo; else resistivo
-    for f, ph in results:
-        if ph > 45:
-            kind = 'Inductor probable'
-        elif ph < -45:
-            kind = 'Capacitor probable'
-        else:
-            kind = 'Resistor probable'
-        print(f"{f} Hz: {ph:.1f}° -> {kind}")
+  print('DCR raw:', dcr)
+  print('Vdc raw:', vdc)
+  print('Idc raw:', idc)
+
+  # Opcional: intentar parseo simple si la respuesta es una línea con número
+  try:
+    dcr_val = float(dcr[0]) if dcr and isinstance(dcr[0], str) else None
+    print('DCR (Ω):', dcr_val)
+  except Exception:
+    pass
 ```
+
+E. Barridos (sweeps) — frecuencia, magnitud y offset (completo)
+
+Objetivo: detallar opciones y cómo ejecutar y parsear sweeps, además de recomendaciones de performance y guardado.
+
+1) Preparación y parámetros clave
+- `sweep_frequency(start, end)` — define inicio y fin del barrido (Hz).
+- `sweep_scale(mode)` — `'log'` (logarítmico) o `'linear'`.
+- `sweep_points(n)` — número de puntos a medir.
+- `set_average(n)` y `set_count(n)` afectan el tiempo por punto.
+
+Estimación de tiempo: usar `get_performance_metrics()` y la función interna `_estimate_sweep_time` (si disponible) para prever duración. Como regla rápida: tiempo ≈ puntos × tiempo_por_punto + setup_overhead.
+
+2) Ejecutar un sweep de frecuencia y guardar resultados (CSV)
+
+```python
+import csv
+from lib.levalib import ADMX2001
+
+with ADMX2001('/dev/ttyUSB0') as dev:
+  dev.set_average(5)
+  dev.sweep_frequency(100, 100000)
+  dev.sweep_scale('log')
+  dev.sweep_points(100)
+  raw = dev.sweep_run()
+
+  # Parse robusto: detectar líneas con comas y extraer números
+  rows = []
+  for line in raw:
+    # limpiar y comprobar
+    if not isinstance(line, str):
+      continue
+    s = line.strip()
+    if not s:
+      continue
+    if ',' in s:
+      parts = [p.strip() for p in s.split(',')]
+      rows.append(parts)
+
+  # Guardar CSV (ajusta cabeceras según formato real)
+  with open('sweep_freq.csv', 'w', newline='') as f:
+    writer = csv.writer(f)
+    writer.writerow(['col1', 'col2', 'col3'])
+    writer.writerows(rows)
+
+  print('Sweep guardado en sweep_freq.csv (primeras 5 filas):', rows[:5])
+```
+
+3) Graficar sweep con matplotlib (opcional)
+
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Asumimos rows como [['freq', 'mag', 'phase'], ...]
+freqs = [float(r[0]) for r in rows if len(r) >= 3]
+mags = [float(r[1]) for r in rows if len(r) >= 3]
+phs = [float(r[2]) for r in rows if len(r) >= 3]
+
+plt.figure()
+plt.subplot(2,1,1)
+plt.semilogx(freqs, mags)
+plt.title('Sweep de frecuencia')
+plt.ylabel('|Z|')
+
+plt.subplot(2,1,2)
+plt.semilogx(freqs, phs)
+plt.ylabel('Fase (°)')
+plt.xlabel('Frecuencia (Hz)')
+plt.tight_layout()
+plt.show()
+```
+
+Consejos para sweeps:
+- Si el sweep es muy largo, reduce `average` o subdivide el sweep en rangos.
+- Para barridos logarítmicos largos, usa menos puntos en las bandas donde no esperas cambios.
+- Si el firmware devuelve datos en bloques grandes, `send_command` podría devolver una estructura optimizada; inspecciona `raw` cuidadosamente.
+
+F. Barrido de magnitud y offset
+
+Los comandos `sweep_magnitude(start, end)` o `sweep_offset(start, end)` se usan de forma análoga a `sweep_frequency` y permiten estudiar la respuesta del DUT ante cambios de amplitud o polarización.
+
+G. Calibración completa (procedimiento seguro)
+
+Objetivo: guiar por el proceso de calibración para máxima precisión.
+
+Procedimiento recomendado:
+
+1. Preparación: asegúrate de tener referencias conocidas: open (sin conexión), short (cortocircuito) y load (resistencia conocida).
+2. Ejecutar `calibrate_open()` y seguir instrucciones físicas.
+3. Ejecutar `calibrate_short()`.
+4. Ejecutar `calibrate_load(r, x)` con la resistencia/reactancia conocida.
+5. Comprobar resultados parciales (`calibrate_list()` o `rdcal`) y luego `calibrate_commit()` para guardar en flash.
+
+Ejemplo interactivo:
+
+```python
+with ADMX2001('/dev/ttyUSB0') as dev:
+  input('Coloca OPEN (sin DUT) y presiona Enter...')
+  dev.calibrate_open()
+  input('Coloca SHORT y presiona Enter...')
+  dev.calibrate_short()
+  input('Coloca LOAD conocida y presiona Enter...')
+  dev.calibrate_load(100.0, 0.0)
+  dev.calibrate_commit()
+  print('Calibración completada y guardada')
+```
+
+H. Control GPIO y LED
+
+Ejemplo: encender LED, leer GPIO y escribir un valor directo.
+
+```python
+with ADMX2001('/dev/ttyUSB0') as dev:
+  dev.led('on')
+  print('GPIO state:', dev.gpio_read())
+  dev.gpio_ctrl(0xFF)  # escribir 255 en registros GPIO (según hardware)
+  dev.led('blink')
+```
+
+I. Ganancia: automática vs manual
+
+- `set_gain_auto()` es recomendable para empezar: el dispositivo ajusta ganancia para evitar saturación.
+- Para reproducibilidad máxima, usa `set_gain_ch0(gain)` y `set_gain_ch1(gain)` con valores fijos (0-3).
+
+Ejemplo:
+
+```python
+with ADMX2001('/dev/ttyUSB0') as dev:
+  dev.set_gain_auto()
+  # ... realizar mediciones ...
+  dev.set_gain_ch0(3)  # fijar ganancia para mediciones repetibles
+```
+
+J. Caching y `send_command` (comportamiento avanzado)
+
+`send_command` acepta `cache_result=True` para almacenar resultados y evitar reenviar comandos de configuración idénticos. Ejemplo:
+
+```python
+with ADMX2001('/dev/ttyUSB0') as dev:
+  dev.send_command('frequency 1000', cache_result=True)
+  # segunda llamada no enviará físicamente el comando si sigue en cache
+  dev.send_command('frequency 1000', cache_result=True)
+```
+
+Nota: la cache tiene un timeout interno; si necesitas forzar reenvío, no uses `cache_result` o limpia manualmente según implementación.
+
+K. Logging y diagnóstico profundo
+
+Activar debug:
+
+```python
+import logging
+logging.getLogger('ADMX2001').setLevel(logging.DEBUG)
+```
+
+Ejemplo de uso para ver líneas crudas:
+
+```python
+with ADMX2001('/dev/ttyUSB0') as dev:
+  print('IDN raw:', dev.send_command('*idn'))
+```
+
+L. Métricas de rendimiento
+
+Usa `get_performance_metrics()` para obtener estadísticas: uptime, comandos enviados, cache hits/misses, tiempos acumulados.
+
+```python
+with ADMX2001('/dev/ttyUSB0') as dev:
+  print(dev.get_performance_metrics())
+```
+
+M. Manejo robusto de errores en scripts
+
+Plantilla recomendada para scripts automatizados:
+
+```python
+from lib.levalib import ADMX2001
+import time
+
+def safe_measure(port, freq):
+  try:
+    with ADMX2001(port) as dev:
+      dev.set_frequency(freq)
+      dev.set_average(10)
+      res = dev.quick_impedance_measurement(freq)
+      return res
+  except Exception as e:
+    # Guardar error y reintentar o abortar según política
+    print('Error en medición:', e)
+    return None
+
+res = safe_measure('/dev/ttyUSB0', 1000)
+if res is None:
+  print('Medición fallida')
+```
+
+N. Tests y mocking para integración continua
+
+Para funciones de parsing, crea tests unitarios que no dependan del hardware. Para integraciones que sí lo requieren, usa fixtures o mocks (p. ej. `unittest.mock` para simular `serial.Serial`).
+
+Ejemplo de test unitario (parse_impedance_result):
+
+```python
+def test_parse_impedance_basic():
+  from lib.levalib import ADMX2001
+  dummy = ADMX2001.__new__(ADMX2001)
+  raw = ["0, 10.0, -5.0"]
+  out = ADMX2001.parse_impedance_result(dummy, raw)
+  assert out['success']
+  assert abs(out['magnitude'] - ((10.0**2 + (-5.0)**2)**0.5)) < 1e-6
+```
+
+O. CLI mínimo para mediciones (ejecutable)
+
+Archivo `tools/measure.py` (sugerencia):
+
+```python
+#!/usr/bin/env python3
+import argparse
+from lib.levalib import ADMX2001
+import json
+
+parser = argparse.ArgumentParser(description='Medición rápida con EVAL-ADMX2001')
+parser.add_argument('--port', required=True)
+parser.add_argument('--freq', type=float, default=1000)
+parser.add_argument('--out', default='-')
+args = parser.parse_args()
+
+with ADMX2001(args.port) as dev:
+  r = dev.quick_impedance_measurement(args.freq)
+  out = json.dumps(r, indent=2)
+  if args.out == '-':
+    print(out)
+  else:
+    with open(args.out, 'w') as f:
+      f.write(out)
+```
+
+P. Consideraciones finales y adaptaciones por firmware
+
+- Si tu firmware imprime encabezados, prompts o textos extra, ajusta los parsers (buscar líneas con comas numéricas, usar regex para extraer números).
+- Para flujos automáticos a largo plazo, monitoriza `get_temperature()` durante el experimento y registra `get_performance_metrics()` para detectar degradación.
+
+---
+
+Fin de la sección de Ejemplos.
 
 -------------------------------------------------------------------------------
 
@@ -570,6 +856,32 @@ with ADMX2001('/dev/ttyUSB0') as dev:
 
 ```
 
+Aclaraciones y correcciones importantes
+---------------------------------------
+
+He revisado la implementación en `lib/levalib.py` y ajustado la documentación para reflejar con precisión el comportamiento actual del código. Estos son puntos críticos que corregimos en la documentación para evitar confusiones:
+
+- connect()/disconnect(): NO existen como métodos en la clase `ADMX2001`.
+  - Uso correcto: la clase abre la conexión en el constructor (`__init__`). Para cerrar la conexión use `close()` o preferiblemente el context manager `with ADMX2001(port) as dev:`. Para intentar una reconexión use `reconnect()`.
+
+- Getters explícitos (p. ej. `get_average()`, `get_offset()`, `get_gain()`, `get_frequency()`): no están implementados como métodos separados.
+  - Cómo obtener valores actuales:
+    - Pregunte al dispositivo con `send_command('<param>')` (por ejemplo `send_command('average')`), si el firmware responde con el valor.
+    - La librería mantiene un cache interno (`self._config_cache`) con claves como `'current_frequency'` cuando se usa `set_frequency`. Puede consultar `dev._config_cache.get('current_frequency')` (nota: es API privada).
+    - Recomendación: usar `send_command` para consultar el valor la primera vez y luego confiar en `set_*` y en `get_performance_metrics()` para telemetría.
+
+- `is_connected` y comprobación activa:
+  - La clase expone un atributo booleano `device.is_connected` que indica el estado conocido internamente.
+  - Para una comprobación activa (enviar un comando y verificar respuesta) use `device.is_device_connected()` — este método realiza un ping al dispositivo.
+  - Atención: en el código existe una definición de método llamada `is_connected(self)` (versión antigua), pero en la práctica al inicializar la instancia el atributo `is_connected` (bool) sobrescribe ese nombre en la instancia. Para evitar ambigüedad, la documentación recomienda usar `device.is_connected` (atributo) y `device.is_device_connected()` (verificación activa).
+
+- CLI y scripts: el README contiene un ejemplo de `tools/measure.py` como plantilla; ese archivo no está incluido actualmente en el repositorio. Si quieres, puedo añadir ese script tal y como está sugerido en la documentación.
+
+- Formato de respuesta y parsing: el formato exacto de las líneas devueltas por el dispositivo depende del firmware. La documentación ahora insiste en inspeccionar la primera respuesta `raw` y adaptar el parser (`parse_impedance_result`) si es necesario.
+
+Con estas correcciones la documentación queda alineada con la implementación actual y evita llamadas a métodos inexistentes o confusas.
+
+
 ### Sweeps de frecuencia
 
 Ejemplo para ejecutar un sweep logarítmico de 100 Hz a 100 kHz con 50 puntos:
@@ -675,12 +987,3 @@ Por favor mantén el estilo de documentación en español y asegúrate de no inc
 ## Licencia
 
 Proyecto licenciado bajo MIT (ver cabecera en `lib/levalib.py`).
-
----
-
-Si quieres, puedo:
-
-- Añadir ejemplos de Jupyter Notebook con gráficos de sweeps.
-- Generar tests unitarios automáticos y un pequeño script CLI para ejecutar mediciones.
-
-Dime cuál de esos siguientes pasos prefieres y lo implemento.
