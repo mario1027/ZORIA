@@ -1,6 +1,6 @@
-# EVAL-ADMX2001 — Documentación completa y guía "para dummies"
+# EVAL-ADMX2001 — Documentación
 
-Este documento es una guía exhaustiva, formal y detallada para usar y desarrollar sobre la biblioteca `levalib` incluida en este repositorio. Está escrita en español y está diseñada para personas que necesitan instrucciones claras, paso a paso, con explicaciones sencillas y ejemplos prácticos.
+
 
 Contenido
 - Introducción rápida
@@ -684,5 +684,3 @@ Si quieres, puedo:
 - Generar tests unitarios automáticos y un pequeño script CLI para ejecutar mediciones.
 
 Dime cuál de esos siguientes pasos prefieres y lo implemento.
-# libeval
-# libeval
