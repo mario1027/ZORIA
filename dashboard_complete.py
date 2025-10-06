@@ -345,11 +345,13 @@ app.layout = dbc.Container([
                         dbc.CardHeader("Configuración"),
                         dbc.CardBody([
                             dbc.Label("Frecuencia (Hz):"),
-                            dbc.Input(id="freq-input", type="number", value=1000),
+                            dbc.Input(id="freq-input", type="number", value=1000, min=0, max=10000000, step=0.1),
+                            html.Small("0 = DC, 0.2 Hz - 10 MHz", className="text-muted"),
                             dbc.Label("Magnitud (Vpk):", className="mt-2"),
-                            dbc.Input(id="mag-input", type="number", value=0.5),
+                            dbc.Input(id="mag-input", type="number", value=0.5, min=0, max=5, step=0.1),
                             dbc.Label("Offset (V):", className="mt-2"),
-                            dbc.Input(id="offset-input", type="number", value=0),
+                            dbc.Input(id="offset-input", type="number", value=0, min=-5, max=5, step=0.1),
+                            html.Small(id="offset-hint", children="⚠️ Usar offset negativo si freq=0 (DC)", className="text-warning", style={'display': 'none'}),
                             html.Hr(),
                             dbc.Label("Modo de Medición:", className="mt-2"),
                             dcc.Dropdown(
@@ -874,6 +876,17 @@ def refresh_ports(n):
     return [{'label': f"{p.device} - {p.description}", 'value': p.device} for p in ports]
 
 @app.callback(
+    Output('offset-hint', 'style'),
+    Input('freq-input', 'value'),
+    prevent_initial_call=False
+)
+def show_dc_hint(freq):
+    """Mostrar advertencia cuando frecuencia = 0 (modo DC)"""
+    if freq == 0:
+        return {'display': 'block'}
+    return {'display': 'none'}
+
+@app.callback(
     [Output('status-badge', 'children'),
      Output('status-badge', 'color'),
      Output('connection-state', 'data')],
@@ -924,6 +937,22 @@ def apply_config(n, freq, mag, offset, display_mode, mdelay, tdelay):
     global device
     if device and is_connected.is_set():
         try:
+            # Validaciones según documentación oficial
+            if freq is None:
+                return "❌ Frecuencia requerida"
+            
+            # Validar modo DC (frequency = 0)
+            if freq == 0:
+                # Modo DC: Solo funciona con display mode 6 (R,X) y offset negativo
+                if display_mode != 6:
+                    return "⚠️ Modo DC requiere display mode R,X (6)"
+                if offset >= 0:
+                    return "⚠️ Modo DC requiere offset negativo (ej: -1)"
+            
+            # Validar rango de frecuencia AC
+            if freq > 0 and (freq < 0.2 or freq > 10000000):
+                return "❌ Frecuencia debe ser 0 (DC) o 0.2 Hz - 10 MHz"
+            
             # Aplicar configuraciones
             device.set_frequency(freq)
             device.set_magnitude(mag)
@@ -955,9 +984,17 @@ def apply_config(n, freq, mag, offset, display_mode, mdelay, tdelay):
                 15: "G,B", 16: "Y,θ°", 17: "Y,θ"
             }
             mode_name = mode_names.get(display_mode, "R,X")
-            return f"✓ Aplicado ({mode_name}, mdelay={mdelay}ms, tdelay={tdelay}ms)"
+            
+            # Feedback especial para modo DC
+            if freq == 0:
+                return f"✓ Modo DC activado (R only, offset={offset}V)"
+            else:
+                return f"✓ Aplicado ({mode_name}, {freq}Hz, mdelay={mdelay}ms)"
         except Exception as e:
-            return f"Error: {str(e)[:20]}"
+            error_msg = str(e)
+            if "timeout" in error_msg.lower():
+                return "⏱️ Timeout - Verificar conexión"
+            return f"❌ Error: {error_msg[:30]}"
     return "❌ No conectado"
 
 
