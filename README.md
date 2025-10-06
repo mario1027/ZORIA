@@ -1,238 +1,589 @@
-# EVAL-ADMX2001 — Documentación
+# EVAL-ADMX2001 - Analizador de Impedancia de Precisión# EVAL-ADMX2001 - Analizador de Impedancia de Precisión
 
 
 
-Contenido
-- Introducción rápida
-- Requisitos e instalación (con ejemplos)
-- Permisos y detección del puerto (Linux)
-- Conceptos básicos: ¿qué hace la librería? (explicado como para dummies)
-- Uso rápido — ejemplo mínimo
-- API completa (métodos y explicaciones detalladas)
-- Ejemplos avanzados (sweeps, calibración, análisis de componentes)
-- Debugging y manejo de errores (paso a paso)
-- Tests y desarrollo
-- Preguntas frecuentes (FAQ)
-- Siguientes pasos
+Sistema completo de control, medición y análisis para el analizador de impedancia **EVAL-ADMX2001** de Analog Devices.Sistema completo de control, medición y análisis para el analizador de impedancia **EVAL-ADMX2001** de Analog Devices.
 
--------------------------------------------------------------------------------
 
-Introducción rápida
--------------------
 
-`levalib` es una biblioteca en Python que permite controlar el analizador de impedancia EVAL-ADMX2001 de Analog Devices a través de un puerto serie (normalmente por USB). El objetivo de esta guía es que puedas:
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 
-- Conectar el dispositivo a tu ordenador.
-- Configurar parámetros (frecuencia, amplitud, offset, ganancia).
-- Realizar mediciones de impedancia y leer temperatura, DC, etc.
-- Ejecutar barridos (sweeps) y calibraciones.
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-No necesitas ser un experto en electrónica ni en Python para seguir esta guía — cada paso incluye explicaciones y qué esperar.
 
--------------------------------------------------------------------------------
 
-Requisitos e instalación
-------------------------
+------
 
-Requisitos mínimos:
 
-- Python 3.8 o superior
-- Paquete Python `pyserial` (para manejar la comunicación serie)
+
+## 📋 Contenido## 📋 Tabla de Contenidos
+
+
+
+- [Descripción](#-descripción)- [Descripción](#-descripción)
+
+- [Características](#-características)- [Características](#-características)
+
+- [Instalación Rápida](#-instalación-rápida)- [Estructura del Proyecto](#-estructura-del-proyecto)
+
+- [Uso Básico](#-uso-básico)- [Instalación Rápida](#-instalación-rápida)
+
+- [Documentación](#-documentación)- [Uso Básico](#-uso-básico)
+
+- [Soporte](#-soporte)- [Documentación](#-documentación)
+
+- [Dashboard Web](#-dashboard-web)
+
+---- [Biblioteca Python](#-biblioteca-python)
+
+- [Soporte](#-soporte)
+
+## 🎯 Descripción- [Licencia](#-licencia)
+
+
+
+Este proyecto proporciona una solución completa para trabajar con el **EVAL-ADMX2001**, incluyendo:---
+
+
+
+- **Biblioteca Python** (`lib/`) - Control completo del dispositivo vía puerto serie## 🎯 Descripción
+
+- **Dashboard Web Interactivo** - Interfaz gráfica profesional con Dash/Plotly
+
+- **Documentación Exhaustiva** - Guías, ejemplos y referencia completa de APIEste proyecto proporciona una solución completa para trabajar con el **EVAL-ADMX2001**, incluyendo:
+
+
+
+**Características del ADMX2001B:**- **Biblioteca Python** (`lib/`) - Control completo del dispositivo vía puerto serie
+
+- 🔬 Mediciones de impedancia de **0.2 Hz a 10 MHz**- **Dashboard Web Interactivo** - Interfaz gráfica profesional con Dash/Plotly
+
+- 📊 Canales de adquisición de **18 bits**- **Documentación Exhaustiva** - Guías, ejemplos y referencia completa de API
+
+- 🎛️ **18 modos de display** en unidades SI
+
+- 🔌 Interfaces **UART y SPI**El **ADMX2001B** es un módulo analizador de impedancia de alto rendimiento:
+
+- ⚡ Opera desde **3.3V** único- 🔬 Mediciones de impedancia de **0.2 Hz a 10 MHz**
+
+- 📊 Canales de adquisición de **18 bits**
+
+---- 🎛️ **18 modos de display** en unidades SI
+
+- 🔌 Interfaces **UART y SPI**
+
+## ✨ Características- ⚡ Opera desde **3.3V** único
+
+
+
+### Biblioteca Python (`lib/`)---
+
+- ✅ Conexión y comunicación robusta por puerto serie
+
+- ✅ Configuración completa (frecuencia, magnitud, offset, ganancia, promediado)## ✨ Características
+
+- ✅ Mediciones de impedancia, temperatura, DCR, Vdc, Idc
+
+- ✅ Barridos (frequency sweeps, EIS)### Biblioteca Python (`lib/`)
+
+- ✅ Sistema de calibración completo- ✅ Conexión y comunicación robusta por puerto serie
+
+- ✅ Control GPIO y LED- ✅ Configuración completa (frecuencia, magnitud, offset, ganancia, promediado)
+
+- ✅ Caching inteligente y delays adaptativos- ✅ Mediciones de impedancia, temperatura, DCR, Vdc, Idc
+
+- ✅ Métricas de rendimiento integradas- ✅ Barridos (frequency sweeps, EIS)
+
+- ✅ Sistema de calibración completo
+
+### Dashboard Web- ✅ Control GPIO y LED
+
+- 🖥️ Interfaz profesional con Bootstrap y Plotly- ✅ Caching inteligente y delays adaptativos
+
+- 📊 Visualización en tiempo real- ✅ Métricas de rendimiento integradas
+
+- 📈 Gráficos de Bode y Nyquist interactivos
+
+- 🔄 Barridos de frecuencia con actualización en vivo### Dashboard Web
+
+- 🛠️ Control total de configuración del dispositivo- 🖥️ Interfaz profesional con Bootstrap y Plotly
+
+- 💾 Exportación de datos a CSV- 📊 Visualización en tiempo real
+
+- 🎨 Diseño responsive y moderno- 📈 Gráficos de Bode y Nyquist interactivos
+
+- 🔄 Barridos de frecuencia con actualización en vivo
+
+---- 🛠️ Control total de configuración del dispositivo
+
+- 💾 Exportación de datos a CSV
+
+## 📁 Estructura del Proyecto- 🎨 Diseño responsive y moderno
+
+
+
+```---
+
+EVAL-ADMX2001-relase 1.0/
+
+├── README.md                          # Este archivo## 📁 Estructura del Proyecto
+
+├── requirements.txt                   # Dependencias Python
+
+├── dashboard_complete.py              # Dashboard web principal```
+
+│EVAL-ADMX2001-relase 1.0/
+
+├── lib/                               # Biblioteca Python├── 📄 README.md                          # Este archivo
+
+│   ├── __init__.py├── 📄 requirements.txt                   # Dependencias Python
+
+│   ├── admx2001.py                    # Driver principal├── 🐍 dashboard_complete.py              # Dashboard web principal
+
+│   ├── calibration.py                 # Sistema de calibración│
+
+│   ├── enums.py                       # Enumeraciones├── 📚 lib/                               # Biblioteca Python
+
+│   ├── exceptions.py                  # Excepciones personalizadas│   ├── __init__.py
+
+│   └── utils.py                       # Utilidades│   ├── admx2001.py                       # Driver principal
+
+││   ├── calibration.py                    # Sistema de calibración
+
+└── Documentación/                     # Documentación en Markdown│   ├── enums.py                          # Enumeraciones
+
+    ├── DOCUMENTACION_OFICIAL.md       # Manual oficial del hardware│   ├── exceptions.py                     # Excepciones personalizadas
+
+    ├── README_LIB.md                  # API de la biblioteca│   └── utils.py                          # Utilidades
+
+    ├── README_DASHBOARD.md            # Guía del dashboard│
+
+    ├── INICIO_RAPIDO.md               # Guía de inicio rápido└── 📖 docs/                              # Documentación
+
+    └── ...                            # Más guías y reportes    ├── DOCUMENTACION_OFICIAL.md          # Manual oficial del hardware
+
+```    ├── README_LIB.md                     # Documentación de la biblioteca
+
+    ├── README_DASHBOARD.md               # Guía del dashboard
+
+---    ├── INICIO_RAPIDO.md                  # Guía de inicio rápido
+
+    ├── INSTRUCCIONES_USO.md              # Instrucciones detalladas
+
+## ⚡ Instalación Rápida    └── ...                               # Reportes y guías adicionales
+
+```
+
+### 1. Requisitos
+
+---
+
+- **Python 3.8+**
+
+- **Puerto USB disponible**Requisitos e instalación
+
+- **Linux**: Permisos para acceder a `/dev/ttyUSB*`------------------------
+
+
+
+### 2. Instalar DependenciasRequisitos mínimos:
+
+
+
+```bash- Python 3.8 o superior
+
+pip install -r requirements.txt- Paquete Python `pyserial` (para manejar la comunicación serie)
+
+```
 
 Instalación rápida:
+
+### 3. Configurar Permisos (Linux)
 
 1) Con pip (usuario actual):
 
 ```bash
-python3 -m pip install --user "pyserial>=3.5"
+
+# Agregar usuario al grupo dialout```bash
+
+sudo usermod -a -G dialout $USERpython3 -m pip install --user "pyserial>=3.5"
+
+# Reiniciar sesión para que tome efecto```
+
 ```
 
 2) En un entorno virtual (recomendado para desarrollo):
 
+### 4. Verificar Puerto
+
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install "pyserial>=3.5"
+
+```bashpython3 -m venv .venv
+
+ls /dev/ttyUSB* /dev/ttyACM* 2>/dev/nullsource .venv/bin/activate
+
+```pip install "pyserial>=3.5"
+
 ```
 
+---
+
 Explicación para dummies:
-- `pyserial` permite que Python hable por un puerto serie (como cuando conectas el ADMX2001 por USB).
+
+## 🚀 Uso Básico- `pyserial` permite que Python hable por un puerto serie (como cuando conectas el ADMX2001 por USB).
+
 - Un entorno virtual es como una caja que contiene sólo las librerías que necesita este proyecto, así no ensucias el Python del sistema.
+
+### Biblioteca Python
 
 -------------------------------------------------------------------------------
 
-Permisos y detección del puerto (Linux)
+```python
+
+from lib import ADMX2001Permisos y detección del puerto (Linux)
+
 --------------------------------------
 
-Cuando conectas el EVAL-ADMX2001 por USB, el sistema crea un archivo especial en `/dev/` como `/dev/ttyUSB0` o `/dev/ttyACM0`.
+# Conectar al dispositivo
 
-1) Para ver qué puertos serie hay disponibles ejecuta:
+with ADMX2001('/dev/ttyUSB0') as device:Cuando conectas el EVAL-ADMX2001 por USB, el sistema crea un archivo especial en `/dev/` como `/dev/ttyUSB0` o `/dev/ttyACM0`.
 
-```bash
-ls /dev/ttyUSB* /dev/ttyACM* 2>/dev/null
+    # Configurar frecuencia
+
+    device.set_frequency(1000)  # 1 kHz1) Para ver qué puertos serie hay disponibles ejecuta:
+
+    
+
+    # Realizar medición```bash
+
+    result = device.measure()ls /dev/ttyUSB* /dev/ttyACM* 2>/dev/null
+
+    print(f"Z = {result[0]} Ω")```
+
 ```
 
 2) Si no aparece nada o al intentar abrir el puerto obtienes un error de permisos, agrega tu usuario al grupo `dialout` (comando que requiere privilegios):
 
-```bash
-sudo usermod -a -G dialout $USER
-# Cierra sesión y vuelve a iniciar sesión para que el cambio tenga efecto
-```
+### Dashboard Web
 
-Explicación para dummies:
+```bash
+
+```bashsudo usermod -a -G dialout $USER
+
+python dashboard_complete.py# Cierra sesión y vuelve a iniciar sesión para que el cambio tenga efecto
+
+``````
+
+
+
+Abrir navegador en: **http://localhost:8050**Explicación para dummies:
+
 - El sistema operativo controla el acceso a los dispositivos. Añadir tu usuario a `dialout` le da permiso para usar puertos serie.
 
+---
+
 -------------------------------------------------------------------------------
+
+## 📖 Documentación
 
 Conceptos básicos: ¿qué hace la librería? (para dummies)
--------------------------------------------------------
 
-Imagina que el ADMX2001 es una persona que habla por texto (línea de comandos). Tú le envías instrucciones como "pon la frecuencia a 1kHz" y él responde con números (por ejemplo: magnitud, fase). `levalib` es el traductor entre tu programa Python y esa persona.
+### Documentación Principal-------------------------------------------------------
 
-Elementos clave:
-- Puerto: la puerta por la que hablamos (ej. `/dev/ttyUSB0`).
-- Comandos: frases cortas que le mandamos al dispositivo (ej. `frequency 1000`).
-- Respuesta: lo que el dispositivo devuelve (ej. "0, 10.0, -5.0").
-- Parsers: funciones que convierten las respuestas en números útiles (ej. calcular magnitud y fase).
 
--------------------------------------------------------------------------------
 
-Uso rápido — ejemplo mínimo (funciona si tienes el dispositivo conectado)
------------------------------------------------------------------------
+| Documento | Descripción |Imagina que el ADMX2001 es una persona que habla por texto (línea de comandos). Tú le envías instrucciones como "pon la frecuencia a 1kHz" y él responde con números (por ejemplo: magnitud, fase). `levalib` es el traductor entre tu programa Python y esa persona.
 
-Archivo ejemplo `quick_example.py`:
+|-----------|-------------|
 
-```python
-from lib.levalib import ADMX2001
+| **[Documentación Oficial](DOCUMENTACION_OFICIAL.md)** | Manual completo del hardware EVAL-ADMX2001 |Elementos clave:
+
+| **[Biblioteca Python](README_LIB.md)** | API completa y ejemplos de uso |- Puerto: la puerta por la que hablamos (ej. `/dev/ttyUSB0`).
+
+| **[Dashboard](README_DASHBOARD.md)** | Guía del dashboard web interactivo |- Comandos: frases cortas que le mandamos al dispositivo (ej. `frequency 1000`).
+
+| **[Inicio Rápido](INICIO_RAPIDO.md)** | Primeros pasos y configuración |- Respuesta: lo que el dispositivo devuelve (ej. "0, 10.0, -5.0").
+
+| **[Instrucciones](INSTRUCCIONES_USO.md)** | Guía detallada de operación |- Parsers: funciones que convierten las respuestas en números útiles (ej. calcular magnitud y fase).
+
+
+
+### Guías Especializadas-------------------------------------------------------------------------------
+
+
+
+| Guía | Tema |Uso rápido — ejemplo mínimo (funciona si tienes el dispositivo conectado)
+
+|------|------|-----------------------------------------------------------------------
+
+| [Guía Rápida](GUIA_RAPIDA.md) | Referencia rápida de comandos |
+
+| [Optimización Sweeps](OPTIMIZACION_SWEEPS.md) | Optimización de barridos |Archivo ejemplo `quick_example.py`:
+
+| [Solución Timeouts](SOLUCION_TIMEOUTS.md) | Solución de problemas |
+
+| [Mejoras Bode](MEJORAS_BODE_DIAGRAM.md) | Mejoras en diagramas |```python
+
+| [Mejoras UX](MEJORAS_UX_DASHBOARD.md) | Experiencia de usuario |from lib.levalib import ADMX2001
+
+| [Resultados Pruebas](RESULTADOS_PRUEBAS_BARRIDOS.md) | Pruebas exhaustivas |
 
 PORT = '/dev/ttyUSB0'  # Cambia esto a tu puerto real
 
+### Reportes Técnicos
+
 def main():
-    try:
-        with ADMX2001(PORT) as dev:
-            print('Conectado:', dev.is_connected)
-            res = dev.quick_impedance_measurement(1000)  # 1 kHz
-            if res['impedance']['success']:
-                z = res['impedance']
+
+| Reporte | Contenido |    try:
+
+|---------|-----------|        with ADMX2001(PORT) as dev:
+
+| [Resumen Ejecutivo V3.2](RESUMEN_EJECUTIVO_V3.2.md) | Resumen de la versión actual |            print('Conectado:', dev.is_connected)
+
+| [Reporte Verificación](REPORTE_VERIFICACION.md) | Verificación de funcionalidades |            res = dev.quick_impedance_measurement(1000)  # 1 kHz
+
+| [Reporte Coherencia](REPORTE_COHERENCIA.md) | Análisis de coherencia |            if res['impedance']['success']:
+
+| [Resumen Optimizaciones](RESUMEN_OPTIMIZACIONES.md) | Optimizaciones implementadas |                z = res['impedance']
+
                 print(f"|Z| = {z['magnitude']:.2f} Ω, fase = {z['phase_degrees']:.1f}°")
-            else:
+
+---            else:
+
                 print('Error en medición:', res['impedance'].get('error'))
-    except Exception as e:
+
+## 🔧 Ejemplos    except Exception as e:
+
         print('Error general:', e)
 
+### Ejemplo 1: Medición Simple
+
 if __name__ == '__main__':
-    main()
-```
 
-Ejecuta:
+```python    main()
 
-```bash
-python3 quick_example.py
+from lib import ADMX2001```
+
+
+
+with ADMX2001('/dev/ttyUSB0') as device:Ejecuta:
+
+    device.set_frequency(1000)
+
+    z_real, z_imag = device.measure()```bash
+
+    z_magnitude = (z_real**2 + z_imag**2)**0.5python3 quick_example.py
+
+    print(f"|Z| = {z_magnitude:.2f} Ω")```
+
 ```
 
 Qué esperar:
-- Si todo está bien verás los resultados de impedancia y la temperatura.
+
+### Ejemplo 2: Barrido de Frecuencia- Si todo está bien verás los resultados de impedancia y la temperatura.
+
 - Si falla, el script imprimirá un error; revisa puerto y permisos.
 
--------------------------------------------------------------------------------
+```python
 
-API completa (explicada detalladamente)
---------------------------------------
+from lib import ADMX2001, SweepScale-------------------------------------------------------------------------------
 
-La clase central es `ADMX2001` (archivo `lib/levalib.py`). A continuación se listan los métodos más útiles con una explicación clara, ejemplos de entrada/salida y notas "para dummies".
 
-Constructor y atributos
+
+with ADMX2001('/dev/ttyUSB0') as device:API completa (explicada detalladamente)
+
+    device.sweep_frequency(100, 100000)--------------------------------------
+
+    device.sweep_scale(SweepScale.LOG)
+
+    device.sweep_points(50)La clase central es `ADMX2001` (archivo `lib/levalib.py`). A continuación se listan los métodos más útiles con una explicación clara, ejemplos de entrada/salida y notas "para dummies".
+
+    data = device.sweep_run()
+
+```Constructor y atributos
+
 - `ADMX2001(port, baudrate=115200, timeout=2.0)`
-  - Qué hace: abre el puerto serie y trata de inicializar comunicación.
+
+### Ejemplo 3: Calibración  - Qué hace: abre el puerto serie y trata de inicializar comunicación.
+
   - Parámetros: `port` (ej. `/dev/ttyUSB0`), `baudrate` (velocidad, por defecto 115200), `timeout` (segundos para esperar respuestas).
-  - Atributos importantes:
-    - `is_connected` (bool): True si la conexión fue exitosa.
+
+```python  - Atributos importantes:
+
+from lib import ADMX2001    - `is_connected` (bool): True si la conexión fue exitosa.
+
     - `last_error` (str): Mensaje del último error ocurrido.
 
-Nota para dummies: el constructor intenta conectar de inmediato. Si prefieres manejo manual de errores, envuelve la creación en try/except.
+with ADMX2001('/dev/ttyUSB0') as device:
 
-Comandos básicos (sistema y ayuda)
-- `get_idn()` — pide identificación del dispositivo (firmware/hardware)
-- `version()` — versión de firmware
+    device.calibrate_open()Nota para dummies: el constructor intenta conectar de inmediato. Si prefieres manejo manual de errores, envuelve la creación en try/except.
+
+    device.calibrate_short()
+
+    device.calibrate_load(1000.0, 0.0)Comandos básicos (sistema y ayuda)
+
+    device.calibrate_commit()- `get_idn()` — pide identificación del dispositivo (firmware/hardware)
+
+```- `version()` — versión de firmware
+
 - `help(command=None)` — ayuda del dispositivo
-- `reset()` — reinicia el dispositivo
+
+---- `reset()` — reinicia el dispositivo
+
 - `abort()` — aborta operación en curso
+
+## 💡 Solución de Problemas
 
 Ejemplo:
 
-```python
-dev.get_idn()
-dev.version()
-```
+### No se puede abrir el puerto serie
 
-Mediciones principales
-- `measure_impedance()`
-  - Qué hace: ejecuta la secuencia `initiate` -> `trigger` y devuelve las líneas en bruto que contienen la medición.
-  - Retorna: lista de cadenas; por ejemplo `['0, 100.0, -50.0']`.
+```python
+
+```bashdev.get_idn()
+
+# Verificar puertodev.version()
+
+ls -l /dev/ttyUSB0```
+
+
+
+# Agregar permisosMediciones principales
+
+sudo usermod -a -G dialout $USER- `measure_impedance()`
+
+# Reiniciar sesión  - Qué hace: ejecuta la secuencia `initiate` -> `trigger` y devuelve las líneas en bruto que contienen la medición.
+
+```  - Retorna: lista de cadenas; por ejemplo `['0, 100.0, -50.0']`.
+
   - Nota: usar `parse_impedance_result()` para convertir en valores numéricos.
 
-- `measure_dcr()` — mide resistencia DC (DCR)
-- `measure_vdc()` — mide voltaje DC
-- `measure_idc()` — mide corriente DC
-- `get_temperature()` — lee la temperatura interna
+### Timeouts en mediciones
 
-Configuración de señal
+- `measure_dcr()` — mide resistencia DC (DCR)
+
+- Aumentar timeout: `ADMX2001(port, timeout=10.0)`- `measure_vdc()` — mide voltaje DC
+
+- Reducir promedios: `device.set_average(5)`- `measure_idc()` — mide corriente DC
+
+- Ver [SOLUCION_TIMEOUTS.md](SOLUCION_TIMEOUTS.md)- `get_temperature()` — lee la temperatura interna
+
+
+
+### Dashboard no iniciaConfiguración de señal
+
 - `set_frequency(freq)` — configura la frecuencia de excitación en Hz
-  - Validaciones: rango permitido 1–100000 Hz (1 Hz a 100 kHz).
-  - Optimización: usa cache para no re-enviar el mismo valor repetidamente.
+
+```bash  - Validaciones: rango permitido 1–100000 Hz (1 Hz a 100 kHz).
+
+# Reinstalar dependencias  - Optimización: usa cache para no re-enviar el mismo valor repetidamente.
+
+pip install --upgrade -r requirements.txt
 
 - `set_magnitude(val)` — amplitud en voltios (0.01–2.0 V)
-- `set_offset(val)` — offset DC (-2.0–2.0 V)
-- `set_gain_auto()` — modo auto de ganancia
-- `set_gain_ch0(gain)` — ganancia manual del canal 0 (0–3)
 
-Promediado y repeticiones
+# Verificar puerto- `set_offset(val)` — offset DC (-2.0–2.0 V)
+
+lsof -i :8050- `set_gain_auto()` — modo auto de ganancia
+
+```- `set_gain_ch0(gain)` — ganancia manual del canal 0 (0–3)
+
+
+
+---Promediado y repeticiones
+
 - `set_average(n)` — promedios internos (1–100)
-- `set_count(n)` — número de mediciones repetidas (1–100)
 
-Formatos y display
-- `set_display(mode)` — controla qué aparece en la salida
-- `set_format(fmt)` — formato `ascii` o `hex`
+## 📊 Rendimiento- `set_count(n)` — número de mediciones repetidas (1–100)
 
-Sweeps (barridos)
-- `sweep_frequency(start, end)` — define inicio y fin de sweep
+
+
+| Operación | Tiempo Típico |Formatos y display
+
+|-----------|---------------|- `set_display(mode)` — controla qué aparece en la salida
+
+| Medición simple | 10-50 ms |- `set_format(fmt)` — formato `ascii` o `hex`
+
+| Medición optimizada | ~10 ms |
+
+| Barrido 100 puntos | 5-30 s |Sweeps (barridos)
+
+| Calibración completa | 30-60 s |- `sweep_frequency(start, end)` — define inicio y fin de sweep
+
 - `sweep_scale(mode)` — `log` o `linear`
-- `sweep_points(n)` — número de puntos
+
+Ver [RESULTADOS_PRUEBAS_BARRIDOS.md](RESULTADOS_PRUEBAS_BARRIDOS.md) para detalles.- `sweep_points(n)` — número de puntos
+
 - `sweep_run()` — ejecuta el sweep y devuelve respuesta cruda
 
-Calibración
-- `calibrate_open()`, `calibrate_short()`, `calibrate_load(r, x)` — cal disponible
-- `calibrate_commit(timestamp=None)` — guarda en flash
-- `calibrate_reload()`, `calibrate_erase()`, `calibrate_list()`
+---
 
-GPIO y auxiliares
-- `gpio_ctrl(value)` — controlar pines GPIO
-- `gpio_read()` — leer estado GPIO
+Calibración
+
+## 🤝 Soporte- `calibrate_open()`, `calibrate_short()`, `calibrate_load(r, x)` — cal disponible
+
+- `calibrate_commit(timestamp=None)` — guarda en flash
+
+### Recursos- `calibrate_reload()`, `calibrate_erase()`, `calibrate_list()`
+
+
+
+- 📖 **Documentación**: Ver archivos `.md` en el proyectoGPIO y auxiliares
+
+- 🌐 **Analog Devices**: https://www.analog.com- `gpio_ctrl(value)` — controlar pines GPIO
+
+- 📧 **Soporte**: admx-support@analog.com- `gpio_read()` — leer estado GPIO
+
 - `led(state)` — controlar LED (`on`, `off`, `blink`)
 
-Parsing y utilidades
-- `send_command(cmd, priority='auto', cache_result=False, keep_raw_response=False)`
-  - Envío genérico de comandos
-  - Implementa delays adaptativos, limpieza de respuesta y caching opcional
+---
 
-- `parse_impedance_result(raw_result)`
+Parsing y utilidades
+
+## 📝 Licencia- `send_command(cmd, priority='auto', cache_result=False, keep_raw_response=False)`
+
+  - Envío genérico de comandos
+
+Licencia MIT - Ver archivo LICENSE  - Implementa delays adaptativos, limpieza de respuesta y caching opcional
+
+
+
+---- `parse_impedance_result(raw_result)`
+
   - Convierte una lista de líneas crudas en diccionario con `magnitude`, `phase_degrees`, `resistance`, `reactance`, `conductance`, `susceptance`, `timestamp`, etc.
 
+## 📅 Versión
+
 - `parse_temperature_result(raw_result)`
-  - Extrae un valor de temperatura si la línea contiene `deg C`.
 
-- `quick_impedance_measurement(frequency=1000)`
-  - Flujo "todo en uno": configura frecuencia, parámetros básicos, realiza medición, parsea resultado y lee temperatura. Retorna diccionario estructurado con `impedance`, `temperature`, `measurement_info`.
+**Versión 3.2** (Actual)  - Extrae un valor de temperatura si la línea contiene `deg C`.
 
--------------------------------------------------------------------------------
+- ✨ Dashboard web completo
 
-Ejemplos
+- 🚀 Optimizaciones de velocidad- `quick_impedance_measurement(frequency=1000)`
 
-Esta sección recoge ejemplos exhaustivos y documentados de todo lo que puedes hacer con `levalib` y el EVAL-ADMX2001. Cada ejemplo incluye: objetivo, explicación paso a paso, código y qué esperar como salida. Se cubren mediciones individuales, lecturas de temperatura, DCR/Vdc/Idc, sweeps (frecuencia, magnitud, offset), calibración completa, control GPIO, parsing, caching, logging, performance, guardado a CSV y graficado.
+- 📊 Mejoras en gráficos  - Flujo "todo en uno": configura frecuencia, parámetros básicos, realiza medición, parsea resultado y lee temperatura. Retorna diccionario estructurado con `impedance`, `temperature`, `measurement_info`.
 
-Nota sobre formatos de respuesta: el firmware del ADMX2001 puede variar. Los ejemplos muestran patrones habituales y cómo adaptar el parseo si el formato difiere.
+- 🐛 Correcciones de estabilidad
 
-A. Medición simple y parseo (paso a paso)
+- 📖 Documentación renovada-------------------------------------------------------------------------------
+
+
+
+Ver [RESUMEN_EJECUTIVO_V3.2.md](RESUMEN_EJECUTIVO_V3.2.md) para changelog completo.Ejemplos
+
+
+
+---Esta sección recoge ejemplos exhaustivos y documentados de todo lo que puedes hacer con `levalib` y el EVAL-ADMX2001. Cada ejemplo incluye: objetivo, explicación paso a paso, código y qué esperar como salida. Se cubren mediciones individuales, lecturas de temperatura, DCR/Vdc/Idc, sweeps (frecuencia, magnitud, offset), calibración completa, control GPIO, parsing, caching, logging, performance, guardado a CSV y graficado.
+
+
+
+**Desarrollado para EVAL-ADMX2001 de Analog Devices**Nota sobre formatos de respuesta: el firmware del ADMX2001 puede variar. Los ejemplos muestran patrones habituales y cómo adaptar el parseo si el formato difiere.
+
+
+
+*Última actualización: Octubre 2025*A. Medición simple y parseo (paso a paso)
+
 
 Objetivo: realizar una medición de impedancia a una frecuencia concreta y obtener los valores numéricos (R, X, |Z|, fase).
 
@@ -987,3 +1338,4 @@ Por favor mantén el estilo de documentación en español y asegúrate de no inc
 ## Licencia
 
 Proyecto licenciado bajo MIT (ver cabecera en `lib/levalib.py`).
+.
