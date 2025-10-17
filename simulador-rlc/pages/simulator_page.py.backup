@@ -1,0 +1,596 @@
+"""
+Página principal del Simulador RLC
+Usando el estilo de la plantilla Volt
+"""
+from dash import html, callback, Input, Output, State, register_page
+from dash.exceptions import PreventUpdate
+import plotly.graph_objects as go
+from plotly.subplots import make_subplo# Función para registrar todos los callbacks
+def register_callbacks(app):
+    """Registra todos los callbacks de la página del simulador"""
+    
+    # Callback para forzar recálculo cuando cambia el tipo de circuito
+    @app.callback(
+        Output('calculate-btn', 'n_clicks'),
+        [Input('circuit-type', 'value')],
+        prevent_initial_call=True
+    )
+    def force_recalculation(circuit_type):
+        """Fuerza recálculo cuando cambia el tipo de circuito"""
+        if circuit_type and not circuit_type.startswith('header'):
+            # Simular un click en el botón para forzar recálculo
+            return 1
+        return 0
+
+    # Callback principal de cálculo
+    @app.callback(
+        [Output('bode-plot', 'figure'),
+         Output('nyquist-plot', 'figure'),
+         Output('impedance-info', 'children')],
+        [Input('calculate-btn', 'n_clicks'),
+         Input('circuit-type', 'value'),
+         Input('resistance-input', 'value'),
+         Input('inductance-input', 'value'),
+         Input('capacitance-input', 'value'),
+         Input('freq-start', 'value'),
+         Input('freq-end', 'value'),
+         Input('freq-points', 'value')],
+        prevent_initial_call=False
+    )
+    def calculate_impedance(n_clicks, circuit_type, R, L, C, f_start, f_end, n_points):
+        """Calcula y grafica la impedancia del circuito"""
+        
+        print(f"\n🚀 BOTÓN PRESIONADO: n_clicks = {n_clicks}")
+        print(f"📊 Datos recibidos: circuit_type={circuit_type}, R={R}, L={L}, C={C}")
+        
+        # Validaciones
+        if not circuit_type or circuit_type.startswith('header'):
+            circuit_type = 'RC_series'
+            
+        # Default values
+        if R is None: R = 1000
+        if L is None: L = 0.001  
+        if C is None: C = 1e-6
+        if f_start is None: f_start = 10
+        if f_end is None: f_end = 100000
+        if n_points is None: n_points = 100
+        
+        # Validar rangos
+        if R <= 0: R = 1000
+        if L <= 0: L = 0.001
+        if C <= 0: C = 1e-6
+        if f_start <= 0: f_start = 10
+        if f_end <= f_start: f_end = f_start * 1000
+        if n_points < 10: n_points = 10
+    circuit_selector_card,
+    resistance_input_card,
+    inductance_input_card,
+    capacitance_input_card,
+    frequency_range_card,
+    bode_plot_card,
+    nyquist_plot_card,
+    impedance_info_card
+)
+from .simulator.impedance_calculator import ImpedanceCalculator
+
+# Funciones auxiliares para formateo de valores
+def format_resistance(R):
+    """Formatea valores de resistencia de manera legible"""
+    if R >= 1000000:
+        return f"{R/1000000:.3f} MΩ"
+    elif R >= 1000:
+        return f"{R/1000:.3f} kΩ"
+    else:
+        return f"{R:.3f} Ω"
+
+def format_inductance(L):
+    """Formatea valores de inductancia de manera legible"""
+    if L >= 1:
+        return f"{L:.3f} H"
+    elif L >= 0.001:
+        return f"{L*1000:.3f} mH"
+    elif L >= 0.000001:
+        return f"{L*1000000:.3f} μH"
+    else:
+        return f"{L*1000000000:.3f} nH"
+
+def format_capacitance(C):
+    """Formatea valores de capacitancia de manera legible"""
+    if C >= 0.001:
+        return f"{C:.3f} F"
+    elif C >= 0.000001:
+        return f"{C*1000:.3f} mF"
+    elif C >= 0.000000001:
+        return f"{C*1000000:.3f} μF"
+    elif C >= 0.000000000001:
+        return f"{C*1000000000:.3f} nF"
+    else:
+        return f"{C*1000000000000:.3f} pF"
+
+def format_frequency(f):
+    """Formatea valores de frecuencia de manera legible"""
+    if f >= 1000000000:
+        return f"{f/1000000000:.3f} GHz"
+    elif f >= 1000000:
+        return f"{f/1000000:.3f} MHz"
+    elif f >= 1000:
+        return f"{f/1000:.3f} kHz"
+    else:
+        return f"{f:.3f} Hz"
+
+def register_simulator_page(app):
+    """Registra la página del simulador después de crear la app"""
+    register_page(
+        __name__,
+        path='/',
+        title='Simulador RLC',
+        name='Simulador RLC',
+        layout=layout
+    )
+    
+    # Registrar callbacks después de que la página esté registrada
+    register_callbacks(app)
+
+# Información de circuitos
+CIRCUIT_INFO = {
+    'R': {
+        'name': 'Resistor',
+        'description': 'Un resistor puro presenta impedancia constante en todas las frecuencias, sin desfase.',
+        'formula': 'Z = R',
+        'components': ['R']
+    },
+    'L': {
+        'name': 'Inductor',
+        'description': 'Un inductor puro presenta impedancia que aumenta linealmente con la frecuencia.',
+        'formula': 'Z = jωL',
+        'components': ['L']
+    },
+    'C': {
+        'name': 'Capacitor',
+        'description': 'Un capacitor puro presenta impedancia que disminuye con la frecuencia.',
+        'formula': 'Z = 1/(jωC)',
+        'components': ['C']
+    },
+    'RC_series': {
+        'name': 'RC en Serie',
+        'description': 'Resistor y capacitor conectados en serie. Comportamiento de filtro pasa-altos.',
+        'formula': 'Z = R + 1/(jωC)',
+        'components': ['R', 'C']
+    },
+    'RC_parallel': {
+        'name': 'RC en Paralelo',
+        'description': 'Resistor y capacitor conectados en paralelo. La impedancia disminuye en altas frecuencias.',
+        'formula': 'Z = R / (1 + jωRC)',
+        'components': ['R', 'C']
+    },
+    'RL_series': {
+        'name': 'RL en Serie',
+        'description': 'Resistor e inductor conectados en serie. Comportamiento de filtro pasa-bajos.',
+        'formula': 'Z = R + jωL',
+        'components': ['R', 'L']
+    },
+    'RL_parallel': {
+        'name': 'RL en Paralelo',
+        'description': 'Resistor e inductor conectados en paralelo. La impedancia disminuye en altas frecuencias.',
+        'formula': 'Z = RjωL / (R + jωL)',
+        'components': ['R', 'L']
+    },
+    'LC_series': {
+        'name': 'LC en Serie',
+        'description': 'Inductor y capacitor en serie. Presenta resonancia donde la impedancia es mínima.',
+        'formula': 'Z = jωL + 1/(jωC)',
+        'components': ['L', 'C']
+    },
+    'LC_parallel': {
+        'name': 'LC en Paralelo',
+        'description': 'Inductor y capacitor en paralelo. Presenta resonancia donde la impedancia es máxima.',
+        'formula': 'Z = jωL / (1 - ω²LC)',
+        'components': ['L', 'C']
+    },
+    'RLC_series': {
+        'name': 'RLC en Serie',
+        'description': 'Circuito resonante serie. Presenta resonancia con impedancia mínima igual a R.',
+        'formula': 'Z = R + jωL + 1/(jωC)',
+        'components': ['R', 'L', 'C']
+    },
+    'RLC_parallel': {
+        'name': 'RLC en Paralelo',
+        'description': 'Circuito resonante paralelo. Presenta resonancia con impedancia máxima.',
+        'formula': 'Z = 1 / (1/R + 1/(jωL) + jωC)',
+        'components': ['R', 'L', 'C']
+    }
+}
+
+
+def format_resistance(R):
+    """Formatea el valor de resistencia de manera legible"""
+    if R >= 1000000:
+        return f"{R/1000000:.3f} MΩ"
+    elif R >= 1000:
+        return f"{R/1000:.3f} kΩ"
+    else:
+        return f"{R:.3f} Ω"
+
+
+def layout(**kwargs):
+    """Layout principal del simulador"""
+    return html.Div([
+        # Sidebar
+        sideBar(),
+        
+        # Main content
+        html.Main([
+            # Top navbar
+            topNavBar(),
+            
+            # Breadcrumbs
+            html.Div([
+                breadCrumbs([
+                    {'icon': ICON.HOME, 'text': 'Inicio', 'href': '/'},
+                    {'text': 'Simulador de impedancia'}
+                ])
+            ], className='container-fluid px-4 pt-4'),
+            
+            # Header
+            html.Div([
+                html.Div([
+                    html.Div([
+                        html.H1([
+                            html.Span(ICON.CHART, className='me-3 text-primary'),
+                            "Simulador de analizador de Impedancia"
+                        ], className='h2 mb-2'),
+                        html.P(
+                            "Analiza la respuesta en frecuencia de circuitos mediante diagramas de Bode y Nyquist",
+                            className='text-muted mb-0'
+                        )
+                    ], className='col-12 col-lg-8'),
+                ], className='row align-items-center')
+            ], className='container-fluid px-4 pt-3 pb-4'),
+            
+            # Content
+            html.Div([
+                html.Div([
+                    # Columna izquierda - Controles
+                    html.Div([
+                        circuit_selector_card(),
+                        resistance_input_card(),
+                        inductance_input_card(),
+                        capacitance_input_card(),
+                        frequency_range_card(),
+                    ], className='col-12 col-lg-4 mb-4'),
+                    
+                    # Columna derecha - Gráficas
+                    html.Div([                        
+                        bode_plot_card(),
+                        nyquist_plot_card(),
+                    ], className='col-12 col-lg-8 mb-4'),
+                    
+                ], className='row')
+            ], className='container-fluid px-4 pb-4'),
+            
+            # Footer
+            footer()
+            
+        ], className='content')
+    ])
+
+
+# Callback para actualizar descripción del circuito
+@callback(
+    [Output('circuit-description', 'children'),
+     Output('circuit-formula', 'children'),
+     Output('resistance-card', 'style'),
+     Output('inductance-card', 'style'),
+     Output('capacitance-card', 'style')],
+    Input('circuit-type', 'value')
+)
+def update_circuit_info(circuit_type):
+    """Actualiza la información del circuito seleccionado y oculta componentes no necesarios"""
+    if not circuit_type or circuit_type.startswith('header'):
+        raise PreventUpdate
+    
+    info = CIRCUIT_INFO[circuit_type]
+    components_needed = info['components']
+    
+    # Estilos para mostrar/ocultar cards
+    show_style = {'display': 'block'}
+    hide_style = {'display': 'none'}
+    
+    # Determinar qué cards mostrar
+    r_style = show_style if 'R' in components_needed else hide_style
+    l_style = show_style if 'L' in components_needed else hide_style
+    c_style = show_style if 'C' in components_needed else hide_style
+    
+    description = html.Div([
+        html.Strong(info['name']),
+        html.Br(),
+        info['description']
+    ])
+    
+    return description, info['formula'], r_style, l_style, c_style
+
+
+# Callback para recalcular automáticamente cuando cambie el tipo de circuito
+@callback(
+    Output('calculate-btn', 'n_clicks'),
+    Input('circuit-type', 'value'),
+    prevent_initial_call=True
+)
+def auto_calculate_on_circuit_change(circuit_type):
+    """Fuerza recálculo cuando cambia el tipo de circuito"""
+    if circuit_type and not circuit_type.startswith('header'):
+        # Simular un click en el botón para forzar recálculo
+        return 1
+    return 0
+
+
+# Callback principal de cálculo
+@callback(
+    [Output('bode-plot', 'figure'),
+     Output('nyquist-plot', 'figure'),
+     Output('impedance-info', 'children')],
+    [Input('calculate-btn', 'n_clicks'),
+     Input('circuit-type', 'value'),
+     Input('resistance-input', 'value'),
+     Input('inductance-input', 'value'),
+     Input('capacitance-input', 'value'),
+     Input('freq-start', 'value'),
+     Input('freq-end', 'value'),
+     Input('freq-points', 'value')],
+    prevent_initial_call=False
+)
+def calculate_impedance(n_clicks, circuit_type, R, L, C, f_start, f_end, n_points):
+    """Calcula y grafica la impedancia del circuito"""
+    
+    print(f"\n🚀 BOTÓN PRESIONADO: n_clicks = {n_clicks}")
+    print(f"📊 Datos recibidos: circuit_type={circuit_type}, R={R}, L={L}, C={C}")
+    
+    # Validaciones
+    if not circuit_type or circuit_type.startswith('header'):
+        circuit_type = 'RC_series'
+    
+    # Convertir a float explícitamente y asignar defaults
+    try:
+        R = float(R) if R is not None else 1000.0
+        # Validar rango de resistencia (1 Ω a 10 MΩ)
+        R = max(1.0, min(R, 10000000.0))
+    except (ValueError, TypeError):
+        R = 1000.0
+    
+    try:
+        L = float(L) if L is not None else 0.001
+    except (ValueError, TypeError):
+        L = 0.001
+    
+    try:
+        C = float(C) if C is not None else 0.000001
+    except (ValueError, TypeError):
+        C = 0.000001
+    
+    try:
+        f_start = float(f_start) if f_start is not None else 0.1
+    except (ValueError, TypeError):
+        f_start = 0.1
+    
+    try:
+        f_end = float(f_end) if f_end is not None else 1000000.0
+    except (ValueError, TypeError):
+        f_end = 1000000.0
+    
+    try:
+        n_points = int(n_points) if n_points is not None else 1000
+    except (ValueError, TypeError):
+        n_points = 1000
+    
+    print(f"\n{'='*60}")
+    print(f"CÁLCULO DE IMPEDANCIA - Click #{n_clicks}")
+    print(f"{'='*60}")
+    print(f"Tipo de circuito: {circuit_type}")
+    print(f"R = {format_resistance(R)} ({R} Ω)")
+    print(f"L = {L} H ({L*1000} mH)")
+    print(f"C = {C} F ({C*1e6} µF)")
+    print(f"Rango: {f_start} Hz → {f_end} Hz ({n_points} puntos)")
+    print(f"{'='*60}\n")
+    
+    # Crear calculadora
+    calc = ImpedanceCalculator(f_start, f_end, n_points)
+    
+    # Calcular impedancia según el tipo de circuito
+    circuit_functions = {
+        'R': lambda: calc.resistor(R),
+        'L': lambda: calc.inductor(L),
+        'C': lambda: calc.capacitor(C),
+        'RC_series': lambda: calc.rc_series(R, C),
+        'RC_parallel': lambda: calc.rc_parallel(R, C),
+        'RL_series': lambda: calc.rl_series(R, L),
+        'RL_parallel': lambda: calc.rl_parallel(R, L),
+        'LC_series': lambda: calc.lc_series(L, C),
+        'LC_parallel': lambda: calc.lc_parallel(L, C),
+        'RLC_series': lambda: calc.rlc_series(R, L, C),
+        'RLC_parallel': lambda: calc.rlc_parallel(R, L, C)
+    }
+    
+    Z = circuit_functions[circuit_type]()
+    
+    # Obtener datos para Bode
+    bode_data = calc.get_bode_data(Z)
+    
+    # Crear figura de Bode con doble eje Y
+    bode_fig = go.Figure()
+    
+    # Magnitud (eje Y izquierdo)
+    bode_fig.add_trace(
+        go.Scatter(
+            x=bode_data['frequencies'],
+            y=bode_data['magnitude_db'],
+            mode='lines',
+            name='Magnitud |Z|',
+            line=dict(color='#31316A', width=3),
+            hovertemplate='<b>Frecuencia:</b> %{x:.2f} Hz<br><b>Magnitud:</b> %{y:.2f} dB<extra></extra>',
+            yaxis='y'
+        )
+    )
+    
+    # Fase (eje Y derecho)
+    bode_fig.add_trace(
+        go.Scatter(
+            x=bode_data['frequencies'],
+            y=bode_data['phase_deg'],
+            mode='lines',
+            name='Fase ∠Z',
+            line=dict(color='#E74694', width=3),
+            hovertemplate='<b>Frecuencia:</b> %{x:.2f} Hz<br><b>Fase:</b> %{y:.2f}°<extra></extra>',
+            yaxis='y2'
+        )
+    )
+    
+    # Configurar ejes
+    bode_fig.update_xaxes(
+        title_text="Frecuencia (Hz)", 
+        type="log", 
+        gridcolor='#E5E7EB',
+        showgrid=True
+    )
+    
+    # Configurar layout con doble eje Y
+    bode_fig.update_layout(
+        template='plotly_white',
+        showlegend=True,
+        legend=dict(
+            x=0.02,
+            y=0.98,
+            bgcolor="rgba(255,255,255,0.8)",
+            bordercolor="rgba(0,0,0,0.2)",
+            borderwidth=1
+        ),
+        height=500,
+        margin=dict(l=60, r=60, t=40, b=60),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(size=12, color='#31316A'),
+        title=dict(
+            text="Diagrama de Bode",
+            x=0.5,
+            font=dict(size=16, color='#31316A')
+        ),
+        # Eje Y izquierdo (Magnitud)
+        yaxis=dict(
+            title=dict(text="Magnitud (dB)", font=dict(color='#31316A')),
+            tickfont=dict(color='#31316A'),
+            gridcolor='#E5E7EB',
+            side='left'
+        ),
+        # Eje Y derecho (Fase)
+        yaxis2=dict(
+            title=dict(text="Fase (°)", font=dict(color='#E74694')),
+            tickfont=dict(color='#E74694'),
+            anchor='x',
+            overlaying='y',
+            side='right'
+        )
+    )
+    
+    # Obtener datos para Nyquist
+    nyquist_data = calc.get_nyquist_data(Z)
+    
+    # Crear figura de Nyquist
+    nyquist_fig = go.Figure()
+    
+    nyquist_fig.add_trace(
+        go.Scatter(
+            x=nyquist_data['real'],
+            y=-nyquist_data['imaginary'],  # Usar -Z'' (parte imaginaria negativa)
+            mode='lines+markers',
+            name='Z',
+            line=dict(color='#31316A', width=2),
+            marker=dict(size=4, color='#E74694'),
+            hovertemplate='<b>Z\' (Real):</b> %{x:.2f} Ω<br><b>-Z\'\' (Imag):</b> %{y:.2f} Ω<extra></extra>'
+        )
+    )
+    
+    # Añadir ejes
+    nyquist_fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
+    nyquist_fig.add_vline(x=0, line_dash="dash", line_color="gray", opacity=0.5)
+    
+    nyquist_fig.update_xaxes(title_text="Z' - Parte Real (Ω)", gridcolor='#E5E7EB')
+    nyquist_fig.update_yaxes(title_text="-Z'' - Parte Imaginaria (Ω)", gridcolor='#E5E7EB')
+    
+    nyquist_fig.update_layout(
+        template='plotly_white',
+        showlegend=False,
+        height=600,
+        margin=dict(l=60, r=30, t=30, b=60),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(size=12, color='#31316A')
+    )
+    
+    # Información de impedancia
+    info_content = []
+    
+    # Valores del circuito
+    info = CIRCUIT_INFO[circuit_type]
+    values_list = []
+    if 'R' in info['components']:
+        values_list.append(html.Li([
+            get_component_icon_element('R', style={'width': '16px', 'height': '16px', 'margin-right': '8px', 'filter': 'hue-rotate(340deg) saturate(2)'}),
+            html.Strong("R = "), 
+            format_resistance(R)
+        ], className='d-flex align-items-center mb-1'))
+    if 'L' in info['components']:
+        values_list.append(html.Li([
+            get_component_icon_element('L', style={'width': '16px', 'height': '16px', 'margin-right': '8px', 'filter': 'hue-rotate(220deg) saturate(2)'}),
+            html.Strong("L = "), 
+            format_inductance(L)
+        ], className='d-flex align-items-center mb-1'))
+    if 'C' in info['components']:
+        values_list.append(html.Li([
+            get_component_icon_element('C', style={'width': '16px', 'height': '16px', 'margin-right': '8px', 'filter': 'hue-rotate(120deg) saturate(2)'}),
+            html.Strong("C = "), 
+            format_capacitance(C)
+        ], className='d-flex align-items-center mb-1'))
+    
+    info_content.append(
+        html.Div([
+            html.H6("Componentes del Circuito", className='text-muted mb-2'),
+            html.Ul(values_list, className='list-unstyled mb-3')
+        ])
+    )
+    
+    # Frecuencia de resonancia (si aplica)
+    if circuit_type in ['LC_series', 'LC_parallel', 'RLC_series', 'RLC_parallel']:
+        f_res = calc.get_resonance_frequency(L, C)
+        info_content.append(
+            html.Div([
+                html.H6("Frecuencia de Resonancia", className='text-muted mb-2'),
+                html.P([
+                    html.Span(ICON.CHART, className='text-warning me-2'),
+                    html.Strong(f"f₀ = {format_frequency(f_res)}")
+                ], className='mb-3 fs-5')
+            ])
+        )
+        
+        # Factor de calidad (si hay resistencia)
+        if circuit_type in ['RLC_series', 'RLC_parallel']:
+            Q = calc.get_quality_factor(R, L, C)
+            info_content.append(
+                html.Div([
+                    html.H6("Factor de Calidad", className='text-muted mb-2'),
+                    html.P([
+                        html.Span(ICON.CLIPBOARD, className='text-success me-2'),
+                        html.Strong(f"Q = {Q:.2f}")
+                    ], className='mb-0 fs-5')
+                ])
+            )
+    
+    # Rango de frecuencias
+    info_content.append(
+        html.Div([
+            html.H6("Rango de Frecuencias", className='text-muted mb-2 mt-3'),
+            html.P([
+                html.Small(f"{format_frequency(f_start)} → {format_frequency(f_end)} ({n_points} puntos)", className='text-muted')
+            ], className='mb-0')
+        ])
+    )
+    
+    return bode_fig, nyquist_fig, html.Div(info_content)

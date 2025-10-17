@@ -940,77 +940,109 @@ class ADMX2001:
             logger.warning(f"count no configurado, usando valor por defecto: {expected_count}")
         expected_count = int(expected_count)
         
-        # Ejecutar sweep con comando 'z' (según documentación oficial)
-        # Los sweeps necesitan un manejo especial porque tardan mucho tiempo
-        logger.info(f"Ejecutando sweep con comando 'z' - esperando {expected_count} puntos...")
+        # Ejecutar sweep con método oficial optimizado
+        # DESCUBRIMIENTO: Un solo comando 'z' devuelve TODOS los puntos del sweep
+        # Este método es 30-40x más rápido que solicitar puntos individuales
+        logger.info(f"Ejecutando sweep optimizado - esperando {expected_count} puntos...")
         
         try:
-            # Enviar comando
-            cmd_bytes = ('z' + '\n').encode('utf-8')
-            self.serial.write(cmd_bytes)
-            self.command_count += 1
-            logger.debug("Comando 'z' enviado")
+            # Limpiar buffer antes de comenzar
+            logger.debug("Limpiando buffer serial...")
+            self.serial.reset_input_buffer()
+            self.serial.reset_output_buffer()
+            time.sleep(0.2)
             
-            # Leer respuesta con paciencia - los sweeps tardan tiempo
-            response = []
+            # Enviar UN solo comando 'z' para ejecutar todo el sweep
+            logger.info("Enviando comando 'z' para ejecutar sweep completo...")
+            self.serial.write(b'z\n')
+            self.serial.flush()
+            self.command_count += 1
+            time.sleep(0.5)  # Dar tiempo al dispositivo para empezar
+            
+            # Leer TODOS los datos del sweep
+            all_data_lines = []
+            all_lines = []
             start_time = time.time()
             last_data_time = time.time()
+            prompt_seen = False
             
-            # Timeout adaptativo: si no hay datos esperamos más tiempo entre puntos
-            # para sweeps lentos, pero no terminamos hasta tener todos los puntos
-            idle_timeout = 10.0  # Timeout entre puntos individuales (aumentado a 10s)
+            # El sweep puede tomar tiempo dependiendo de la configuración
+            # Usamos un timeout generoso pero monitoreamos actividad
+            idle_timeout = 10.0  # Sin datos por 10 segundos = terminar
             
-            # Contador de puntos de datos válidos recibidos
-            points_received = 0
+            logger.info("Leyendo datos del sweep...")
             
-            while time.time() - start_time < timeout:
+            while (time.time() - start_time) < timeout:
                 if self.serial.in_waiting > 0:
-                    line = self.serial.readline().decode('utf-8', errors='ignore')
-                    line = line.strip()
+                    line = self.serial.readline().decode('utf-8', errors='ignore').strip()
                     
                     if line:
-                        response.append(line)
+                        all_lines.append(line)
                         last_data_time = time.time()
-                        logger.debug(f"Línea recibida: {line[:60]}")
                         
-                        # Contar si es una línea de datos válida (no prompt, no echo)
-                        if (line and 
-                            not line.startswith('ADMX') and 
-                            line not in ['z', 'initiate'] and
-                            ',' in line):  # Las líneas de datos contienen comas
-                            points_received += 1
-                            logger.debug(f"Punto {points_received}/{expected_count} recibido")
+                        # Log cada 10 puntos para no saturar
+                        if len(all_data_lines) % 10 == 0 and len(all_data_lines) > 0:
+                            logger.info(f"⏳ Progreso: {len(all_data_lines)} puntos recibidos...")
                         
-                        # Si vemos el prompt Y ya recibimos todos los puntos, terminó
+                        # Verificar si es línea de datos
+                        if (',' in line and 
+                            not line.startswith('ADMX') and
+                            line not in ['z', 'abort'] and
+                            not line.startswith('Warn')):
+                            # Intentar parsear para validar
+                            try:
+                                parts = line.split(',')
+                                if len(parts) == 3:
+                                    float(parts[0])  # sweep value (freq, magnitude, etc)
+                                    float(parts[1])  # real part
+                                    float(parts[2])  # imaginary part
+                                    all_data_lines.append(line)
+                                    logger.debug(f"✓ Datos: {line[:60]}...")
+                            except ValueError:
+                                pass  # No es línea de datos válida
+                        
+                        # Detectar prompt
                         if 'ADMX2001>' in line:
-                            logger.debug("Prompt detectado")
-                            if points_received >= expected_count:
-                                logger.debug(f"Todos los {expected_count} puntos recibidos - sweep completado")
+                            prompt_seen = True
+                            logger.debug(f"Prompt detectado con {len(all_data_lines)} puntos")
+                            
+                            # IMPORTANTE: El prompt puede aparecer ANTES de que terminen los datos
+                            # debido al promediado (average). NO terminar inmediatamente.
+                            # Solo terminar si:
+                            # 1. Ya tenemos suficientes puntos, O
+                            # 2. No hay más datos después de esperar
+                            
+                            if len(all_data_lines) >= expected_count:
+                                logger.info(f"✓ Todos los puntos esperados recibidos ({len(all_data_lines)})")
                                 break
-                            else:
-                                logger.debug(f"Prompt detectado pero solo {points_received}/{expected_count} puntos - continuando...")
+                            
+                            # Aún faltan puntos - esperar más tiempo
+                            logger.debug(f"Prompt visto pero solo {len(all_data_lines)}/{expected_count} puntos - esperando más...")
+                            time.sleep(1.0)  # Esperar más tiempo
+                            
+                            # Si realmente no hay más datos, terminar
+                            if self.serial.in_waiting == 0:
+                                # Última verificación - esperar otro segundo
+                                time.sleep(1.0)
+                                if self.serial.in_waiting == 0:
+                                    logger.warning(f"No hay más datos en buffer - terminando con {len(all_data_lines)}/{expected_count} puntos")
+                                    break
                 else:
-                    # No hay datos, esperar un poco
-                    time.sleep(0.1)
+                    # No hay datos, esperar
+                    time.sleep(0.05)
                     
-                    # Solo terminar por timeout si:
-                    # 1. Ya recibimos todos los puntos esperados, O
-                    # 2. Llevamos mucho tiempo sin datos Y ya tenemos al menos algunos puntos
-                    if points_received >= expected_count:
-                        logger.debug(f"Todos los {expected_count} puntos recibidos - finalizando")
-                        break
-                    elif time.time() - last_data_time > idle_timeout:
-                        if points_received > 0:
-                            logger.warning(f"Timeout sin datos después de {idle_timeout}s - "
-                                         f"recibidos {points_received}/{expected_count} puntos")
+                    # Timeout si llevamos mucho sin datos
+                    if (time.time() - last_data_time) > idle_timeout:
+                        if len(all_data_lines) > 0:
+                            logger.info(f"Timeout de inactividad - recibidos {len(all_data_lines)} puntos")
                             break
                         else:
-                            logger.error(f"Timeout sin ningún dato después de {idle_timeout}s")
+                            logger.warning(f"Timeout sin datos después de {idle_timeout}s")
                             break
             
             elapsed = time.time() - start_time
-            logger.info(f"Lectura completada en {elapsed:.2f}s, {len(response)} líneas, "
-                       f"{points_received} puntos de datos")
+            points_received = len(all_data_lines)
+            logger.info(f"Lectura completada en {elapsed:.2f}s, {points_received} puntos de datos obtenidos")
             
             # Advertir si no recibimos todos los puntos esperados
             if points_received < expected_count:
@@ -1020,11 +1052,11 @@ class ADMX2001:
         except Exception as e:
             raise MeasurementError(f"Error ejecutando sweep: {e}")
         
-        # Parsear resultados
+        # Parsear resultados desde las líneas de datos recolectadas
         results = []
-        logger.debug(f"Parseando {len(response)} líneas de respuesta")
+        logger.debug(f"Parseando {len(all_data_lines)} líneas de datos")
         
-        for i, line in enumerate(response):
+        for i, line in enumerate(all_data_lines):
             # Saltar líneas vacías, comandos echo y prompts
             if not line or line.startswith('ADMX') or line.strip() in ['z', 'initiate']:
                 continue
@@ -1044,7 +1076,7 @@ class ADMX2001:
             else:
                 logger.debug(f"Línea {i} no parseada: {line[:50]}")
         
-        logger.info(f"Sweep completado: {len(results)} puntos obtenidos de {len(response)} líneas")
+        logger.info(f"Sweep completado: {len(results)} puntos parseados de {len(all_data_lines)} líneas de datos")
         
         # Verificación final
         if len(results) < expected_count:

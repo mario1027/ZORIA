@@ -155,7 +155,7 @@ RECOMMENDED_MIN_MDELAY = 0.0  # Solo a frecuencias > 10kHz
 DEFAULT_BAUDRATE = 115200
 DEFAULT_TIMEOUT = 5.0  # Aumentado para dispositivos lentos
 COMMAND_TIMEOUT = 10.0
-SWEEP_TIMEOUT = 60.0  # Para sweeps largos
+SWEEP_TIMEOUT = 600.0  # 10 minutos - para sweeps muy largos (era 60s)
 
 # Temperatura
 TEMPERATURE_WARNING_THRESHOLD = 60.0  # °C

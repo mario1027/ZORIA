@@ -1029,22 +1029,26 @@ def update_realtime(n, display_mode):
                 alert_type = data.get('alert_type', 'error')
                 
                 if alert_type == 'warning':
+                    # Escapar el mensaje de error para JavaScript
+                    safe_error_msg = error_msg[:80].replace("'", "\\'").replace('"', '\\"').replace('\n', ' ')
                     error_alert = f"""
                         Swal.fire({{
                             icon: 'warning',
                             title: 'Errores de Medición',
-                            html: '<b>{error_count} errores consecutivos</b><br><br>{error_msg[:80]}',
+                            html: '<b>{error_count} errores consecutivos</b><br><br>{safe_error_msg}',
                             confirmButtonColor: '#ffc107',
                             timer: 5000,
                             timerProgressBar: true
                         }});
                     """
                 else:  # error
+                    # Escapar el mensaje de error para JavaScript
+                    safe_error_msg = error_msg.replace("'", "\\'").replace('"', '\\"').replace('\n', ' ')
                     error_alert = f"""
                         Swal.fire({{
                             icon: 'error',
                             title: 'Error Crítico de Medición',
-                            html: '<b>Medición interrumpida</b><br><br>{error_msg}<br><br><small>Por favor verifica la conexión del dispositivo</small>',
+                            html: '<b>Medición interrumpida</b><br><br>{safe_error_msg}<br><br><small>Por favor verifica la conexión del dispositivo</small>',
                             confirmButtonColor: '#dc3545'
                         }});
                     """
@@ -1247,11 +1251,16 @@ def update_sweep(n_intervals, sweep_n, stop_n, cancel_n, start, end, points, sca
             
             missing_text = ", ".join(missing_fields)
             
+            # Formatear valores de forma segura para JavaScript
+            start_str = str(start) if start is not None else 'N/A'
+            end_str = str(end) if end is not None else 'N/A'
+            points_str = str(points) if points is not None else 'N/A'
+            
             sweetalert_script = f"""
                 Swal.fire({{
                     icon: 'warning',
                     title: 'Datos Incompletos',
-                    html: 'Por favor complete: <b>{missing_text}</b><br><br><small>Valores actuales: start={start}, end={end}, points={points}</small>',
+                    html: 'Por favor complete: <b>{missing_text}</b><br><br><small>Valores actuales: start={start_str}, end={end_str}, points={points_str}</small>',
                     confirmButtonColor: '#0d6efd'
                 }});
             """
@@ -1465,12 +1474,14 @@ def update_sweep(n_intervals, sweep_n, stop_n, cancel_n, start, end, points, sca
         )
         
         # Traza de fase en eje Y secundario (derecho)
+        # Multiplicar fase por -1 para convención Bode estándar
+        phase_negative = [-1 * p for p in phase]
         bode_fig.add_trace(
             go.Scatter(
                 x=param, 
-                y=[-p for p in phase],  # Negativo para convención Bode
+                y=phase_negative,
                 mode='lines+markers', 
-                name='Fase (θ)',
+                name='-Fase (θ)',
                 line=dict(color='#ff7f0e', width=2),
                 marker=dict(size=6),
                 yaxis='y2'
@@ -1499,7 +1510,7 @@ def update_sweep(n_intervals, sweep_n, stop_n, cancel_n, start, end, points, sca
                 fixedrange=False  # Permite zoom en Y1
             ),
             yaxis2=dict(
-                title=dict(text="Fase (°)", font=dict(color='#ff7f0e')),
+                title=dict(text="-Fase (°)", font=dict(color='#ff7f0e')),
                 side="right",
                 overlaying="y",
                 tickfont=dict(color='#ff7f0e'),
@@ -1581,8 +1592,14 @@ def update_sweep(n_intervals, sweep_n, stop_n, cancel_n, start, end, points, sca
 app.clientside_callback(
     """
     function(script) {
-        if (script && script.length > 0) {
-            eval(script);
+        if (script && typeof script === 'string' && script.trim().length > 10) {
+            try {
+                // Ejecutar el script de SweetAlert
+                eval(script);
+            } catch (error) {
+                console.error('Error ejecutando SweetAlert script:', error);
+                console.error('Script problemático:', script);
+            }
         }
         return '';
     }

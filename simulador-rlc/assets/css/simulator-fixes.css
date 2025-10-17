@@ -1,0 +1,224 @@
+/* Arreglos específicos para el simulador RLC */
+
+/* Estilos para iconos de componentes */
+.component-icon {
+    width: 20px;
+    height: 20px;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+.component-icon.resistor {
+    filter: hue-rotate(340deg) saturate(2) brightness(1.2);
+}
+
+.component-icon.inductor {
+    filter: hue-rotate(220deg) saturate(2) brightness(1.2);
+}
+
+.component-icon.capacitor {
+    filter: hue-rotate(120deg) saturate(2) brightness(1.2);
+}
+
+/* Estilos específicos para cada input de componente */
+#resistance-input,
+#inductance-input,
+#capacitance-input,
+#freq-start,
+#freq-end,
+#freq-points {
+    border-color: #d1d5db !important;
+    box-shadow: none !important;
+    background-color: #ffffff !important;
+    color: #212529 !important;
+}
+
+#resistance-input:focus,
+#inductance-input:focus,
+#capacitance-input:focus,
+#freq-start:focus,
+#freq-end:focus,
+#freq-points:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25) !important;
+    outline: none !important;
+}
+
+/* Eliminar bordes rojos de los inputs por defecto */
+.form-control,
+input[type="number"],
+input[type="text"],
+input {
+    border-color: #d1d5db !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease;
+}
+
+/* Estilo normal para inputs activos */
+.form-control:focus,
+input[type="number"]:focus,
+input[type="text"]:focus,
+input:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25) !important;
+    outline: none !important;
+}
+
+/* Asegurar que los inputs de Dash no tengan estilos de error */
+.dash-input-container input,
+.dash-input-container .form-control {
+    border-color: #d1d5db !important;
+    box-shadow: none !important;
+    background-color: #ffffff !important;
+    color: #212529 !important;
+}
+
+.dash-input-container input:focus,
+.dash-input-container .form-control:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25) !important;
+    outline: none !important;
+}
+
+/* Eliminar cualquier validación visual por defecto */
+.form-control.is-invalid,
+.form-control.is-valid,
+.was-validated .form-control:invalid,
+.was-validated .form-control:valid,
+input:invalid,
+input:valid,
+#resistance-input:invalid,
+#inductance-input:invalid,
+#capacitance-input:invalid,
+#freq-start:invalid,
+#freq-end:invalid,
+#freq-points:invalid {
+    border-color: #d1d5db !important;
+    box-shadow: none !important;
+}
+
+/* Estilos específicos para inputs deshabilitados */
+.form-control:disabled,
+.form-control[readonly],
+input:disabled,
+input[readonly] {
+    background-color: #f8f9fa !important;
+    border-color: #e9ecef !important;
+    opacity: 0.65 !important;
+    color: #6c757d !important;
+}
+
+/* Asegurar que los input-group-text tengan colores consistentes */
+.input-group-text {
+    background-color: #f8f9fa !important;
+    border-color: #d1d5db !important;
+    color: #6c757d !important;
+    transition: all 0.2s ease;
+}
+
+/* Estilos para inputs habilitados vs deshabilitados */
+.form-control:not(:disabled):not([readonly]),
+input:not(:disabled):not([readonly]) {
+    background-color: #ffffff !important;
+    color: #212529 !important;
+}
+
+/* Sobreescribir estilos de Bootstrap que puedan causar bordes rojos */
+.input-group .form-control:not(:focus):not(:invalid),
+.input-group input:not(:focus):not(:invalid),
+.form-control:not(:focus):not(:invalid),
+input:not(:focus):not(:invalid) {
+    border-color: #d1d5db !important;
+    box-shadow: none !important;
+}
+
+/* Forzar estilos para inputs específicos en cualquier estado */
+#inductance-input,
+#resistance-input,
+#capacitance-input {
+    border-color: #d1d5db !important;
+    box-shadow: none !important;
+    background-color: #ffffff !important;
+    color: #212529 !important;
+}
+
+/* Eliminar cualquier estilo de error de los elementos padre */
+.input-group .form-control,
+.input-group input {
+    border-color: #d1d5db !important;
+}
+
+.input-group:focus-within .form-control,
+.input-group:focus-within input {
+    border-color: #6366f1 !important;
+}
+
+.input-group:focus-within .input-group-text {
+    border-color: #6366f1 !important;
+    background-color: rgba(99, 102, 241, 0.1) !important;
+}
+
+/* Asegurar que los dropdown también tengan estilos consistentes */
+.Select-control {
+    border-color: #d1d5db !important;
+    box-shadow: none !important;
+}
+
+.Select-control:hover {
+    border-color: #6366f1 !important;
+}
+
+.Select--is-focused .Select-control {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25) !important;
+}
+
+/* Estilos específicos para Dash Dropdown */
+.dash-dropdown .Select-control {
+    border-color: #d1d5db !important;
+}
+
+.dash-dropdown .Select--is-focused .Select-control {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25) !important;
+}
+
+/* Transiciones suaves para cards que aparecen/desaparecen */
+.card {
+    transition: all 0.3s ease;
+}
+
+/* Estilos para elementos ocultos */
+[style*="display: none"] {
+    opacity: 0;
+    transform: translateY(-10px);
+}
+
+/* Evitar problemas de validación HTML5 */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* Asegurar que placeholder text sea visible */
+input::placeholder,
+.form-control::placeholder {
+    color: #9ca3af !important;
+    opacity: 1;
+}
+
+/* Eliminar outline en todos los inputs cuando están en focus */
+input:focus,
+.form-control:focus,
+select:focus,
+textarea:focus,
+button:focus {
+    outline: none !important;
+    box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25) !important;
+}
