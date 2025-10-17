@@ -1475,11 +1475,11 @@ def update_sweep(n_intervals, sweep_n, stop_n, cancel_n, start, end, points, sca
         
         # Traza de fase en eje Y secundario (derecho)
         # Multiplicar fase por -1 para convención Bode estándar
-        phase_negative = [-1 * p for p in phase]
+        #phase_negative = [-1 * p for p in phase]
         bode_fig.add_trace(
             go.Scatter(
                 x=param, 
-                y=phase_negative,
+                y=phase,
                 mode='lines+markers', 
                 name='-Fase (θ)',
                 line=dict(color='#ff7f0e', width=2),
