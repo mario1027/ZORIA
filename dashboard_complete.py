@@ -581,6 +581,20 @@ app.layout = dbc.Container([
                                 "Auto (-1) configura según frecuencia."
                             ], className="text-info small"),
                             html.Hr(),
+                            dbc.Label("📊 Visualización de Fase:", className="mt-2"),
+                            dbc.Checklist(
+                                options=[
+                                    {"label": " Invertir fase (mostrar -Fase)", "value": "negative"}
+                                ],
+                                value=["negative"],  # Por defecto mostrar -Fase
+                                id="phase-negative-checkbox",
+                                switch=True,
+                            ),
+                            dbc.FormText([
+                                html.I(className="fas fa-info-circle me-1"),
+                                "Convención Bode: fase negativa para impedancias capacitivas"
+                            ], className="text-info small mb-3"),
+                            html.Hr(),
                             dbc.Button(
                                 [html.I(className="fas fa-play me-2"), "Iniciar Barrido"], 
                                 id="sweep-btn", 
@@ -1146,7 +1160,8 @@ def control_measurement(start_n, stop_n):
     [Input('interval-sweep-progress', 'n_intervals'),
      Input('sweep-btn', 'n_clicks'),
      Input('stop-sweep-btn', 'n_clicks'),
-     Input('modal-cancel-btn', 'n_clicks')],
+     Input('modal-cancel-btn', 'n_clicks'),
+     Input('phase-negative-checkbox', 'value')],
     [State('sweep-start', 'value'),
      State('sweep-end', 'value'),
      State('sweep-points', 'value'),
@@ -1159,7 +1174,7 @@ def control_measurement(start_n, stop_n):
      State('sweep-modal', 'is_open')],
     prevent_initial_call=False
 )
-def update_sweep(n_intervals, sweep_n, stop_n, cancel_n, start, end, points, scale, 
+def update_sweep(n_intervals, sweep_n, stop_n, cancel_n, phase_negative, start, end, points, scale, 
                  display_mode, mdelay, tdelay, stored_data, sweep_state, modal_open):
     global sweep_thread, sweep_data_global, stop_sweep, sweep_data_last_hash
     
@@ -1219,199 +1234,213 @@ def update_sweep(n_intervals, sweep_n, stop_n, cancel_n, start, end, points, sca
     else:
         progress_percent = 0
     
-    # Si se clickeó el botón de iniciar sweep
-    if triggered == 'sweep-btn':
-        # Debug ANTES de conversión
-        print(f"DEBUG RAW - Valores crudos: start={start} (type={type(start).__name__}), end={end} (type={type(end).__name__}), points={points} (type={type(points).__name__})")
-        
-        # Convertir valores a números y manejar None
-        try:
-            start = float(start) if start is not None and start != '' else None
-            end = float(end) if end is not None and end != '' else None
-            points = int(points) if points is not None and points != '' else None
-        except (ValueError, TypeError) as e:
-            print(f"ERROR en conversión: {e}")
-            pass
-        
-        # Debug: Imprimir valores recibidos
-        print(f"DEBUG CONVERTED - Valores convertidos: start={start}, end={end}, points={points}")
-        
-        # Validaciones
-        if start is None or end is None or points is None:
-            print(f"WARNING - Valores None detectados: start={start}, end={end}, points={points}")
+    # IMPORTANTE: Solo ejecutar validaciones y lógica de sweep si NO es el checkbox
+    # El checkbox solo debe regenerar la visualización, no tocar la conexión del dispositivo
+    if triggered != 'phase-negative-checkbox':
+        # Si se clickeó el botón de iniciar sweep
+        if triggered == 'sweep-btn':
+            # Debug ANTES de conversión
+            print(f"DEBUG RAW - Valores crudos: start={start} (type={type(start).__name__}), end={end} (type={type(end).__name__}), points={points} (type={type(points).__name__})")
             
-            # Identificar qué campo falta
-            missing_fields = []
-            if start is None:
-                missing_fields.append("Inicio")
-            if end is None:
-                missing_fields.append("Fin")
-            if points is None:
-                missing_fields.append("Puntos")
+            # Convertir valores a números y manejar None
+            try:
+                start = float(start) if start is not None and start != '' else None
+                end = float(end) if end is not None and end != '' else None
+                points = int(points) if points is not None and points != '' else None
+            except (ValueError, TypeError) as e:
+                print(f"ERROR en conversión: {e}")
+                pass
             
-            missing_text = ", ".join(missing_fields)
+            # Debug: Imprimir valores recibidos
+            print(f"DEBUG CONVERTED - Valores convertidos: start={start}, end={end}, points={points}")
             
-            # Formatear valores de forma segura para JavaScript
-            start_str = str(start) if start is not None else 'N/A'
-            end_str = str(end) if end is not None else 'N/A'
-            points_str = str(points) if points is not None else 'N/A'
-            
-            sweetalert_script = f"""
-                Swal.fire({{
-                    icon: 'warning',
-                    title: 'Datos Incompletos',
-                    html: 'Por favor complete: <b>{missing_text}</b><br><br><small>Valores actuales: start={start_str}, end={end_str}, points={points_str}</small>',
-                    confirmButtonColor: '#0d6efd'
-                }});
-            """
-            return (go.Figure(), go.Figure(), "", error_msg, "", stored_data, 
-                    False, 0, "", 0, {'display': 'none'}, False, True, 
-                    {'running': False, 'total': 0}, sweetalert_script)
-        
-        elif start < 0.2 or start > 10000000:
-            sweetalert_script = f"""
-                Swal.fire({{
-                    icon: 'error',
-                    title: 'Frecuencia Inválida',
-                    text: 'Inicio fuera de rango (0.2 Hz - 10 MHz): {start} Hz',
-                    confirmButtonColor: '#0d6efd'
-                }});
-            """
-            return (go.Figure(), go.Figure(), "", error_msg, "", stored_data,
-                    False, 0, "", 0, {'display': 'none'}, False, True,
-                    {'running': False, 'total': 0}, sweetalert_script)
-        
-        elif end < 0.2 or end > 10000000:
-            sweetalert_script = f"""
-                Swal.fire({{
-                    icon: 'error',
-                    title: 'Frecuencia Inválida',
-                    text: 'Fin fuera de rango (0.2 Hz - 10 MHz): {end} Hz',
-                    confirmButtonColor: '#0d6efd'
-                }});
-            """
-            return (go.Figure(), go.Figure(), "", error_msg, "", stored_data,
-                    False, 0, "", 0, {'display': 'none'}, False, True,
-                    {'running': False, 'total': 0}, sweetalert_script)
-        
-        elif start >= end:
-            sweetalert_script = """
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Rango Inválido',
-                    text: 'La frecuencia inicial debe ser menor que la final',
-                    confirmButtonColor: '#0d6efd'
-                });
-            """
-            return (go.Figure(), go.Figure(), "", error_msg, "", stored_data,
-                    False, 0, "", 0, {'display': 'none'}, False, True,
-                    {'running': False, 'total': 0}, sweetalert_script)
-        
-        # Validar puntos según ancho de banda
-        decades = abs(np.log10(end) - np.log10(start)) if end > start else 0
-        # Determinar límite máximo realista según ancho de banda
-        if decades < 0.5:
-            max_allowed = 1000
-        elif decades < 1.0:
-            max_allowed = 500
-        elif decades < 2.0:
-            max_allowed = 300
-        elif decades < 3.0:
-            max_allowed = 255
-        elif decades < 4.0:
-            max_allowed = 200
-        else:
-            max_allowed = 100
-        
-        if points < 2 or points > max_allowed:
-            sweetalert_script = f"""
-                Swal.fire({{
-                    icon: 'error',
-                    title: 'Número de Puntos Inválido',
-                    text: 'Para este rango ({decades:.1f} décadas), máximo {max_allowed} puntos (recibido: {points}). A menor ancho → más puntos.',
-                    confirmButtonColor: '#0d6efd'
-                }});
-            """
-            return (go.Figure(), go.Figure(), "", error_msg, "", stored_data,
-                    False, 0, "", 0, {'display': 'none'}, False, True,
-                    {'running': False, 'total': 0}, sweetalert_script)
-        
-        elif not device or not is_connected.is_set():
-            sweetalert_script = """
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Dispositivo No Conectado',
-                    text: 'Por favor conecte el dispositivo antes de iniciar el barrido',
-                    confirmButtonColor: '#0d6efd'
-                });
-            """
-            return (go.Figure(), go.Figure(), "", error_msg, "", stored_data,
-                    False, 0, "", 0, {'display': 'none'}, False, True,
-                    {'running': False, 'total': 0}, sweetalert_script)
-        
-        # Todo válido - iniciar sweep
-        else:
-            stop_sweep.clear()
-            config = {
-                'type': 'frequency',
-                'start': start,
-                'end': end,
-                'points': points,
-                'scale': scale,
-                'display_mode': display_mode if display_mode is not None else 6,  # Default: R_X
-                'mdelay': mdelay if mdelay is not None else -1,
-                'tdelay': tdelay if tdelay is not None else 0
-            }
-            if not sweep_thread or not sweep_thread.is_alive():
-                sweep_thread = threading.Thread(target=sweep_worker, args=(config,), daemon=True)
-                sweep_thread.start()
+            # Validaciones
+            if start is None or end is None or points is None:
+                print(f"WARNING - Valores None detectados: start={start}, end={end}, points={points}")
                 
+                # Identificar qué campo falta
+                missing_fields = []
+                if start is None:
+                    missing_fields.append("Inicio")
+                if end is None:
+                    missing_fields.append("Fin")
+                if points is None:
+                    missing_fields.append("Puntos")
+                
+                missing_text = ", ".join(missing_fields)
+                
+                # Formatear valores de forma segura para JavaScript
+                start_str = str(start) if start is not None else 'N/A'
+                end_str = str(end) if end is not None else 'N/A'
+                points_str = str(points) if points is not None else 'N/A'
+                
+                sweetalert_script = f"""
+                    Swal.fire({{
+                        icon: 'warning',
+                        title: 'Datos Incompletos',
+                        html: 'Por favor complete: <b>{missing_text}</b><br><br><small>Valores actuales: start={start_str}, end={end_str}, points={points_str}</small>',
+                        confirmButtonColor: '#0d6efd'
+                    }});
+                """
+                return (go.Figure(), go.Figure(), "", error_msg, "", stored_data, 
+                        False, 0, "", 0, {'display': 'none'}, False, True, 
+                        {'running': False, 'total': 0}, sweetalert_script)
+            
+            elif start < 0.2 or start > 10000000:
+                sweetalert_script = f"""
+                    Swal.fire({{
+                        icon: 'error',
+                        title: 'Frecuencia Inválida',
+                        text: 'Inicio fuera de rango (0.2 Hz - 10 MHz): {start} Hz',
+                        confirmButtonColor: '#0d6efd'
+                    }});
+                """
+                return (go.Figure(), go.Figure(), "", error_msg, "", stored_data,
+                        False, 0, "", 0, {'display': 'none'}, False, True,
+                        {'running': False, 'total': 0}, sweetalert_script)
+            
+            elif end < 0.2 or end > 10000000:
+                sweetalert_script = f"""
+                    Swal.fire({{
+                        icon: 'error',
+                        title: 'Frecuencia Inválida',
+                        text: 'Fin fuera de rango (0.2 Hz - 10 MHz): {end} Hz',
+                        confirmButtonColor: '#0d6efd'
+                    }});
+                """
+                return (go.Figure(), go.Figure(), "", error_msg, "", stored_data,
+                        False, 0, "", 0, {'display': 'none'}, False, True,
+                        {'running': False, 'total': 0}, sweetalert_script)
+            
+            elif start >= end:
                 sweetalert_script = """
                     Swal.fire({
-                        icon: 'success',
-                        title: 'Barrido Iniciado',
-                        text: 'Analizando impedancia en múltiples frecuencias...',
-                        timer: 2000,
-                        showConfirmButton: false
+                        icon: 'warning',
+                        title: 'Rango Inválido',
+                        text: 'La frecuencia inicial debe ser menor que la final',
+                        confirmButtonColor: '#0d6efd'
                     });
                 """
-                
-                is_running = True
-                total_points = points
-    
-    # Si se clickeó detener o cancelar
-    elif triggered in ['stop-sweep-btn', 'modal-cancel-btn']:
-        stop_sweep.set()
-        is_running = False
+                return (go.Figure(), go.Figure(), "", error_msg, "", stored_data,
+                        False, 0, "", 0, {'display': 'none'}, False, True,
+                        {'running': False, 'total': 0}, sweetalert_script)
+            
+            # Validar puntos según ancho de banda
+            decades = abs(np.log10(end) - np.log10(start)) if end > start else 0
+            # Determinar límite máximo realista según ancho de banda
+            if decades < 0.5:
+                max_allowed = 1000
+            elif decades < 1.0:
+                max_allowed = 500
+            elif decades < 2.0:
+                max_allowed = 300
+            elif decades < 3.0:
+                max_allowed = 255
+            elif decades < 4.0:
+                max_allowed = 200
+            else:
+                max_allowed = 100
+            
+            if points < 2 or points > max_allowed:
+                sweetalert_script = f"""
+                    Swal.fire({{
+                        icon: 'error',
+                        title: 'Número de Puntos Inválido',
+                        text: 'Para este rango ({decades:.1f} décadas), máximo {max_allowed} puntos (recibido: {points}). A menor ancho → más puntos.',
+                        confirmButtonColor: '#0d6efd'
+                    }});
+                """
+                return (go.Figure(), go.Figure(), "", error_msg, "", stored_data,
+                        False, 0, "", 0, {'display': 'none'}, False, True,
+                        {'running': False, 'total': 0}, sweetalert_script)
+            
+            elif not device or not is_connected.is_set():
+                sweetalert_script = """
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Dispositivo No Conectado',
+                        text: 'Por favor conecte el dispositivo antes de iniciar el barrido',
+                        confirmButtonColor: '#0d6efd'
+                    });
+                """
+                return (go.Figure(), go.Figure(), "", error_msg, "", stored_data,
+                        False, 0, "", 0, {'display': 'none'}, False, True,
+                        {'running': False, 'total': 0}, sweetalert_script)
+            
+            # Todo válido - iniciar sweep
+            else:
+                stop_sweep.clear()
+                config = {
+                    'type': 'frequency',
+                    'start': start,
+                    'end': end,
+                    'points': points,
+                    'scale': scale,
+                    'display_mode': display_mode if display_mode is not None else 6,  # Default: R_X
+                    'mdelay': mdelay if mdelay is not None else -1,
+                    'tdelay': tdelay if tdelay is not None else 0
+                }
+                if not sweep_thread or not sweep_thread.is_alive():
+                    sweep_thread = threading.Thread(target=sweep_worker, args=(config,), daemon=True)
+                    sweep_thread.start()
+                    
+                    sweetalert_script = """
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Barrido Iniciado',
+                            text: 'Analizando impedancia en múltiples frecuencias...',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    """
+                    
+                    is_running = True
+                    total_points = points
         
-        sweetalert_script = """
-            Swal.fire({
-                icon: 'info',
-                title: 'Barrido Detenido',
-                text: 'El barrido fue cancelado por el usuario',
-                confirmButtonColor: '#0d6efd'
-            });
-        """
-    
-    # Verificar si el sweep terminó
-    if is_running and sweep_thread and not sweep_thread.is_alive():
-        is_running = False
-        if len(sweep_data_global['param']) == total_points:
-            success_msg = f"✓ Barrido completado: {len(sweep_data_global['param'])} puntos"
-            sweetalert_script = f"""
-                Swal.fire({{
-                    icon: 'success',
-                    title: '¡Barrido Completado!',
-                    text: 'Se obtuvieron {len(sweep_data_global['param'])} puntos de datos',
+        # Si se clickeó detener o cancelar
+        if triggered in ['stop-sweep-btn', 'modal-cancel-btn']:
+            stop_sweep.set()
+            is_running = False
+            
+            sweetalert_script = """
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Barrido Detenido',
+                    text: 'El barrido fue cancelado por el usuario',
                     confirmButtonColor: '#0d6efd'
-                }});
+                });
             """
-        else:
-            error_msg = f"⚠ Barrido incompleto: {len(sweep_data_global['param'])}/{total_points} puntos"
+        
+        # Verificar si el sweep terminó
+        if is_running and sweep_thread and not sweep_thread.is_alive():
+            is_running = False
+            if len(sweep_data_global['param']) == total_points:
+                success_msg = f"✓ Barrido completado: {len(sweep_data_global['param'])} puntos"
+                sweetalert_script = f"""
+                    Swal.fire({{
+                        icon: 'success',
+                        title: '¡Barrido Completado!',
+                        text: 'Se obtuvieron {len(sweep_data_global['param'])} puntos de datos',
+                        confirmButtonColor: '#0d6efd'
+                    }});
+                """
+            else:
+                error_msg = f"⚠ Barrido incompleto: {len(sweep_data_global['param'])}/{total_points} puntos"
+    
+    # FIN del bloque de validación y lógica de sweep
+    # Todo lo anterior solo se ejecuta si triggered != 'phase-negative-checkbox'
+    
+    # CASO ESPECIAL: Si el trigger es el checkbox de fase, solo regenerar gráficos
+    # NO ejecutar validaciones ni lógica de sweep, solo cambiar visualización
+    if triggered == 'phase-negative-checkbox':
+        # Solo regenerar los gráficos con los datos existentes
+        # Saltar toda la lógica de validación y sweep
+        # (se procesará en la sección de generación de gráficos abajo)
+        pass  # Continuar al bloque de generación de gráficos
     
     # Si el trigger es el intervalo y los datos NO han cambiado, 
     # usar no_update para las figuras para preservar el zoom
-    if triggered == 'interval-sweep-progress' and not data_changed:
+    elif triggered == 'interval-sweep-progress' and not data_changed:
         # Actualizar el hash para la próxima vez
         sweep_data_last_hash = current_data_hash
         
@@ -1446,7 +1475,7 @@ def update_sweep(n_intervals, sweep_n, stop_n, cancel_n, start, end, points, sca
                 {'running': is_running, 'total': total_points},
                 sweetalert_script)
     
-    # Si llegamos aquí, los datos cambiaron o el trigger fue un botón
+    # Si llegamos aquí, los datos cambiaron o el trigger fue un botón de acción
     # Actualizar el hash
     sweep_data_last_hash = current_data_hash
     
@@ -1474,14 +1503,26 @@ def update_sweep(n_intervals, sweep_n, stop_n, cancel_n, start, end, points, sca
         )
         
         # Traza de fase en eje Y secundario (derecho)
-        # Multiplicar fase por -1 para convención Bode estándar
-        #phase_negative = [-1 * p for p in phase]
+        # Determinar si aplicar negativo según checkbox
+        is_phase_negative = phase_negative and 'negative' in phase_negative
+        
+        if is_phase_negative:
+            # Multiplicar fase por -1 para convención Bode estándar
+            phase_data = [-1 * p for p in phase]
+            phase_label = '-Fase (θ)'
+            phase_axis_label = "-Fase (°)"
+        else:
+            # Fase positiva (sin invertir)
+            phase_data = phase
+            phase_label = 'Fase (θ)'
+            phase_axis_label = "Fase (°)"
+        
         bode_fig.add_trace(
             go.Scatter(
                 x=param, 
-                y=phase,
+                y=phase_data,
                 mode='lines+markers', 
-                name='-Fase (θ)',
+                name=phase_label,
                 line=dict(color='#ff7f0e', width=2),
                 marker=dict(size=6),
                 yaxis='y2'
@@ -1510,7 +1551,7 @@ def update_sweep(n_intervals, sweep_n, stop_n, cancel_n, start, end, points, sca
                 fixedrange=False  # Permite zoom en Y1
             ),
             yaxis2=dict(
-                title=dict(text="-Fase (°)", font=dict(color='#ff7f0e')),
+                title=dict(text=phase_axis_label, font=dict(color='#ff7f0e')),
                 side="right",
                 overlaying="y",
                 tickfont=dict(color='#ff7f0e'),
