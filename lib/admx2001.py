@@ -285,12 +285,14 @@ class ADMX2001:
         
     def _connect(self) -> None:
         """Establece conexión con el dispositivo."""
+        baudrate = self.baudrate  # Usar el baudrate configurado (115200 por defecto)
+        
         try:
-            logger.info(f"Conectando a {self.port} @ {self.baudrate} baud...")
+            logger.info(f"Conectando a {self.port} @ {baudrate} baud...")
             
             self.serial = serial.Serial(
                 port=self.port,
-                baudrate=self.baudrate,
+                baudrate=baudrate,
                 timeout=self.timeout,
                 bytesize=serial.EIGHTBITS,
                 parity=serial.PARITY_NONE,
@@ -306,17 +308,56 @@ class ADMX2001:
             time.sleep(0.2)
             prompt_response = self.serial.read(1024).decode('utf-8', errors='ignore')
             
-            # Verificar si hay prompt ADMX2001>
-            if 'ADMX2001>' in prompt_response or True:  # Asumir conectado si el puerto abrió
+            # Si no hay prompt, intentar comando *idn
+            if 'ADMX2001>' not in prompt_response:
+                logger.info("No se recibió prompt inicial, intentando comando *idn...")
+                self.serial.write(b'*idn\n')
+                time.sleep(0.2)
+                idn_response = self.serial.read(1024).decode('utf-8', errors='ignore')
+                prompt_response += idn_response
+            
+            # Verificar si hay prompt ADMX2001> o respuesta a *idn
+            if 'ADMX2001>' in prompt_response or 'Analog Devices' in prompt_response:
                 self.is_connected = True
-                logger.info(f"Conectado exitosamente a EVAL-ADMX2001")
+                logger.info(f"Conectado exitosamente a EVAL-ADMX2001 @ {baudrate} baud")
+                return
             else:
-                raise ConnectionError("No se recibió respuesta del dispositivo")
+                raise ConnectionError(f"No se recibió respuesta del dispositivo. Respuesta: {repr(prompt_response)}")
                 
         except serial.SerialException as e:
             raise ConnectionError(f"Error abriendo puerto serie: {e}")
         except Exception as e:
             raise ConnectionError(f"Error conectando: {e}")
+    
+    def connect(self) -> None:
+        """
+        Conecta al dispositivo ADMX2001.
+        
+        Este método es compatible con versiones anteriores que requieren
+        una llamada explícita a connect(). En la implementación actual,
+        la conexión se establece automáticamente en __init__().
+        
+        Raises:
+            ConnectionError: Si no se puede conectar al dispositivo
+        """
+        if not self.is_connected:
+            self._connect()
+    
+    def disconnect(self) -> None:
+        """
+        Desconecta del dispositivo ADMX2001.
+        
+        Cierra la conexión serie y libera recursos.
+        """
+        if self.serial and self.serial.is_open:
+            try:
+                self.serial.close()
+                logger.info("Desconectado del dispositivo ADMX2001")
+            except Exception as e:
+                logger.warning(f"Error al cerrar conexión serie: {e}")
+        
+        self.is_connected = False
+        self.serial = None
     
     def send_command(self, command: str, timeout: Optional[float] = None,
                     expect_prompt: bool = True, retries: int = 2) -> List[str]:
@@ -712,6 +753,21 @@ class ADMX2001:
         self.send_command(f"tdelay {delay_ms}")
         logger.info(f"Trigger delay configurado: {delay_ms} ms")
     
+    def set_trigger_delay(self, delay_ms: float) -> None:
+        """
+        Alias para set_tdelay() - configura el delay de trigger.
+        
+        Este método proporciona una interfaz alternativa más descriptiva
+        para configurar el delay de trigger.
+        
+        Args:
+            delay_ms: Delay en milisegundos (0 - 10000)
+        
+        Raises:
+            ValidationError: Si el delay está fuera de rango
+        """
+        self.set_tdelay(delay_ms)
+    
     # ==================== Utilidades ====================
     
     def recommend_impedance_range(self, impedance: float) -> 'ImpedanceRange':
@@ -927,11 +983,6 @@ class ADMX2001:
             ...     print(f"Freq: {point['sweep_value']} kHz, "
             ...           f"Z: {point['measurement'][0]} Ω")
         """
-        from .enums import SWEEP_TIMEOUT
-        
-        if timeout is None:
-            timeout = SWEEP_TIMEOUT
-        
         # Obtener el número de puntos esperados de la configuración
         # Asegurarse de que sea un entero válido
         expected_count = self.current_config.get('count')
@@ -939,6 +990,14 @@ class ADMX2001:
             expected_count = 11  # Valor por defecto
             logger.warning(f"count no configurado, usando valor por defecto: {expected_count}")
         expected_count = int(expected_count)
+        
+        from .enums import SWEEP_TIMEOUT
+        
+        if timeout is None:
+            # Ajustar timeout basado en número de puntos
+            # Base: 60s + 2s por punto para mediciones con averaging
+            timeout = max(SWEEP_TIMEOUT, 60 + expected_count * 2)
+            logger.info(f"Timeout ajustado a {timeout:.1f}s para {expected_count} puntos")
         
         # Ejecutar sweep con método oficial optimizado
         # DESCUBRIMIENTO: Un solo comando 'z' devuelve TODOS los puntos del sweep
@@ -968,7 +1027,14 @@ class ADMX2001:
             
             # El sweep puede tomar tiempo dependiendo de la configuración
             # Usamos un timeout generoso pero monitoreamos actividad
-            idle_timeout = 10.0  # Sin datos por 10 segundos = terminar
+            # Aumentar timeout de inactividad para sweeps con averaging/promediado
+            # El dispositivo puede tardar varios segundos entre puntos cuando promedia
+            if expected_count > 100:
+                idle_timeout = 60.0  # 60 segundos para sweeps grandes
+            elif expected_count > 50:
+                idle_timeout = 45.0  # 45 segundos para sweeps medianos
+            else:
+                idle_timeout = 30.0  # 30 segundos para sweeps pequeños
             
             logger.info("Leyendo datos del sweep...")
             
@@ -1006,27 +1072,17 @@ class ADMX2001:
                             prompt_seen = True
                             logger.debug(f"Prompt detectado con {len(all_data_lines)} puntos")
                             
-                            # IMPORTANTE: El prompt puede aparecer ANTES de que terminen los datos
-                            # debido al promediado (average). NO terminar inmediatamente.
-                            # Solo terminar si:
-                            # 1. Ya tenemos suficientes puntos, O
-                            # 2. No hay más datos después de esperar
+                            # Cuando vemos el prompt, verificar si hay más datos
+                            # Esperar un breve tiempo por datos retrasados (averaging)
+                            time.sleep(2.0)  # Esperar 2s por datos retrasados
                             
-                            if len(all_data_lines) >= expected_count:
-                                logger.info(f"✓ Todos los puntos esperados recibidos ({len(all_data_lines)})")
-                                break
-                            
-                            # Aún faltan puntos - esperar más tiempo
-                            logger.debug(f"Prompt visto pero solo {len(all_data_lines)}/{expected_count} puntos - esperando más...")
-                            time.sleep(1.0)  # Esperar más tiempo
-                            
-                            # Si realmente no hay más datos, terminar
                             if self.serial.in_waiting == 0:
-                                # Última verificación - esperar otro segundo
-                                time.sleep(1.0)
-                                if self.serial.in_waiting == 0:
-                                    logger.warning(f"No hay más datos en buffer - terminando con {len(all_data_lines)}/{expected_count} puntos")
-                                    break
+                                # No hay más datos - el dispositivo terminó
+                                logger.info(f"✓ Sweep completado - {len(all_data_lines)} puntos recibidos")
+                                break
+                            else:
+                                # Hay más datos - continuar leyendo
+                                logger.debug(f"Hay datos adicionales después del prompt - continuando...")
                 else:
                     # No hay datos, esperar
                     time.sleep(0.05)

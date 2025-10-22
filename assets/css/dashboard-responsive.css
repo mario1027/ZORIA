@@ -1,0 +1,307 @@
+/* Dashboard Responsive Fixes */
+
+/* Sidebar responsivo */
+.sidebar {
+    width: 280px;
+    min-height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1050;
+    transition: transform 0.3s ease;
+    background-color: #343a40 !important;
+}
+
+/* En desktop, sidebar visible */
+@media (min-width: 992px) {
+    .sidebar {
+        transform: translateX(0);
+    }
+}
+
+/* En móviles y tablets, sidebar oculto por defecto */
+@media (max-width: 991.98px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+    
+    .sidebar.show {
+        transform: translateX(0);
+    }
+    
+    /* Botón para mostrar sidebar en móviles */
+    .sidebar-toggle {
+        position: fixed;
+        top: 15px;
+        left: 15px;
+        z-index: 1100;
+        background-color: #007bff;
+        border: none;
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        font-size: 1.2rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .sidebar-toggle:hover {
+        background-color: #0056b3;
+    }
+}
+
+/* Contenido principal - asegurar que no se superponga con sidebar */
+.main-content {
+    padding: 15px;
+    min-height: 100vh;
+    width: 100%;
+    box-sizing: border-box;
+    transition: margin-left 0.3s ease;
+}
+
+/* En móviles, sin margen izquierdo */
+@media (max-width: 991.98px) {
+    .main-content {
+        margin-left: 0 !important;
+        padding: 10px;
+        width: 100%;
+    }
+    
+    /* Sidebar completamente oculto en móviles */
+    .sidebar {
+        transform: translateX(-100%) !important;
+        position: fixed;
+        z-index: 1050;
+    }
+    
+    /* Cuando se muestra el sidebar en móvil */
+    .sidebar.show {
+        transform: translateX(0) !important;
+    }
+}
+
+/* En tablets, mantener responsividad */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .main-content {
+        margin-left: 0;
+        padding: 15px;
+    }
+}
+
+/* En desktop, aplicar margen para sidebar */
+@media (min-width: 992px) {
+    .main-content {
+        margin-left: 280px;
+        padding: 20px;
+    }
+}
+
+/* Cards responsivos */
+.card {
+    margin-bottom: 1rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+@media (max-width: 576px) {
+    .card {
+        margin-bottom: 0.75rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .card-header {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* Gráficos responsivos */
+.graph-container {
+    width: 100%;
+    height: auto;
+    min-height: 400px;
+}
+
+@media (max-width: 768px) {
+    .graph-container {
+        min-height: 350px;
+    }
+}
+
+@media (max-width: 576px) {
+    .graph-container {
+        min-height: 300px;
+    }
+}
+
+/* Controles de barrido responsivos */
+.sweep-controls {
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+    .sweep-controls .col-auto {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .sweep-controls .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .sweep-controls .form-control {
+        font-size: 0.9rem;
+        padding: 0.5rem;
+    }
+    
+    .sweep-controls .form-label {
+        font-size: 0.8rem;
+        margin-bottom: 0.25rem;
+    }
+}
+
+/* Status y conexión responsivos */
+.connection-status {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+    .connection-status {
+        margin-bottom: 0.75rem;
+    }
+}
+
+/* Títulos responsivos */
+h1 {
+    font-size: 2.5rem;
+}
+
+@media (max-width: 768px) {
+    h1 {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 576px) {
+    h1 {
+        font-size: 1.75rem;
+    }
+}
+
+h5 {
+    font-size: 1.25rem;
+}
+
+@media (max-width: 576px) {
+    h5 {
+        font-size: 1.1rem;
+    }
+}
+
+/* Modales responsivos */
+.modal-dialog {
+    margin: 1rem;
+}
+
+@media (max-width: 576px) {
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+    
+    .modal-body {
+        padding: 1rem;
+    }
+    
+    .modal-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .modal-footer {
+        padding: 0.75rem 1rem;
+    }
+}
+
+/* Progress bars responsivos */
+.progress {
+    height: 1.5rem;
+}
+
+@media (max-width: 576px) {
+    .progress {
+        height: 1.25rem;
+    }
+}
+
+/* Container fluido en móviles */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+}
+
+/* Evitar overflow horizontal */
+body {
+    overflow-x: hidden;
+}
+
+.row {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* Ajustar dropdowns en móviles */
+@media (max-width: 576px) {
+    .dropdown-menu {
+        font-size: 0.9rem;
+    }
+}
+
+/* Botones responsivos */
+@media (max-width: 576px) {
+    .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* Espaciado vertical en móviles */
+@media (max-width: 768px) {
+    .mb-4 {
+        margin-bottom: 1.5rem !important;
+    }
+    
+    .mb-3 {
+        margin-bottom: 1rem !important;
+    }
+}
+
+/* Ajustes para muy pantallas pequeñas */
+@media (max-width: 360px) {
+    .main-content {
+        padding: 8px;
+    }
+    
+    .card-body {
+        padding: 0.75rem;
+    }
+    
+    h1 {
+        font-size: 1.5rem;
+    }
+    
+    .btn {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.8rem;
+    }
+}

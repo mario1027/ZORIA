@@ -1,0 +1,73 @@
+/* Estilos específicos para controles de barrido */
+.sweep-controls .form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.sweep-controls .form-control {
+    border-radius: 0.375rem;
+    border: 1px solid #ced4da;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.sweep-controls .form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.sweep-controls .btn {
+    font-weight: 500;
+    border-radius: 0.375rem;
+    transition: all 0.15s ease-in-out;
+}
+
+.sweep-controls .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.sweep-status {
+    min-height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+    background-color: #f8f9fa !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 0.375rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+    .sweep-controls .col {
+        margin-bottom: 1rem;
+    }
+
+    .sweep-controls .form-label {
+        font-size: 0.8rem;
+    }
+
+    .sweep-controls .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+}
+
+@media (min-width: 576px) and (max-width: 768px) {
+    .sweep-controls .col {
+        margin-bottom: 0.75rem;
+    }
+}
+
+/* Prevent overlap in small screens */
+@media (max-width: 992px) {
+    .sweep-controls .row {
+        margin-bottom: 1rem;
+    }
+
+    .sweep-controls .card-body {
+        padding: 1.5rem 1rem;
+    }
+}
