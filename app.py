@@ -12,7 +12,8 @@ external_stylesheets = [
     "https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css",
     VOLT,
     "/assets/css/navigation.css",
-    "/assets/css/mobile-nav.css"
+    "/assets/css/mobile-nav.css",
+    "/assets/css/scichart-themes.css"
     ]
 
 external_scripts = [

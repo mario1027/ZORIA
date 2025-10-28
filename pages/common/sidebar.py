@@ -13,13 +13,14 @@ from .mobile_nav import mobileSidebarHeader
 SIDEBAR_ITEMS = [
     {"text": "Dashboard ADMX2001", "icon": ICON.CHART_PIE, "href": "/"},
     {"text": "Simulador RLC", "icon": ICON.VIEW_GRID, "href": "/simulator"},
+    {"text": "Command Prompt", "icon": ICON.CONSOLE, "href": "#", "data-bs-toggle": "modal", "data-bs-target": "#command-modal"},
 ]
 
 # Dropdowns vacíos por ahora - se pueden agregar más secciones después
 DROPDOWN_ITEMS = []
 
 # Funciones auxiliares
-def create_sidebar_link(text, icon, href, hyperlink=False, target=""):
+def create_sidebar_link(text, icon, href, hyperlink=False, target="", **kwargs):
     """
     Crea un enlace simple en la barra lateral.
 
@@ -29,14 +30,24 @@ def create_sidebar_link(text, icon, href, hyperlink=False, target=""):
         href (str): Ruta del enlace.
         hyperlink (bool, opcional): Si el enlace debe ser un `html.A`. Por defecto es `False`.
         target (str, opcional): Target del enlace. Por defecto es una cadena vacía.
+        **kwargs: Atributos adicionales como data-bs-toggle, data-bs-target, etc.
 
     Returns:
         SidebarNavItem: Componente de enlace para la barra lateral.
     """
-    element = html.A if hyperlink else dcc.Link
+    # Si hay atributos Bootstrap (data-bs-*), forzar el uso de html.A
+    has_bootstrap_attrs = any(key.startswith('data-bs-') for key in kwargs.keys())
+    if has_bootstrap_attrs or hyperlink:
+        element = html.A
+    else:
+        element = dcc.Link
+    
     attributes = {"href": href, "className": "nav-link"}
     if target:
         attributes["target"] = target
+    
+    # Agregar atributos adicionales
+    attributes.update(kwargs)
 
     el = element([
         html.Span(icon, className="sidebar-icon"),
@@ -99,4 +110,4 @@ def sideBar():
                 className="nav flex-column pt-3 pt-md-0"
             )
         ], className="sidebar-inner px-4 pt-3")
-    ], id="sidebarMenu", className="sidebar d-lg-block bg-gray-800 text-white collapse")
+    ], id="sidebarMenu", className="sidebar d-lg-block bg-chart-blue text-white collapse")

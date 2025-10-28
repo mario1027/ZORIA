@@ -2,7 +2,7 @@
 Página del Simulador RLC integrada en la aplicación multi-página
 Usando el estilo de la plantilla Volt con navegación avanzada
 """
-from dash import html, Input, Output, State
+from dash import html, Input, Output, State, dcc
 from dash_spa import register_page
 import plotly.graph_objects as go
 
@@ -33,6 +33,9 @@ CIRCUIT_INFO = get_circuit_info()
 
 # Layout principal con navegación compartida
 layout = html.Div([
+    # Store para el tema de los gráficos del simulador
+    dcc.Store(id="simulator-theme-store", data={"theme": "dark"}, storage_type="local"),
+    
     # Mobile Navbar (solo visible en móvil)
     mobileNavBar(),
     
@@ -50,6 +53,18 @@ layout = html.Div([
                         html.H1("Simulador de Circuitos RLC", className="h2 mb-4"),
                         html.P("Analiza la respuesta en frecuencia de diferentes configuraciones de circuitos RLC", className="text-muted")
                     ], className="d-flex justify-content-between align-items-center mb-4"),
+
+                    # Botón de toggle de tema para gráficos
+                    html.Div([
+                        html.Button(
+                            id="simulator-theme-toggle",
+                            className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2",
+                            children=[
+                                html.I(className="fas fa-moon", id="simulator-theme-icon"),
+                                html.Span("Tema Gráficos", id="simulator-theme-text")
+                            ]
+                        )
+                    ], className="mb-3"),
 
                     html.Div(
                         className="row g-4",
@@ -123,12 +138,17 @@ def register_simulator_callbacks(app):
          Input("capacitance-input", "value"),
          Input("freq-start", "value"),
          Input("freq-end", "value"),
-         Input("freq-points", "value")],
+         Input("freq-points", "value"),
+         Input("simulator-theme-store", "data")],
         prevent_initial_call=False
     )
-    def calculate_impedance(n_clicks, circuit_type, R, L, C, f_start, f_end, n_points):
+    def calculate_impedance(n_clicks, circuit_type, R, L, C, f_start, f_end, n_points, theme_data):
         safe_print(f"🚀 BOTÓN PRESIONADO: n_clicks = {n_clicks}")
         safe_print(f"📊 Datos recibidos: circuit_type={circuit_type}, R={R}, L={L}, C={C}")
+
+        # Obtener el tema actual
+        theme = theme_data.get('theme', 'dark') if theme_data else 'dark'
+        safe_print(f"🎨 Tema actual: {theme}")
 
         CIRCUIT_INFO = get_circuit_info()
 
@@ -155,13 +175,29 @@ def register_simulator_callbacks(app):
             bode_data = calc.get_bode_data(Z)
             nyquist_data = calc.get_nyquist_data(Z)
 
+            # Definir colores basados en el tema
+            if theme == 'light':
+                mag_color = '#00BFFF'  # Cyan más oscuro para light theme
+                phase_color = '#FF1493'  # Pink más oscuro para light theme
+                nyquist_color = '#FF8C00'  # Orange más oscuro para light theme
+                bg_color = '#FFFFFF'
+                grid_color = '#E0E0E0'
+                text_color = '#333333'
+            else:  # dark theme
+                mag_color = '#00FFFF'  # Cyan brillante para dark theme
+                phase_color = '#FF69B4'  # Pink para dark theme
+                nyquist_color = '#FFA500'  # Orange para dark theme
+                bg_color = '#0D213A'
+                grid_color = '#1F3D68'
+                text_color = '#6495ED'
+
             bode_fig = go.Figure()
             bode_fig.add_trace(go.Scatter(
                 x=bode_data["frequencies"],
                 y=bode_data["magnitude_db"],
                 mode="lines",
                 name="Magnitud |Z|",
-                line=dict(color="blue", width=2),
+                line=dict(color=mag_color, width=2),
                 yaxis="y1"
             ))
             bode_fig.add_trace(go.Scatter(
@@ -169,18 +205,49 @@ def register_simulator_callbacks(app):
                 y=bode_data["phase_deg"],
                 mode="lines",
                 name="Fase φ",
-                line=dict(color="red", width=2),
+                line=dict(color=phase_color, width=2),
                 yaxis="y2"
             ))
 
             bode_fig.update_layout(
-                title={"text": f"Diagrama de Bode - {CIRCUIT_INFO[circuit_type]['name']}", "font": {"size": 16}},
-                xaxis=dict(title="Frecuencia (Hz)", type="log", showgrid=True),
-                yaxis=dict(title=dict(text="Magnitud |Z| (dB)", font=dict(color="blue")), tickfont={"color": "blue"}, side="left"),
-                yaxis2=dict(title=dict(text="Fase φ (°)", font=dict(color="red")), tickfont={"color": "red"}, anchor="x", overlaying="y", side="right"),
+                title={"text": f"Diagrama de Bode - {CIRCUIT_INFO[circuit_type]['name']}", "font": {"size": 16, "color": text_color}},
+                xaxis=dict(
+                    title="Frecuencia (Hz)", 
+                    type="log", 
+                    showgrid=True,
+                    gridcolor=grid_color,
+                    linecolor=text_color,
+                    tickcolor=text_color,
+                    tickfont=dict(color=text_color),
+                    title_font=dict(color=text_color)
+                ),
+                yaxis=dict(
+                    title=dict(text="Magnitud |Z| (dB)", font=dict(color=mag_color)), 
+                    tickfont={"color": mag_color}, 
+                    side="left",
+                    showgrid=True,
+                    gridcolor=grid_color,
+                    linecolor=text_color,
+                    tickcolor=text_color,
+                    title_font=dict(color=text_color)
+                ),
+                yaxis2=dict(
+                    title=dict(text="Fase φ (°)", font=dict(color=phase_color)), 
+                    tickfont={"color": phase_color}, 
+                    anchor="x", 
+                    overlaying="y", 
+                    side="right",
+                    showgrid=False,
+                    linecolor=text_color,
+                    tickcolor=text_color,
+                    title_font=dict(color=text_color)
+                ),
                 legend=dict(x=0.7, y=0.95),
                 height=450,
-                margin=dict(l=60, r=60, t=50, b=50)
+                margin=dict(l=60, r=60, t=50, b=50),
+                plot_bgcolor=bg_color,
+                paper_bgcolor=bg_color,
+                font=dict(color=text_color, size=12, family="Arial, sans-serif")
             )
 
             # Crear gráfico de Nyquist con colormap jet basado en frecuencia
@@ -196,12 +263,11 @@ def register_simulator_callbacks(app):
                 mode="lines+markers",
                 name="Z(jω)",
                 line=dict(
-                    color="darkblue",
+                    color=nyquist_color,
                     width=2
                 ),
                 marker=dict(
                     color=frequencies,
-                    colorscale='Jet',
                     size=8,
                     showscale=False
                 ),
@@ -214,11 +280,34 @@ def register_simulator_callbacks(app):
             ))
 
             nyquist_fig.update_layout(
-                title={"text": f"Diagrama de Nyquist - {CIRCUIT_INFO[circuit_type]['name']}", "font": {"size": 14}},
-                xaxis=dict(title="Parte Real Z' (Ω)"),
-                yaxis=dict(title="Parte Imaginaria -Z'' (Ω)"),
+                title={"text": f"Diagrama de Nyquist - {CIRCUIT_INFO[circuit_type]['name']}", "font": {"size": 14, "color": text_color}},
+                xaxis=dict(
+                    title="Parte Real Z' (Ω)",
+                    showgrid=True,
+                    zeroline=True,
+                    autorange=True,
+                    gridcolor=grid_color,
+                    linecolor=text_color,
+                    tickcolor=text_color,
+                    tickfont=dict(color=text_color),
+                    title_font=dict(color=text_color)
+                ),
+                yaxis=dict(
+                    title="Parte Imaginaria -Z'' (Ω)",
+                    showgrid=True,
+                    zeroline=True,
+                    autorange=True,
+                    gridcolor=grid_color,
+                    linecolor=text_color,
+                    tickcolor=text_color,
+                    tickfont=dict(color=text_color),
+                    title_font=dict(color=text_color)
+                ),
                 height=450,
-                margin=dict(l=60, r=60, t=50, b=50)
+                margin=dict(l=60, r=60, t=50, b=50),
+                plot_bgcolor=bg_color,
+                paper_bgcolor=bg_color,
+                font=dict(color=text_color, size=12, family="Arial, sans-serif")
             )
 
             info_content = [
@@ -231,8 +320,60 @@ def register_simulator_callbacks(app):
 
         except Exception as e:
             safe_print(f"❌ Error: {e}")
+            # Definir colores para el error basados en el tema
+            if theme == 'light':
+                bg_color = '#FFFFFF'
+                text_color = '#333333'
+            else:
+                bg_color = '#0D213A'
+                text_color = '#6495ED'
+                
             empty_fig = go.Figure()
+            empty_fig.update_layout(
+                title="Error en el cálculo",
+                annotations=[dict(
+                    text="Error en el cálculo de impedancia",
+                    showarrow=False,
+                    xref="paper",
+                    yref="paper",
+                    x=0.5,
+                    y=0.5,
+                    font=dict(size=14, color=text_color)
+                )],
+                plot_bgcolor=bg_color,
+                paper_bgcolor=bg_color,
+                font=dict(color=text_color, size=12, family="Arial, sans-serif"),
+                title_font=dict(color=text_color, size=16)
+            )
             return empty_fig, empty_fig, html.Div([html.P("Error en el cálculo")])
+
+    @app.callback(
+        [Output("simulator-theme-store", "data"),
+         Output("simulator-theme-icon", "className"),
+         Output("simulator-theme-text", "children")],
+        [Input("simulator-theme-toggle", "n_clicks")],
+        [State("simulator-theme-store", "data")],
+        prevent_initial_call=True
+    )
+    def toggle_simulator_theme(n_clicks, theme_data):
+        """Alterna entre tema oscuro y claro para los gráficos del simulador"""
+        if theme_data is None:
+            theme_data = {"theme": "dark"}
+        
+        current_theme = theme_data.get("theme", "dark")
+        new_theme = "light" if current_theme == "dark" else "dark"
+        
+        # Actualizar icono y texto
+        if new_theme == "light":
+            icon_class = "fas fa-sun"
+            text = "Tema Claro"
+        else:
+            icon_class = "fas fa-moon"
+            text = "Tema Oscuro"
+        
+        safe_print(f"🎨 Cambiando tema del simulador: {current_theme} → {new_theme}")
+        
+        return {"theme": new_theme}, icon_class, text
 
 def register_simulator_page(app):
     """Registra la página del simulador en la aplicación DashSPA"""

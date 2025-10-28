@@ -10,6 +10,8 @@ import serial.tools.list_ports
 import re
 import math
 import logging
+import os
+import numpy as np
 from typing import List, Optional, Tuple, Dict, Any
 from .exceptions import ValidationError
 
@@ -322,7 +324,8 @@ def clean_response_line(line: str) -> str:
     Limpia una línea de respuesta del dispositivo.
     
     Remueve:
-    - Códigos ANSI de escape
+    - Códigos ANSI de escape (secuencias de escape estándar)
+    - Códigos de control de cursor VT100 (ESC 7, ESC 8, etc.)
     - Prompts (ADMX2001>)
     - Espacios en blanco al inicio/final
     
@@ -332,9 +335,17 @@ def clean_response_line(line: str) -> str:
     Returns:
         Línea limpia
     """
-    # Remover códigos ANSI
+    # Remover códigos ANSI estándar (secuencias de escape complejas)
     ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
     line = ansi_escape.sub('', line)
+    
+    # Remover códigos de control de cursor VT100 simples (ESC + dígito/letra)
+    # ESC 7 = save cursor, ESC 8 = restore cursor, etc.
+    vt100_control = re.compile(r'\x1B[0-9A-Za-z]')
+    line = vt100_control.sub('', line)
+    
+    # Remover cualquier ESC solitario que pueda quedar
+    line = line.replace('\x1B', '')
     
     # Remover prompt
     line = line.replace('ADMX2001>', '')
@@ -442,3 +453,165 @@ def estimate_measurement_time(frequency: float, average: int, count: int,
     
     total_time_ms = measurement_time + communication_overhead
     return total_time_ms / 1000.0  # convertir a segundos
+
+
+def save_sweep_data_to_csv(data: Dict[str, List], filename: str = None) -> str:
+    """
+    Guarda datos de barrido de frecuencia en un archivo CSV.
+    
+    Args:
+        data: Diccionario con datos del barrido:
+            - param: Lista de frecuencias (Hz)
+            - z_real: Lista de partes reales de impedancia (Ω)
+            - z_imag: Lista de partes imaginarias de impedancia (Ω)
+            - z_mag: Lista de magnitudes de impedancia (Ω)
+            - phase: Lista de fases (radianes)
+        filename: Nombre del archivo (opcional). Si no se proporciona,
+                 se genera automáticamente con timestamp.
+    
+    Returns:
+        Nombre del archivo creado
+    
+    Raises:
+        ValueError: Si los datos no tienen la estructura correcta
+    """
+    import csv
+    from datetime import datetime
+    
+    # Validar estructura de datos
+    required_keys = ['param', 'z_real', 'z_imag', 'z_mag', 'phase']
+    for key in required_keys:
+        if key not in data:
+            raise ValueError(f"Falta la clave requerida: {key}")
+        if not isinstance(data[key], list) or len(data[key]) == 0:
+            raise ValueError(f"Datos inválidos para {key}: debe ser una lista no vacía")
+    
+    # Verificar que todas las listas tengan la misma longitud
+    lengths = [len(data[key]) for key in required_keys]
+    if len(set(lengths)) != 1:
+        raise ValueError(f"Todas las listas deben tener la misma longitud. Longitudes encontradas: {dict(zip(required_keys, lengths))}")
+    
+    # Generar nombre de archivo si no se proporciona
+    if filename is None:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"sweep_data_{timestamp}.csv"
+    
+    # Asegurar extensión .csv
+    if not filename.lower().endswith('.csv'):
+        filename += '.csv'
+    
+    # Crear directorio si no existe
+    os.makedirs('data', exist_ok=True)
+    filepath = os.path.join('data', filename)
+    
+    # Escribir archivo CSV
+    with open(filepath, 'w', newline='', encoding='utf-8') as csvfile:
+        fieldnames = ['frequency_hz', 'z_real_ohm', 'z_imag_ohm', 'z_magnitude_ohm', 'phase_rad', 'phase_deg']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        
+        # Escribir encabezado
+        writer.writeheader()
+        
+        # Escribir datos
+        for i in range(len(data['param'])):
+            row = {
+                'frequency_hz': data['param'][i],
+                'z_real_ohm': data['z_real'][i],
+                'z_imag_ohm': data['z_imag'][i],
+                'z_magnitude_ohm': data['z_mag'][i],
+                'phase_rad': data['phase'][i],
+                'phase_deg': np.degrees(data['phase'][i])  # Convertir a grados
+            }
+            writer.writerow(row)
+    
+    return filename
+
+
+def load_sweep_data_from_csv(filepath: str) -> Dict[str, List]:
+    """
+    Carga datos de barrido de frecuencia desde un archivo CSV.
+    
+    Args:
+        filepath: Ruta al archivo CSV
+    
+    Returns:
+        Diccionario con datos del barrido:
+            - param: Lista de frecuencias (Hz)
+            - z_real: Lista de partes reales de impedancia (Ω)
+            - z_imag: Lista de partes imaginarias de impedancia (Ω)
+            - z_mag: Lista de magnitudes de impedancia (Ω)
+            - phase: Lista de fases (radianes)
+    
+    Raises:
+        FileNotFoundError: Si el archivo no existe
+        ValueError: Si el formato del CSV es inválido
+    """
+    import csv
+    
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"Archivo no encontrado: {filepath}")
+    
+    data = {
+        'param': [],
+        'z_real': [],
+        'z_imag': [],
+        'z_mag': [],
+        'phase': []
+    }
+    
+    try:
+        with open(filepath, 'r', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            
+            # Verificar encabezados requeridos
+            required_headers = ['frequency_hz', 'z_real_ohm', 'z_imag_ohm', 'z_magnitude_ohm', 'phase_rad']
+            missing_headers = [h for h in required_headers if h not in reader.fieldnames]
+            if missing_headers:
+                raise ValueError(f"Encabezados requeridos faltantes: {missing_headers}")
+            
+            # Leer datos
+            for row_num, row in enumerate(reader, start=2):  # +2 porque header es línea 1
+                try:
+                    data['param'].append(float(row['frequency_hz']))
+                    data['z_real'].append(float(row['z_real_ohm']))
+                    data['z_imag'].append(float(row['z_imag_ohm']))
+                    data['z_mag'].append(float(row['z_magnitude_ohm']))
+                    data['phase'].append(float(row['phase_rad']))
+                except (ValueError, KeyError) as e:
+                    raise ValueError(f"Error en línea {row_num}: {str(e)}")
+    
+    except UnicodeDecodeError:
+        raise ValueError("El archivo CSV debe estar codificado en UTF-8")
+    except Exception as e:
+        raise ValueError(f"Error al leer el archivo CSV: {str(e)}")
+    
+    # Validar que se cargaron datos
+    if len(data['param']) == 0:
+        raise ValueError("El archivo CSV no contiene datos válidos")
+    
+    return data
+
+
+def list_csv_files() -> List[str]:
+    """
+    Lista todos los archivos CSV en el directorio data/.
+    
+    Returns:
+        Lista de nombres de archivos CSV ordenados por fecha de modificación (más reciente primero)
+    """
+    
+    data_dir = 'data'
+    if not os.path.exists(data_dir):
+        return []
+    
+    csv_files = []
+    for filename in os.listdir(data_dir):
+        if filename.lower().endswith('.csv'):
+            filepath = os.path.join(data_dir, filename)
+            if os.path.isfile(filepath):
+                csv_files.append(filename)
+    
+    # Ordenar por fecha de modificación (más reciente primero)
+    csv_files.sort(key=lambda x: os.path.getmtime(os.path.join(data_dir, x)), reverse=True)
+    
+    return csv_files
