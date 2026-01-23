@@ -351,7 +351,7 @@ def layout():
                                             ["Parámetro", "Rango", "Unidad"],
                                             [
                                                 ["Frecuencia Inicial/Final", "0.2 Hz - 10 MHz", "Hz"],
-                                                ["Número de Puntos", "2 - 1000", "puntos"],
+                                                ["Número de Puntos", "≥ 2 (sin límite)", "puntos"],
                                                 ["Escala", "Lineal / Logarítmica", "-"],
                                                 ["Magnitud", "0.001 - 10", "Vpk"],
                                             ]

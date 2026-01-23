@@ -924,7 +924,7 @@ def sweep_config_card_compact():
                         ], className="col-6 col-md-2"),
                         html.Div([
                             html.Label("Puntos", className="form-label fw-bold small mb-1"),
-                            dcc.Input(id='sweep-points', type='number', value=50, min=2, max=1000, className="form-control form-control-sm")
+                            dcc.Input(id='sweep-points', type='number', value=50, min=2, className="form-control form-control-sm")
                         ], className="col-6 col-md-2"),
                         html.Div([
                             html.Label("Escala", className="form-label fw-bold small mb-1"),
