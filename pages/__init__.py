@@ -1,3 +1,3 @@
 """
-Páginas del dashboard ADMX2001
+Páginas del dashboard ZORIA
 """

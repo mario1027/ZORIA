@@ -1,5 +1,5 @@
 """
-Componentes comunes compartidos entre Dashboard ADMX2001 y Simulador RLC
+Componentes comunes compartidos entre Dashboard ZORIA y Simulador RLC
 Basados 100% en dash-plantilla VOLT Bootstrap 5
 """
 

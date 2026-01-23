@@ -1,5 +1,5 @@
 """
-Dashboard ADMX2001 - Analizador de Impedancia
+ZORIA Dashboard - Analizador de Impedancia
 Refactorizado 100% según patrón dash-plantilla VOLT Bootstrap 5
 """
 from dash import html, Input, Output, State, ctx, register_page, dcc, dash_table
@@ -476,7 +476,7 @@ def sweep_worker(config):
             sweep_scale = SweepScale.LOG if scale == 'log' else SweepScale.LINEAR
 
             # SEGMENTACIÓN: El ADMX2001 tiene límite de 255 puntos por barrido
-            MAX_POINTS_PER_SEGMENT = 2000
+            MAX_POINTS_PER_SEGMENT = 255
             
             if points <= MAX_POINTS_PER_SEGMENT:
                 # Barrido simple - sin segmentación
@@ -1015,7 +1015,7 @@ layout = html.Div([
                 # Header optimizado con botón de conexión
                 html.Div([
                     html.Div([
-                        html.H2("Dashboard ADMX2001", className="h3 mb-0")
+                        html.H2("ZORIA Dashboard", className="h3 mb-0")
                 ], className="col-12 col-md-6 mb-2 mb-md-0"),
                 html.Div([
                     # Botón de alternancia de tema
@@ -2322,7 +2322,7 @@ def register_callbacks(app):
 # ==================== FUNCIONES AUXILIARES ====================
 
 def create_dashboard_page():
-    """Crea la página del dashboard ADMX2001"""
+    """Crea la página del dashboard ZORIA"""
     return layout
 
 def register_dashboard_page(app):
@@ -2330,7 +2330,7 @@ def register_dashboard_page(app):
     register_page(
         __name__,
         path="/",
-        title="ADMX2001 Dashboard",
+        title="ZORIA Dashboard",
         name="Dashboard",
         layout=layout
     )

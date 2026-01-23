@@ -1,5 +1,5 @@
 """
-Sidebar compartido entre Dashboard ADMX2001 y Simulador RLC
+Sidebar compartido entre Dashboard ZORIA y Simulador RLC
 Basado 100% en dash-plantilla VOLT Bootstrap 5
 """
 from typing import List
@@ -11,9 +11,28 @@ from .mobile_nav import mobileSidebarHeader
 
 # Constantes de configuración
 SIDEBAR_ITEMS = [
-    {"text": "Dashboard ADMX2001", "icon": ICON.CHART_PIE, "href": "/"},
-    {"text": "Simulador RLC", "icon": ICON.VIEW_GRID, "href": "/simulator"},
-    {"text": "Command Prompt", "icon": ICON.CONSOLE, "href": "#", "data-bs-toggle": "modal", "data-bs-target": "#command-modal"},
+    {
+        "text": "Dashboard ZORIA",
+        "icon": ICON.CHART_PIE,
+        "href": "/",
+    },
+    {
+        "text": "Simulador RLC",
+        "icon": ICON.VIEW_GRID,
+        "href": "/simulator",
+    },
+    {
+        "text": "Documentación",
+        "icon": ICON.DOCUMENT,
+        "href": "/documentacion",
+    },
+    {
+        "text": "Command Prompt",
+        "icon": ICON.CONSOLE,
+        "href": "#",
+        "data-bs-toggle": "modal",
+        "data-bs-target": "#command-modal",
+    },
 ]
 
 # Dropdowns vacíos por ahora - se pueden agregar más secciones después

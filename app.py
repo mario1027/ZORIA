@@ -32,7 +32,7 @@ def create_app() -> DashSPA:
         external_stylesheets=external_stylesheets,
         url_base_pathname="/",
         assets_folder='assets',
-        title='ADMX2001 Dashboard',
+        title='ZORIA Dashboard',
         update_title=None)  # Sin pages_folder, usa el default
     
     # Configurar favicon

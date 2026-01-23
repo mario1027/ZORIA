@@ -26,16 +26,16 @@ class BreadcrumbBuilder:
 
     # Mapeo de rutas a breadcrumbs
     ROUTE_MAP = {
-        "/": ["Inicio", "Dashboard ADMX2001"],
+        "/": ["Inicio", "Dashboard ZORIA"],
         "/simulator": ["Inicio", "Simulador RLC", "Análisis de Circuitos"],
         "/simulator#circuits": ["Inicio", "Simulador RLC", "Circuitos"],
         "/simulator#parameters": ["Inicio", "Simulador RLC", "Parámetros"],
         "/simulator#analysis": ["Inicio", "Simulador RLC", "Análisis"],
         "/simulator#results": ["Inicio", "Simulador RLC", "Resultados"],
-        "/#connection": ["Inicio", "Dashboard ADMX2001", "Conexión"],
-        "/#measurements": ["Inicio", "Dashboard ADMX2001", "Mediciones"],
-        "/#sweeps": ["Inicio", "Dashboard ADMX2001", "Barridos"],
-        "/#plots": ["Inicio", "Dashboard ADMX2001", "Gráficos"]
+        "/#connection": ["Inicio", "Dashboard ZORIA", "Conexión"],
+        "/#measurements": ["Inicio", "Dashboard ZORIA", "Mediciones"],
+        "/#sweeps": ["Inicio", "Dashboard ZORIA", "Barridos"],
+        "/#plots": ["Inicio", "Dashboard ZORIA", "Gráficos"]
     }
 
     @staticmethod
@@ -80,7 +80,7 @@ class BreadcrumbBuilder:
     def _get_href_for_part(part: str) -> str:
         """Obtiene el href correspondiente para una parte del breadcrumb"""
         href_map = {
-            "Dashboard ADMX2001": "/",
+            "Dashboard ZORIA": "/",
             "Simulador RLC": "/simulator"
         }
         return href_map.get(part, "#")

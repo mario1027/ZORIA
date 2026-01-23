@@ -20,7 +20,7 @@ def footer():
             # Información de copyright
             html.Div([
                 html.P([
-                    "© 2024 ADMX2001 Dashboard & RLC Simulator. ",
+                    "© 2024 ZORIA Dashboard & RLC Simulator. ",
                     html.A("Documentación", href="/docs", className="text-decoration-none ms-2"),
                     " | ",
                     html.A("Soporte", href="/support", className="text-decoration-none ms-2")
