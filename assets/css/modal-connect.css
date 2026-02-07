@@ -1,0 +1,137 @@
+/* =============================================================================
+   MODAL DE CONEXIÓN COMPACTO CON AUTOCONEXIÓN
+   ============================================================================= */
+
+/* Modal compacto */
+.modal-connect .modal-dialog {
+    max-width: 380px;
+}
+
+.modal-connect-compact {
+    border-radius: 16px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+/* Header compacto */
+.modal-connect-header-compact {
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    color: white;
+}
+
+.auto-connect-icon {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Área de estado */
+.auto-connect-status-area {
+    border: 1px solid #e5e7eb;
+}
+
+/* Spinner de autoconexión */
+@keyframes scanning {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.auto-connect-scanning {
+    animation: scanning 1.5s ease-in-out infinite;
+}
+
+/* Estados de conexión */
+.auto-connect-success {
+    color: #10b981 !important;
+}
+
+.auto-connect-error {
+    color: #ef4444 !important;
+}
+
+.auto-connect-warning {
+    color: #f59e0b !important;
+}
+
+/* Barra de progreso */
+.progress-bar {
+    background: linear-gradient(90deg, #3b82f6, #10b981);
+    transition: width 0.3s ease;
+}
+
+/* Puerto detectado */
+#detected-port {
+    background: #f3f4f6;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+#detected-port.has-device {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+/* Panel manual colapsable */
+#manual-config-panel {
+    transition: all 0.3s ease;
+}
+
+#manual-config-panel:not(.d-none) {
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        max-height: 200px;
+    }
+}
+
+/* Botones */
+.btn-connect {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    transition: all 0.2s ease;
+}
+
+.btn-connect:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+.btn-connect:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Animación de escaneo */
+@keyframes scanPulse {
+    0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+.scanning-active {
+    animation: scanPulse 1.5s ease-out infinite;
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+    .modal-connect .modal-dialog {
+        max-width: 95%;
+        margin: 1rem auto;
+    }
+}

@@ -257,10 +257,10 @@ def bode_plot_card():
     return html.Div([
         html.Div([
             html.H5([
-                html.Span("📈", className='me-2'),
-                "Diagrama de Bode"
-            ], className='card-title mb-0')
-        ], className='card-header bg-white border-bottom'),
+                html.I(className="fas fa-chart-line me-2"),
+                "📊 Diagrama de Bode"
+            ], className='mb-0')
+        ], className='d-flex justify-content-between align-items-center card-header border-bottom border-gray-300 p-3'),
         html.Div([
             dcc.Loading(
                 id='loading-bode',
@@ -277,7 +277,7 @@ def bode_plot_card():
                 color='#262B40'
             )
         ], className='card-body p-2')
-    ], className='card border-0 shadow-sm mb-4')
+    ], className='card border-0 shadow h-100')
 
 
 def nyquist_plot_card():
@@ -285,12 +285,10 @@ def nyquist_plot_card():
     return html.Div([
         html.Div([
             html.H5([
-                html.Span("🔄", className='me-2'),
-                "Diagrama de Nyquist (Z' vs -Z'')"
-            ], className='card-title mb-0'),
-            html.Small("Representa la impedancia compleja como Z' (real) vs -Z'' (imaginaria negativa)",
-                      className='text-muted d-block')
-        ], className='card-header bg-white border-bottom'),
+                html.I(className="fas fa-circle-notch me-2"),
+                "📊 Diagrama de Nyquist"
+            ], className='mb-0')
+        ], className='d-flex justify-content-between align-items-center card-header border-bottom border-gray-300 p-3'),
         html.Div([
             dcc.Loading(
                 id='loading-nyquist',
@@ -307,7 +305,7 @@ def nyquist_plot_card():
                 color='#262B40'
             )
         ], className='card-body p-2')
-    ], className='card border-0 shadow-sm mb-4')
+    ], className='card border-0 shadow h-100')
 
 
 def impedance_info_card():
@@ -315,11 +313,11 @@ def impedance_info_card():
     return html.Div([
         html.Div([
             html.H5([
-                html.Span("📋", className='me-2'),
+                html.I(className="fas fa-info-circle me-2"),
                 "Información de Impedancia"
-            ], className='card-title mb-0')
-        ], className='card-header bg-soft border-bottom'),
+            ], className='mb-0')
+        ], className='d-flex justify-content-between align-items-center card-header border-bottom border-gray-300 p-3'),
         html.Div([
             html.Div(id='simulator-impedance-info', className='text-center py-4')
         ], className='card-body')
-    ], className='card border-0 shadow-sm mb-4 bg-soft')
+    ], className='card border-0 shadow mb-4')

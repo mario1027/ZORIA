@@ -1,0 +1,440 @@
+/* =============================================================================
+   WIZARD DE CALIBRACIÓN - ESTILOS PROFESIONALES
+   ============================================================================= */
+
+/* Modal tipo ventana de escritorio */
+.cal-wizard-modal {
+    position: fixed;
+    width: 750px;
+    height: 600px;
+    max-width: 90vw;
+    max-height: 85vh;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.25),
+        0 0 0 1px rgba(0, 0, 0, 0.1);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Cuando está inicializado con JS, no usar transform */
+.cal-wizard-modal.window-initialized {
+    animation: none;
+}
+
+/* Header arrastrable */
+.cal-wizard-header {
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    color: white;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: grab;
+    user-select: none;
+    border-radius: 16px 16px 0 0;
+}
+
+.cal-wizard-header:active {
+    cursor: grabbing;
+}
+
+.cal-wizard-title {
+    display: flex;
+    align-items: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.cal-wizard-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.cal-wizard-control-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cal-wizard-control-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+}
+
+.cal-wizard-close-btn:hover {
+    background: #ef4444;
+}
+
+/* Body del wizard */
+.cal-wizard-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+    background: #f8fafc;
+}
+
+/* Barra de progreso con pasos */
+.cal-wizard-progress {
+    background: white;
+    padding: 24px 20px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.cal-steps-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+}
+
+.cal-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+}
+
+.cal-step-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.cal-step:nth-child(1) .cal-step-icon::before { content: "1"; }
+.cal-step:nth-child(3) .cal-step-icon::before { content: "2"; }
+.cal-step:nth-child(5) .cal-step-icon::before { content: "3"; }
+.cal-step:nth-child(7) .cal-step-icon::before { content: "4"; }
+.cal-step:nth-child(9) .cal-step-icon::before { content: "5"; }
+
+.cal-step-active .cal-step-icon {
+    background: #3b82f6;
+    color: white;
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+    animation: calStepPulse 2s infinite;
+}
+
+@keyframes calStepPulse {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2); }
+    50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.1); }
+}
+
+.cal-step-completed .cal-step-icon {
+    background: #10b981;
+    color: white;
+}
+
+.cal-step-completed .cal-step-icon::before {
+    content: "✓" !important;
+    font-size: 1.2rem;
+}
+
+.cal-step-label {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.cal-step-active .cal-step-label {
+    color: #3b82f6;
+    font-weight: 600;
+}
+
+.cal-step-completed .cal-step-label {
+    color: #10b981;
+}
+
+.cal-step-connector {
+    width: 50px;
+    height: 2px;
+    background: #e2e8f0;
+    margin: 0 8px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+}
+
+.cal-connector-completed {
+    background: #10b981;
+}
+
+/* Contenido del wizard */
+.cal-wizard-content {
+    padding: 24px;
+}
+
+.cal-wizard-content-step {
+    animation: calContentIn 0.3s ease-out;
+}
+
+@keyframes calContentIn {
+    from {
+        opacity: 0;
+        transform: translateX(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Diagramas de conexión */
+.cal-diagram-container {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 30px;
+    display: flex;
+    justify-content: center;
+}
+
+.cal-diagram {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    position: relative;
+}
+
+.cal-diagram-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.cal-terminal {
+    width: 70px;
+    height: 40px;
+    background: #475569;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    border: 2px solid #64748b;
+    transition: all 0.3s ease;
+}
+
+.cal-terminal-active {
+    background: #3b82f6;
+    border-color: #60a5fa;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+    animation: calTerminalGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes calTerminalGlow {
+    0%, 100% { box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.8); }
+}
+
+.cal-wire {
+    flex: 1;
+    height: 3px;
+    background: #475569;
+    border-radius: 2px;
+    position: relative;
+    min-width: 100px;
+    transition: all 0.3s ease;
+}
+
+.cal-wire-open-h,
+.cal-wire-open-l {
+    background: #10b981;
+    animation: calWirePulse 1.5s ease-in-out infinite;
+}
+
+.cal-wire-short {
+    background: #f59e0b;
+    animation: calWirePulse 1.5s ease-in-out infinite;
+}
+
+.cal-wire-load {
+    background: #8b5cf6;
+    animation: calWirePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes calWirePulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
+.cal-diagram-indicator {
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.cal-indicator {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+}
+
+.cal-indicator-open {
+    background: #10b981;
+}
+
+.cal-indicator-short {
+    background: #f59e0b;
+}
+
+.cal-indicator-load {
+    background: #8b5cf6;
+}
+
+/* Animaciones */
+.cal-anim-pulse {
+    animation: calPulse 2s ease-in-out infinite;
+}
+
+@keyframes calPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+.cal-anim-blink {
+    animation: calBlink 1.5s ease-in-out infinite;
+}
+
+@keyframes calBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.cal-anim-bounce {
+    animation: calBounce 0.6s ease-out;
+}
+
+@keyframes calBounce {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/* Guía rápida */
+.cal-guide-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border-left: 4px solid #3b82f6;
+    transition: all 0.2s ease;
+}
+
+.cal-guide-item:hover {
+    background: #f1f5f9;
+    transform: translateX(4px);
+}
+
+.cal-guide-number {
+    width: 28px;
+    height: 28px;
+    background: #3b82f6;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+/* Panel de configuración */
+.cal-config-panel {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #bae6fd !important;
+}
+
+/* Botones de acción */
+#btn-start-calibration {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+#btn-start-calibration:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.4);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .cal-wizard-modal {
+        width: 95vw;
+        max-height: 90vh;
+    }
+    
+    .cal-steps-container {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .cal-step-connector {
+        display: none;
+    }
+    
+    .cal-step-label {
+        font-size: 0.65rem;
+    }
+    
+    .cal-diagram-container {
+        padding: 20px;
+    }
+    
+    .cal-terminal {
+        width: 55px;
+        height: 35px;
+        font-size: 0.6rem;
+    }
+    
+    .cal-wire {
+        min-width: 50px;
+    }
+}
+
+/* Scrollbar personalizado para el wizard */
+.cal-wizard-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.cal-wizard-body::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.cal-wizard-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.cal-wizard-body::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}

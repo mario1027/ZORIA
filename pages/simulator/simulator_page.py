@@ -20,6 +20,8 @@ from pages.simulator.impedance_calculator import ImpedanceCalculator, get_circui
 from pages.common.sidebar import sideBar
 from pages.common.mobile_nav import mobileNavBar
 from pages.common.footer import footer
+from pages.common.terminal_component import global_terminal_component
+from pages.common.floating_terminal_button import floating_terminal_button
 
 # Función helper para prints seguros (maneja BrokenPipeError)
 def safe_print(message):
@@ -49,48 +51,63 @@ layout = html.Div([
             html.Div(
                 className="container-fluid py-4",
                 children=[
+                    # Header con título y botón de tema
                     html.Div([
-                        html.H1("Simulador de Circuitos RLC", className="h2 mb-4"),
-                        html.P("Analiza la respuesta en frecuencia de diferentes configuraciones de circuitos RLC", className="text-muted")
-                    ], className="d-flex justify-content-between align-items-center mb-4"),
-
-                    # Botón de toggle de tema para gráficos
-                    html.Div([
-                        html.Button(
-                            id="simulator-theme-toggle",
-                            className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2",
-                            children=[
-                                html.I(className="fas fa-moon", id="simulator-theme-icon"),
-                                html.Span("Tema Gráficos", id="simulator-theme-text")
-                            ]
-                        )
-                    ], className="mb-3"),
-
-                    html.Div(
-                        className="row g-4",
-                        children=[
-                            html.Div(
-                                className="col-lg-4",
+                        html.Div([
+                            html.H2("Simulador de Circuitos RLC", className="h3 mb-0")
+                        ], className="col-12 col-md-6 mb-2 mb-md-0"),
+                        html.Div([
+                            # Botón de tema
+                            html.Button(
+                                id="simulator-theme-toggle",
+                                className="btn btn-outline-secondary",
                                 children=[
-                                    circuit_selector_card(),
-                                    html.Div(className="row g-3 mt-1", children=[
-                                        html.Div(className="col-12", children=[resistance_input_card()]),
-                                        html.Div(className="col-12", children=[inductance_input_card()]),
-                                        html.Div(className="col-12", children=[capacitance_input_card()])
-                                    ]),
-                                    frequency_range_card()
-                                ]
-                            ),
-                            html.Div(
-                                className="col-lg-8",
-                                children=[
-                                    bode_plot_card(),
-                                    nyquist_plot_card(),
-                                    impedance_info_card()
-                                ]
+                                    html.I(className="fas fa-moon", id="simulator-theme-icon")
+                                ],
+                                title="Cambiar tema de gráficos"
                             )
-                        ]
-                    )
+                        ], className="col-12 col-md-6 d-flex justify-content-md-end align-items-center")
+                    ], className="row align-items-center py-4"),
+
+                    # ✅ PRIORIDAD #1: GRÁFICOS PRIMERO (70% altura visual)
+                    html.Div([
+                        # Diagrama de Bode
+                        html.Div([
+                            bode_plot_card()
+                        ], className="col-12 col-lg-6 mb-4"),
+
+                        # Diagrama de Nyquist
+                        html.Div([
+                            nyquist_plot_card()
+                        ], className="col-12 col-lg-6 mb-4")
+                    ], className="row"),
+                    
+                    # ✅ PRIORIDAD #2: CONFIGURACIÓN COMPACTA (30% altura visual)
+                    html.Div([
+                        # Configuración de circuito
+                        html.Div([
+                            html.Div([
+                                circuit_selector_card(),
+                                html.Div(className="row g-3 mt-1", children=[
+                                    html.Div(className="col-md-4", children=[resistance_input_card()]),
+                                    html.Div(className="col-md-4", children=[inductance_input_card()]),
+                                    html.Div(className="col-md-4", children=[capacitance_input_card()])
+                                ])
+                            ], className="col-lg-8 mb-4"),
+                            
+                            # Rango de frecuencia
+                            html.Div([
+                                frequency_range_card()
+                            ], className="col-lg-4 mb-4")
+                        ], className="row"),
+                        
+                        # Información de impedancia
+                        html.Div([
+                            html.Div([
+                                impedance_info_card()
+                            ], className="col-12")
+                        ], className="row")
+                    ])
                 ]
             )
         ], className="main-content w-100")
@@ -98,7 +115,13 @@ layout = html.Div([
     ], className="d-flex flex-grow-1"),
 
     # Footer al final, fuera del flex sidebar-content
-    footer()
+    footer(),
+    
+    # Terminal CLI Global
+    global_terminal_component(),
+    
+    # Botón flotante del terminal
+    floating_terminal_button()
 
 ], className="d-flex flex-column min-vh-100")
 
@@ -349,8 +372,7 @@ def register_simulator_callbacks(app):
 
     @app.callback(
         [Output("simulator-theme-store", "data"),
-         Output("simulator-theme-icon", "className"),
-         Output("simulator-theme-text", "children")],
+         Output("simulator-theme-icon", "className")],
         [Input("simulator-theme-toggle", "n_clicks")],
         [State("simulator-theme-store", "data")],
         prevent_initial_call=True
@@ -363,17 +385,15 @@ def register_simulator_callbacks(app):
         current_theme = theme_data.get("theme", "dark")
         new_theme = "light" if current_theme == "dark" else "dark"
         
-        # Actualizar icono y texto
+        # Actualizar icono
         if new_theme == "light":
             icon_class = "fas fa-sun"
-            text = "Tema Claro"
         else:
             icon_class = "fas fa-moon"
-            text = "Tema Oscuro"
         
         safe_print(f"🎨 Cambiando tema del simulador: {current_theme} → {new_theme}")
         
-        return {"theme": new_theme}, icon_class, text
+        return {"theme": new_theme}, icon_class
 
 def register_simulator_page(app):
     """Registra la página del simulador en la aplicación DashSPA"""

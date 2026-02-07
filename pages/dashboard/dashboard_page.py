@@ -29,6 +29,10 @@ from lib.utils import clean_response_line
 from pages.common.sidebar import sideBar
 from pages.common.mobile_nav import mobileNavBar
 from pages.common.footer import footer
+from pages.common.floating_terminal_button import floating_terminal_button
+
+# Importar estado global del dispositivo
+from lib.device_state import device_state
 
 # ==================== CONFIGURACIÓN GLOBAL ====================
 
@@ -674,138 +678,100 @@ def sweep_worker(config):
         sweep_queue.put({'error': True, 'message': str(e)})
 
 # ==================== COMPONENTES DE UI ====================
-
-def command_prompt_modal():
-    """Modal de command prompt para comunicación directa con ADMX2001"""
-    MODAL_ID = 'command-modal'
-    DISMISS = {"data-bs-dismiss": "modal"}
-    
-    return html.Div([
-        html.Div([
-            html.Div([
-                html.Div([
-                    html.Div([
-                        # Botón close (esquina superior derecha)
-                        html.Button(type='button', className='btn-close ms-auto', **DISMISS),
-                        
-                        # Título centrado
-                        html.Div([
-                            html.H1([
-                                html.I(className="fas fa-terminal me-2"),
-                                "Command Prompt ADMX2001"
-                            ], className='mb-0 h4')
-                        ], className='text-center mb-4 mt-md-0'),
-                        
-                        # Área de terminal/output
-                        html.Div([
-                            html.Div([
-                                html.Pre("", id="command-output", className="bg-dark text-light p-3 rounded", 
-                                        style={'height': '300px', 'overflow-y': 'auto', 'font-family': 'monospace', 'font-size': '12px'})
-                            ], className="mb-3"),
-                            
-                            # Input de comando
-                            html.Div([
-                                html.Div([
-                                    html.Span("ADMX2001> ", className="text-primary fw-bold"),
-                                    dcc.Input(
-                                        id="command-input",
-                                        type="text",
-                                        placeholder="Escriba comando CLI (ej: 'z', 'frequency 1000', 'help')",
-                                        className="form-control d-inline-block",
-                                        style={'width': 'calc(100% - 100px)', 'border-radius': '0.375rem 0 0 0.375rem'}
-                                    ),
-                                    html.Button([
-                                        html.I(className="fas fa-paper-plane")
-                                    ], id="send-command-btn", className="btn btn-primary", 
-                                       style={'border-radius': '0 0.375rem 0.375rem 0'})
-                                ], className="input-group")
-                            ], className="mb-3"),
-                            
-                            # Botones de acción
-                            html.Div([
-                                html.Button("Limpiar Terminal", id="clear-terminal-btn", className="btn btn-warning me-2"),
-                                html.Button("Ejecutar 'z'", id="quick-measure-btn", className="btn btn-success me-2"),
-                                html.Button("Ejecutar 'help'", id="quick-help-btn", className="btn btn-info me-2"),
-                                html.Button("Cerrar", type="button", className="btn btn-secondary", **DISMISS)
-                            ], className='d-flex gap-2 flex-wrap')
-                        ])
-                    ], className='card p-3 p-lg-4')
-                ], className='modal-body p-0')
-            ], className='modal-content')
-        ], className='modal-dialog modal-dialog-centered modal-xl d-flex align-items-center min-vh-100 w-100 mx-auto', role='document')
-    ], className='modal fade', id=MODAL_ID, tabIndex='-1', role='dialog', **{"aria-hidden": "true"})
+# NOTA: El terminal CLI ahora es global (ver terminal_component.py)
+# Se eliminó command_prompt_modal() para evitar IDs duplicados
 
 def connect_modal():
-    """Modal para conexión/desconexión del dispositivo ADMX2001"""
+    """Ventana de conexión arrastrable tipo escritorio para ADMX2001"""
     MODAL_ID = 'connect-modal'
-    DISMISS = {"data-bs-dismiss": "modal"}
     
     return html.Div([
+        # Ventana arrastrable tipo escritorio
         html.Div([
+            # Header arrastrable
             html.Div([
                 html.Div([
+                    html.I(className="fas fa-microchip"),
+                ], className="window-title-icon"),
+                html.Span("Conexión ADMX2001", className="window-title-text"),
+                
+                html.Div([
+                    html.Button(
+                        html.I(className="fas fa-minus"),
+                        id="connect-modal-minimize",
+                        className="window-control-btn window-btn-minimize",
+                        title="Minimizar"
+                    ),
+                    html.Button(
+                        html.I(className="fas fa-times"),
+                        id="connect-modal-close",
+                        className="window-control-btn window-btn-close",
+                        title="Cerrar"
+                    ),
+                ], className="window-controls")
+            ], className="window-header", id="connect-modal-header"),
+            
+            # Body
+            html.Div([
+                # Estado y progreso
+                html.Div([
                     html.Div([
-                        # Botón close (esquina superior derecha)
-                        html.Button(type='button', className='btn-close ms-auto', **DISMISS),
-                        
-                        # Título centrado
-                        html.Div([
-                            html.H1([
-                                html.I(className="fas fa-plug me-2"),
-                                "Conectar ADMX2001"
-                            ], className='mb-0 h4')
-                        ], className='text-center mb-4 mt-md-0'),
-                        
-                        # Contenido del modal
-                        html.Div([
-                            # Selector de puerto serial
-                            html.Div([
-                                html.Label("Puerto Serial", className="form-label fw-bold"),
-                                dcc.Dropdown(
-                                    id='serial-ports',
-                                    options=[{'label': 'Buscando puertos...', 'value': '', 'disabled': True}],
-                                    value='',
-                                    placeholder="Seleccione un puerto serial",
-                                    className="mb-3"
-                                )
-                            ], className="mb-4"),
-                            
-                            # Información del dispositivo
-                            html.Div([
-                                html.H6("Información del Dispositivo", className="fw-bold mb-3"),
-                                html.P([
-                                    html.I(className="fas fa-info-circle me-2"),
-                                    "El ADMX2001 es un analizador de impedancia que se conecta vía puerto serial USB."
-                                ], className="text-muted small mb-2"),
-                                html.P([
-                                    html.I(className="fas fa-cogs me-2"),
-                                    "Asegúrese de que el dispositivo esté encendido y conectado correctamente."
-                                ], className="text-muted small mb-0")
-                            ], className="mb-4"),
-                            
-                            # Estado de conexión
-                            html.Div([
-                                html.Span("", id="connect-status", className="text-muted small")
-                            ], className="mb-3"),
-                            
-                            # Botones de acción
-                            html.Div([
-                                html.Button([
-                                    html.I(className="fas fa-plug me-2"),
-                                    "Conectar"
-                                ], id="connect-btn", className="btn btn-success me-2"),
-                                html.Button([
-                                    html.I(className="fas fa-power-off me-2"),
-                                    "Desconectar"
-                                ], id="disconnect-modal-btn", className="btn btn-outline-danger me-2"),
-                                html.Button("Cancelar", type="button", className="btn btn-secondary", **DISMISS)
-                            ], className='d-flex gap-2 flex-wrap')
-                        ])
-                    ], className='card p-3 p-lg-4')
-                ], className='modal-body p-0')
-            ], className='modal-content')
-        ], className='modal-dialog modal-dialog-centered modal-lg d-flex align-items-center min-vh-100 w-100 mx-auto', role='document')
-    ], className='modal fade', id=MODAL_ID, tabIndex='-1', role='dialog', **{"aria-hidden": "true"})
+                        html.Div(id="auto-connect-spinner", className="spinner-border spinner-border-sm text-primary me-2", style={'display': 'none'}),
+                        html.Span(id="auto-connect-status", className="fw-semibold text-primary", children="Buscando dispositivo...")
+                    ], className="d-flex align-items-center justify-content-center mb-3"),
+                    
+                    # Barra de progreso
+                    html.Div([
+                        html.Div(
+                            id="auto-connect-progress",
+                            className="progress-bar progress-bar-striped progress-bar-animated",
+                            style={'width': '0%'}
+                        )
+                    ], className="progress mb-3", style={'height': '8px'}),
+                    
+                    # Puerto detectado
+                    html.Div([
+                        html.Small("Puerto: ", className="text-muted"),
+                        html.Code(id="detected-port", className="text-dark ms-1", children="--")
+                    ], className="text-center mb-2"),
+                    
+                    # Resultado del test
+                    html.Div(id="connection-test-result", className="text-center small mt-2")
+                    
+                ], className="p-3 bg-light rounded mb-3"),
+                
+                # Selector manual
+                html.Div([
+                    html.Label([html.I(className="fas fa-usb me-2"), "Puerto Manual"], className="form-label fw-semibold small"),
+                    dcc.Dropdown(
+                        id='serial-ports',
+                        options=[],
+                        value='',
+                        placeholder="Seleccionar puerto...",
+                        className="mb-2"
+                    ),
+                    html.Button([
+                        html.I(className="fas fa-sync-alt me-1"),
+                        "Actualizar"
+                    ], id="refresh-ports-btn", className="btn btn-sm btn-outline-secondary w-100 mb-3", n_clicks=0)
+                ]),
+                
+                # Botones de acción
+                html.Div([
+                    html.Button([
+                        html.I(className="fas fa-bolt me-2"),
+                        "Conectar"
+                    ], id="connect-btn", className="btn btn-success w-100 mb-2"),
+                    html.Button([
+                        html.I(className="fas fa-power-off me-2"),
+                        "Desconectar"
+                    ], id="disconnect-modal-btn", className="btn btn-outline-danger w-100 mb-2"),
+                ], className='action-buttons')
+                
+            ], className='window-body p-3')
+            
+        ], id=MODAL_ID, className='draggable-window connection-window', style={'display': 'none', 'width': '380px', 'height': 'auto'})
+    ])
 
 def csv_modal():
     """Modal para cargar archivos CSV"""
@@ -1001,6 +967,9 @@ layout = html.Div([
     # Mobile Navbar (solo visible en móvil)
     mobileNavBar(),
     
+    # Botón flotante del terminal
+    floating_terminal_button(),
+    
     # Contenedor flex para sidebar y contenido principal
     html.Div([
         # Sidebar (navegación izquierda)
@@ -1012,26 +981,17 @@ layout = html.Div([
             
             # Contenedor principal con fondo
             html.Div([
-                # Header optimizado con botón de conexión
+                # Header limpio - controles de conexión movidos al sidebar
                 html.Div([
                     html.Div([
                         html.H2("ZORIA Dashboard", className="h3 mb-0")
                 ], className="col-12 col-md-6 mb-2 mb-md-0"),
                 html.Div([
-                    # Botón de alternancia de tema
+                    # Solo botón de tema
                     html.Button([
                         html.I(className="fas fa-moon", id="theme-icon")
-                    ], id="theme-toggle-btn", className="btn btn-outline-secondary me-2", title="Cambiar tema"),
-                    html.Button([
-                        html.I(className="fas fa-plug me-2"),
-                        "Conectar Dispositivo"
-                    ], id="open-connect-modal", className="btn btn-gray-800 me-2", **{"data-bs-toggle": "modal", "data-bs-target": "#connect-modal"}),
-                    html.Span("🔌 Desconectado", id="connection-badge", className="badge bg-secondary px-3 py-2"),
-                    html.Button([
-                        html.I(className="fas fa-power-off me-2"),
-                        "Desconectar"
-                    ], id="disconnect-btn", className="btn btn-outline-danger ms-2", title="Desconectar dispositivo")
-                ], className="col-12 col-md-6 d-flex justify-content-md-end align-items-center gap-2")
+                    ], id="theme-toggle-btn", className="btn btn-outline-secondary", title="Cambiar tema"),
+                ], className="col-12 col-md-6 d-flex justify-content-md-end align-items-center")
             ], className="row align-items-center py-4"),
 
             # Intervalos de actualización y stores
@@ -1039,6 +999,7 @@ layout = html.Div([
             dcc.Interval(id='measurement-interval', interval=500, n_intervals=0, disabled=True),
             dcc.Interval(id='sweep-interval', interval=1000, n_intervals=0, disabled=True),  # Deshabilitado por defecto - se activa solo durante barrido
             dcc.Interval(id='connection-status-interval', interval=1000, n_intervals=0),
+            dcc.Interval(id='connection-monitor-interval', interval=3000, n_intervals=0),  # Monitor activo de conexión
             dcc.Interval(id='modal-close-interval', interval=1000, n_intervals=0, disabled=True),  # Para cerrar modal con delay
             dcc.Store(id='sweep-data-store', storage_type='session', data={'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}),  # Persistir datos entre páginas
             dcc.Store(id='phase-negative-store', storage_type='session', data=False),  # Persistir configuración de fase entre páginas
@@ -1049,6 +1010,9 @@ layout = html.Div([
             dcc.Store(id='theme-store', storage_type='local', data='dark'),  # Store para mantener el tema seleccionado
             dcc.Download(id='download-csv'),  # Componente para descargar archivos CSV
             dcc.Store(id='csv-upload-store', data=None),  # Store temporal para datos CSV cargados
+            dcc.Store(id='auto-connect-on-start', data=False),  # Trigger para auto-conexión al iniciar
+            dcc.Store(id='connect-modal-dummy', data=None),  # Dummy store para callbacks clientside
+            dcc.Store(id='chart-modal-dummy', data=None),  # Dummy store para ventana de gráfico
 
             # ✅ PRIORIDAD #1: GRÁFICOS PRIMERO (70% altura visual)
             html.Div([
@@ -1101,9 +1065,7 @@ layout = html.Div([
             # Modales
             connect_modal(),
             csv_modal(),
-            
-            # Modal de command prompt
-            command_prompt_modal(),
+            # Nota: Terminal CLI es global, no se incluye aquí
             
             # Modal de progreso del barrido (estilo Volt Bootstrap 5)
             html.Div([
@@ -1153,48 +1115,86 @@ layout = html.Div([
     # Footer al final, fuera del flex sidebar-content
     footer(),
     
-    # Modal para gráfico maximizado (usando Bootstrap modal con control híbrido)
+    # Ventana de gráfico maximizado - Estilo ventana arrastrable moderna
     html.Div([
+        # Header - estructura estandarizada
+        html.Div([
+            # Título
+            html.Div([
+                html.I(className="fas fa-chart-line me-2"),
+                html.Span("Gráfico Maximizado", id="chart-modal-title"),
+            ], className="window-title"),
+            
+            # Controles
+            html.Div([
+                html.Button(
+                    html.I(className="fas fa-minus"),
+                    id="modal-minimize-btn",
+                    className="window-control-btn window-btn-minimize",
+                    title="Minimizar"
+                ),
+                html.Button(
+                    html.I(className="fas fa-expand"),
+                    id="modal-maximize-btn",
+                    className="window-control-btn window-btn-maximize",
+                    title="Maximizar/Restaurar"
+                ),
+                html.Button(
+                    html.I(className="fas fa-times"),
+                    id="modal-close-btn",
+                    className="window-control-btn window-btn-close",
+                    title="Cerrar (Esc)"
+                )
+            ], className="window-controls")
+        ], className="window-header", id="chart-modal-header-drag"),
+        
+        # Body con gráfico
+        html.Div([
+            dcc.Graph(
+                id='modal-chart',
+                style={'height': '100%'},
+                config={
+                    'displayModeBar': True,
+                    'displaylogo': False,
+                    'scrollZoom': True,
+                    'modeBarButtonsToRemove': ['pan2d', 'lasso2d', 'select2d'],
+                    'toImageButtonOptions': {
+                        'format': 'png',
+                        'filename': 'zoria_chart',
+                        'height': 800,
+                        'width': 1200,
+                        'scale': 2
+                    }
+                }
+            )
+        ], className="window-body"),
+        
+        # Info bar en la parte inferior
         html.Div([
             html.Div([
-                # Header del modal
-                html.Div([
-                    html.H5("Gráfico Maximizado", className="modal-title"),
-                    html.Button(
-                        type="button",
-                        className="btn-close",
-                        id="modal-close-btn",
-                        **{"data-bs-dismiss": "modal", "aria-label": "Close"}
-                    )
-                ], className="modal-header"),
-                # Body del modal
-                html.Div([
-                    dcc.Graph(
-                        id='modal-chart',
-                        style={'height': '75vh'},
-                        config={
-                            'displayModeBar': True,
-                            'displaylogo': False,
-                            'scrollZoom': True,
-                            'modeBarButtonsToRemove': ['pan2d', 'lasso2d']
-                        }
-                    )
-                ], className="modal-body p-0"),
-                # Footer del modal con botón de cerrar
-                html.Div([
-                    html.Button(
-                        "Cerrar",
-                        id="modal-close-footer-btn",
-                        className="btn btn-secondary",
-                        type="button"
-                    )
-                ], className="modal-footer")
-            ], className="modal-content")
-        ], className="modal-dialog modal-fullscreen"),
-    ], className="modal fade", id="chart-modal", tabIndex="-1", 
-       style={'display': 'none'},  # Inicialmente oculto
-       role="dialog",
-       **{"aria-labelledby": "chart-modal-label", "aria-hidden": "true"}),
+                html.Small([
+                    html.I(className="fas fa-info-circle me-1"),
+                    " Use la rueda del ratón para zoom • Doble clic para resetear • Arrastre para pan"
+                ], className="text-muted")
+            ], className="d-flex align-items-center"),
+            html.Div([
+                html.Button(
+                    [html.I(className="fas fa-download me-1"), " PNG"],
+                    id="modal-export-png-btn",
+                    className="btn btn-sm btn-outline-secondary me-2"
+                ),
+                html.Button(
+                    [html.I(className="fas fa-file-csv me-1"), " CSV"],
+                    id="modal-export-csv-btn",
+                    className="btn btn-sm btn-outline-secondary"
+                )
+            ], className="d-flex align-items-center")
+        ], className="chart-footer")
+    ], 
+    id="chart-modal",
+    className="draggable-window chart-window",
+    style={'display': 'none'}
+    ),
     
     # Componente SPA_ALERT para notificaciones
     SPA_ALERT,
@@ -1209,10 +1209,13 @@ def register_callbacks(app):
     # Callback para actualizar puertos seriales
     @app.callback(
         Output('serial-ports', 'options'),
-        [Input('connect-btn', 'n_clicks'),
-         Input('ports-interval', 'n_intervals')]
+        Output('serial-ports', 'value', allow_duplicate=True),
+        [Input('ports-interval', 'n_intervals'),
+         Input('refresh-ports-btn', 'n_clicks')],
+        State('serial-ports', 'value'),
+        prevent_initial_call=True
     )
-    def update_serial_ports(connect_clicks, interval_n):
+    def update_serial_ports(interval_n, refresh_clicks, current_value):
         """Actualiza la lista de puertos seriales disponibles"""
         try:
             # Primero intentar detectar puertos ADMX2001
@@ -1220,13 +1223,15 @@ def register_callbacks(app):
             all_ports = serial.tools.list_ports.comports()
 
             options = []
+            available_devices = []
 
             # Agregar puertos ADMX2001 primero
             for port in admx_ports:
                 options.append({
-                    'label': f"🔌 {port.device} - {port.description} (Posible ADMX2001)",
+                    'label': f"✓ {port.device} - {port.description[:30]}",
                     'value': port.device
                 })
+                available_devices.append(port.device)
 
             # Agregar otros puertos
             for port in all_ports:
@@ -1235,16 +1240,23 @@ def register_callbacks(app):
                         'label': f"{port.device} - {port.description}",
                         'value': port.device
                     })
+                    available_devices.append(port.device)
 
             # Si no hay puertos, mostrar mensaje
             if not options:
-                options = [{'label': 'No se encontraron puertos seriales', 'value': '', 'disabled': True}]
-
-            return options
+                options = [{'label': '❌ No se encontraron puertos', 'value': '', 'disabled': True}]
+                return options, ''
+            
+            # Mantener el valor actual si sigue disponible, si no, dejar el primero
+            if current_value and current_value in available_devices:
+                return options, current_value
+            else:
+                # Si el valor actual ya no está disponible, seleccionar el primero
+                return options, available_devices[0] if available_devices else ''
 
         except Exception as e:
             print(f"Error al detectar puertos seriales: {e}")
-            return [{'label': f'Error: {str(e)}', 'value': '', 'disabled': True}]
+            return [{'label': f'❌ Error: {str(e)[:40]}', 'value': '', 'disabled': True}], ''
 
     # Callback para sincronizar checkbox de fase negativa con Store
     @app.callback(
@@ -1361,59 +1373,252 @@ def register_callbacks(app):
         # No cerrar aún
         raise PreventUpdate
 
-    # Callback para gestionar conexión
+    # =========================================================================
+    # CALLBACK ÚNICO DE CONEXIÓN - Consolida todas las formas de conectar
+    # =========================================================================
     @app.callback(
-        [Output('connection-badge', 'children'),
-         Output('connection-badge', 'className'),
+        [Output('sidebar-connection-text', 'children'),
+         Output('sidebar-connection-dot', 'className'),
+         Output('sidebar-device-port', 'children'),
+         Output('sidebar-disconnect-btn', 'disabled'),
          Output('connection-error-trigger', 'data'),
          Output('connection-success-trigger', 'data')],
         [Input('connect-btn', 'n_clicks'),
-         Input('disconnect-btn', 'n_clicks'),
-         Input('disconnect-modal-btn', 'n_clicks')],
+         Input('sidebar-quick-connect-btn', 'n_clicks'),
+         Input('sidebar-disconnect-btn', 'n_clicks'),
+         Input('disconnect-modal-btn', 'n_clicks'),
+         Input('auto-connect-on-start', 'data')],
         State('serial-ports', 'value'),
         prevent_initial_call=True
     )
-    def manage_connection(connect_clicks, disconnect_clicks, disconnect_modal_clicks, port):
-        """Gestiona la conexión/desconexión del dispositivo"""
+    def unified_connection_handler(connect_clicks, sidebar_quick_clicks,
+                                   sidebar_disconnect_clicks,
+                                   disconnect_modal_clicks, auto_start, port):
+        """
+        Callback único que maneja TODAS las formas de conexión:
+        - Conexión manual desde modal (connect-btn)
+        - Conexión rápida sidebar (sidebar-quick-connect-btn) 
+        - Auto-conexión al inicio (auto-connect-on-start)
+        - Desconexión (sidebar-disconnect-btn, disconnect-modal-btn)
+        """
         global device
-
+        
         triggered = ctx.triggered_id
-
-        if triggered == 'connect-btn':
-            if not port or port == '':
-                return "❌ Seleccione un puerto serial", "badge bg-warning px-3 py-2", False, False
-
-            try:
-                global device
-                # Conexión con baudrate correcto (115200) y timeout aumentado (5s)
-                device = ADMX2001(port, baudrate=115200, timeout=5.0)
-                is_connected.set()
-                
-                # Configurar delays iniciales del dispositivo
-                device.set_mdelay(1)  # 1ms measurement delay por defecto
-                device.set_tdelay(0)  # Sin trigger delay por defecto
-                
-                logger.info(f"Dispositivo ADMX2001 conectado en {port}")
-                return "✅ Conectado", "badge bg-success px-3 py-2", False, True
-
-            except Exception as e:
-                logger.error(f"Error conectando al dispositivo: {e}")
-                return f"❌ Error: {str(e)[:50]}", "badge bg-danger px-3 py-2", True, False
-
-        elif triggered in ['disconnect-btn', 'disconnect-modal-btn']:
+        logger.info(f"Connection handler triggered by: {triggered}")
+        
+        # Si ya está conectado y no es desconexión, mostrar estado
+        if triggered not in ['sidebar-disconnect-btn', 'disconnect-modal-btn']:
+            if device_state.is_connected and device_state.device is not None:
+                # Verificar que realmente esté conectado
+                is_conn, status_msg, port_info = device_state.verify_connection()
+                if is_conn:
+                    return ("Conectado", "connection-pulse connected",
+                            port_info if port_info else "ADMX2001",
+                            False, False, False)
+                # Si falló verificación, continuar con reconexión
+        
+        # ===== DESCONEXIÓN =====
+        if triggered in ['sidebar-disconnect-btn', 'disconnect-modal-btn']:
             try:
                 if device:
                     device.close()
                 is_connected.clear()
                 device = None
+                device_state.set_device(None, False)
                 logger.info("Dispositivo desconectado")
-                return "🔌 Desconectado", "badge bg-secondary px-3 py-2", False, False
-
+                return ("Desconectado", "connection-pulse disconnected",
+                        "ADMX2001", True, False, False)
             except Exception as e:
                 logger.error(f"Error desconectando: {e}")
-                return f"❌ Error: {str(e)[:50]}", "badge bg-danger px-3 py-2", False, False
+                return ("Error", "connection-pulse error",
+                        "ADMX2001", True, True, False)
+        
+        # ===== CONEXIÓN MANUAL (desde modal) =====
+        if triggered == 'connect-btn':
+            if not port or port == '':
+                return ("Seleccione puerto", "connection-pulse disconnected",
+                        "ADMX2001", True, True, False)
+            
+            try:
+                logger.info(f"Conectando manualmente a {port}...")
+                device = ADMX2001(port, baudrate=115200, timeout=5.0)
+                is_connected.set()
+                device_state.set_device(device, True)
+                device.set_mdelay(1)
+                device.set_tdelay(0)
+                logger.info(f"✅ Conectado a {port}")
+                return ("Conectado", "connection-pulse connected",
+                        port, False, False, True)
+            except Exception as e:
+                logger.error(f"Error conectando: {e}")
+                return ("Error", "connection-pulse error",
+                        "ADMX2001", True, True, False)
+        
+        # ===== CONEXIÓN RÁPIDA / AUTO =====
+        if triggered in ['sidebar-quick-connect-btn', 'auto-connect-on-start']:
+            try:
+                logger.info("Iniciando conexión automática...")
+                all_ports = list(serial.tools.list_ports.comports())
+                
+                if not all_ports:
+                    logger.warning("No hay puertos disponibles")
+                    return ("Sin puertos", "connection-pulse disconnected",
+                            "ADMX2001", True, True, False)
+                
+                logger.info(f"Puertos: {[p.device for p in all_ports]}")
+                
+                # Priorizar candidatos
+                candidates = []
+                for p in all_ports:
+                    desc = p.description.upper() if p.description else ""
+                    manuf = p.manufacturer.upper() if p.manufacturer else ""
+                    if any(x in desc or x in manuf for x in ['FTDI', 'CP210', 'SILICON', 'USB-SERIAL', 'FT232']):
+                        candidates.append(p)
+                
+                # Probar candidatos primero, luego todos
+                ports_to_try = candidates if candidates else all_ports
+                logger.info(f"Probando: {[p.device for p in ports_to_try[:3]]}")
+                
+                for p in ports_to_try[:3]:
+                    try:
+                        logger.info(f"Probando {p.device}...")
+                        dev = ADMX2001(p.device, baudrate=115200, timeout=3.0)
+                        time.sleep(0.3)
+                        
+                        resp = dev.send_command('*idn')
+                        logger.info(f"Respuesta: {resp}")
+                        
+                        if resp and any(x in str(resp).upper() for x in ['ADMX', '2001', 'ANALOG']):
+                            dev.set_mdelay(1)
+                            dev.set_tdelay(0)
+                            device = dev
+                            is_connected.set()
+                            device_state.set_device(device, True)
+                            logger.info(f"✅ Conectado a {p.device}")
+                            return ("Conectado", "connection-pulse connected",
+                                    p.device, False, False, True)
+                        else:
+                            dev.close()
+                    except Exception as e:
+                        logger.warning(f"Falló {p.device}: {e}")
+                        continue
+                
+                logger.warning("No se encontró dispositivo ADMX2001")
+                # No es un error crítico, solo no hay dispositivo conectado
+                return ("No detectado", "connection-pulse disconnected",
+                        "ADMX2001", True, False, False)
+                
+            except Exception as e:
+                logger.error(f"Error autoconnect: {e}")
+                return ("Error", "connection-pulse error",
+                        "ADMX2001", True, True, False)
+        
+        return ("Desconectado", "connection-pulse disconnected",
+                "ADMX2001", True, False, False)
 
-        return "🔌 Desconectado", "badge bg-secondary px-3 py-2", False, False
+    # =========================================================================
+    # MONITOR ACTIVO DE CONEXIÓN - Verifica estado real periódicamente
+    # =========================================================================
+    @app.callback(
+        [Output('sidebar-connection-text', 'children', allow_duplicate=True),
+         Output('sidebar-connection-dot', 'className', allow_duplicate=True),
+         Output('sidebar-device-port', 'children', allow_duplicate=True),
+         Output('sidebar-disconnect-btn', 'disabled', allow_duplicate=True)],
+        Input('connection-monitor-interval', 'n_intervals'),
+        prevent_initial_call=True
+    )
+    def monitor_connection_health(n_intervals):
+        """
+        Monitorea activamente la salud de la conexión cada 3 segundos.
+        Verifica que el dispositivo siga respondiendo y actualiza el badge y sidebar.
+        """
+        if n_intervals is None or n_intervals == 0:
+            raise PreventUpdate
+        
+        try:
+            # Verificar estado real del dispositivo
+            is_conn, status_msg, port = device_state.verify_connection()
+            
+            if is_conn:
+                # Dispositivo conectado y respondiendo
+                return ("Conectado", "connection-pulse connected",
+                        port if port else "ADMX2001", False)
+            else:
+                # Dispositivo no responde, actualizar estado
+                if status_msg == "Puerto cerrado":
+                    return ("Error", "connection-pulse error",
+                            "Puerto cerrado", True)
+                elif status_msg == "Sin respuesta":
+                    return ("Sin respuesta", "connection-pulse error",
+                            "Sin respuesta", True)
+                else:
+                    return ("Desconectado", "connection-pulse disconnected",
+                            "ADMX2001", True)
+        
+        except Exception as e:
+            logger.error(f"Error en monitor de conexión: {e}")
+            raise PreventUpdate
+
+    # Callback para auto-conectar al iniciar
+    @app.callback(
+        Output('auto-connect-on-start', 'data'),
+        Input('ports-interval', 'n_intervals'),
+        prevent_initial_call=True
+    )
+    def trigger_auto_connect(n_intervals):
+        """Trigger para auto-conexión al iniciar"""
+        if n_intervals == 1 and not device_state.is_connected:
+            logger.info("Trigger auto-connect")
+            return True
+        raise PreventUpdate
+
+    # Callback consolidado para ventana de conexión (abrir/cerrar)
+    app.clientside_callback(
+        """
+        function(open_clicks, close_clicks, disconnect_clicks, status_text) {
+            // Abrir modal (desde sidebar)
+            if (open_clicks) {
+                setTimeout(function() {
+                    var modal = document.getElementById('connect-modal');
+                    if (!modal) return;
+                    
+                    if (window.DraggableWindows && window.DraggableWindows.show) {
+                        window.DraggableWindows.show('connect-modal');
+                    } else {
+                        modal.style.display = 'block';
+                        modal.style.position = 'fixed';
+                        modal.style.zIndex = '10000';
+                        modal.style.left = '50%';
+                        modal.style.top = '50%';
+                        modal.style.transform = 'translate(-50%, -50%)';
+                    }
+                }, 50);
+            }
+            
+            // Cerrar por botones
+            if (close_clicks || disconnect_clicks) {
+                var modal = document.getElementById('connect-modal');
+                if (modal) modal.style.display = 'none';
+            }
+            
+            // Auto-cerrar al conectar
+            if (status_text && status_text.indexOf('Conectado') !== -1) {
+                setTimeout(function() {
+                    var modal = document.getElementById('connect-modal');
+                    if (modal) modal.style.display = 'none';
+                }, 1500);
+            }
+            
+            return window.dash_clientside.no_update;
+        }
+        """,
+        Output('connect-modal-dummy', 'data'),
+        Input('sidebar-config-btn', 'n_clicks'),
+        Input('connect-modal-close', 'n_clicks'),
+        Input('disconnect-modal-btn', 'n_clicks'),
+        Input('sidebar-connection-text', 'children'),
+        prevent_initial_call=True
+    )
 
     # Callback para gestionar barrido y actualizar gráficos
     @app.callback(
@@ -1931,207 +2136,303 @@ def register_callbacks(app):
             return alert.report()
         return NOUPDATE
 
-    # Callbacks para modal de gráfico maximizado
+    # Callbacks para ventana de gráfico maximizado
     @app.callback(
-        [Output('chart-modal', 'style'),
-         Output('chart-modal', 'className'),
-         Output('modal-chart', 'figure')],
+        [Output('chart-modal', 'style', allow_duplicate=True),
+         Output('modal-chart', 'figure'),
+         Output('chart-modal-title', 'children')],
         [Input('maximize-bode-btn', 'n_clicks'),
          Input('maximize-nyquist-btn', 'n_clicks')],
-        [State('chart-modal', 'style'),
-         State('chart-modal', 'className'),
-         State('sweep-data-store', 'data'),
+        [State('sweep-data-store', 'data'),
          State('phase-negative-store', 'data'),
          State('theme-store', 'data')],
         prevent_initial_call=True
     )
-    def toggle_modal_chart(bode_clicks, nyquist_clicks, current_style, current_class, stored_data, negative_phase, theme):
-        """Muestra/oculta el modal con el gráfico maximizado"""
+    def show_chart_modal(bode_clicks, nyquist_clicks, stored_data, negative_phase, theme):
+        """Muestra la ventana con el gráfico maximizado"""
         if not ctx.triggered:
-            return {'display': 'none'}, "modal fade", go.Figure()
+            raise PreventUpdate
         
         triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
         
-        # Determinar si mostrar u ocultar el modal
-        is_visible = current_style and current_style.get('display') == 'block'
-        
-        if is_visible:
-            # Ocultar modal
-            return {'display': 'none'}, "modal fade", go.Figure()
+        # Determinar qué gráfico mostrar
+        if triggered_id == 'maximize-bode-btn':
+            chart_type = 'bode'
+            title_text = "Diagrama de Bode"
+        elif triggered_id == 'maximize-nyquist-btn':
+            chart_type = 'nyquist'
+            title_text = "Diagrama de Nyquist"
         else:
-            # Mostrar modal
-            
-            # Determinar qué gráfico mostrar
-            if triggered_id == 'maximize-bode-btn':
-                chart_type = 'bode'
-                title = "Diagrama de Bode - Vista Maximizada"
-            elif triggered_id == 'maximize-nyquist-btn':
-                chart_type = 'nyquist'
-                title = "Diagrama de Nyquist - Vista Maximizada"
-            else:
-                return {'display': 'none'}, "modal fade", go.Figure()
-            
-            # Crear el gráfico maximizado
-            if stored_data and len(stored_data.get('param', [])) > 0:
-                if chart_type == 'bode':
-                    fig = create_bode_plot(
-                        stored_data['param'], 
-                        stored_data['z_mag'], 
-                        stored_data['phase'],
-                        negative_phase,
-                        theme
-                    )
-                else:  # nyquist
-                    fig = create_nyquist_plot(
-                        stored_data['z_real'], 
-                        stored_data['z_imag'], 
-                        stored_data['param'],
-                        theme
-                    )
-                
-                # Actualizar el título para la vista maximizada
-                fig.update_layout(
-                    title={
-                        'text': title,
-                        'font': {'size': 20, 'color': '#6495ED' if theme == 'dark' else '#333333'}
-                    },
-                    height=None,  # Usar altura automática para ocupar toda la pantalla
-                    margin=dict(l=40, r=40, t=60, b=40)
+            raise PreventUpdate
+        
+        # Crear el gráfico maximizado
+        if stored_data and len(stored_data.get('param', [])) > 0:
+            if chart_type == 'bode':
+                fig = create_bode_plot(
+                    stored_data['param'], 
+                    stored_data['z_mag'], 
+                    stored_data['phase'],
+                    negative_phase,
+                    theme
                 )
-            else:
-                # Gráfico vacío si no hay datos
-                fig = create_empty_figure(f"{title} - Sin datos", theme)
-                fig.update_layout(
-                    title={
-                        'text': title,
-                        'font': {'size': 20, 'color': '#6495ED' if theme == 'dark' else '#333333'}
-                    },
-                    height=None,
-                    margin=dict(l=40, r=40, t=60, b=40)
+            else:  # nyquist
+                fig = create_nyquist_plot(
+                    stored_data['z_real'], 
+                    stored_data['z_imag'], 
+                    stored_data['param'],
+                    theme
                 )
             
-            return {'display': 'block'}, "modal fade show", fig
+            # Actualizar el layout para la vista maximizada
+            fig.update_layout(
+                title=None,  # Sin título interno, usamos el del header
+                margin=dict(l=60, r=40, t=40, b=60)
+            )
+        else:
+            # Gráfico vacío si no hay datos
+            fig = create_empty_figure(f"{title_text} - Sin datos disponibles", theme)
+            fig.update_layout(margin=dict(l=60, r=40, t=60, b=60))
+        
+        return {'display': 'flex'}, fig, title_text
 
-    # Callback para cerrar el modal
+    # Callback para cerrar la ventana de gráfico
     @app.callback(
-        [Output('chart-modal', 'style', allow_duplicate=True),
-         Output('chart-modal', 'className', allow_duplicate=True)],
-        [Input('modal-close-btn', 'n_clicks'),
-         Input('modal-close-footer-btn', 'n_clicks')],
+        Output('chart-modal', 'style', allow_duplicate=True),
+        Input('modal-close-btn', 'n_clicks'),
         prevent_initial_call=True
     )
-    def close_modal(close_clicks, close_footer_clicks):
-        """Cierra el modal cuando se hace clic en el botón de cerrar"""
-        return {'display': 'none'}, "modal fade"
+    def close_chart_modal(close_clicks):
+        """Cierra la ventana de gráfico"""
+        return {'display': 'none'}
 
-    # Callback para actualizar estado de conexión en el modal
+    # Inicializar ventana arrastrable del gráfico (clientside)
+    app.clientside_callback(
+        """
+        function(style) {
+            if (!style || style.display !== 'flex') return window.dash_clientside.no_update;
+            
+            setTimeout(function() {
+                if (!window.DraggableWindows) {
+                    console.error('[ChartModal] DraggableWindows no disponible');
+                    return;
+                }
+                
+                var win = document.getElementById('chart-modal');
+                var header = document.getElementById('chart-modal-header-drag');
+                
+                if (!win || !header) {
+                    console.error('[ChartModal] Elementos no encontrados');
+                    return;
+                }
+                
+                // Inicializar si no existe
+                if (!window.DraggableWindows.isInitialized('chart-modal')) {
+                    console.log('[ChartModal] Inicializando ventana');
+                    window.DraggableWindows.init('chart-modal', 'chart-modal-header-drag', {
+                        width: 900,
+                        height: 650,
+                        x: (window.innerWidth - 900) / 2,
+                        y: (window.innerHeight - 650) / 2
+                    });
+                }
+                
+                // Mostrar ventana
+                console.log('[ChartModal] Mostrando ventana');
+                window.DraggableWindows.show('chart-modal');
+            }, 300);
+            
+            return window.dash_clientside.no_update;
+        }
+        """,
+        Output('chart-modal-dummy', 'data', allow_duplicate=True),
+        Input('chart-modal', 'style'),
+        prevent_initial_call=True
+    )
+
+    # =========================================================================
+    # AUTOCONEXIÓN INTELIGENTE - Callbacks del modal compacto
+    # =========================================================================
+    
+    # Toggle panel manual
+    app.clientside_callback(
+        """
+        function(n_clicks) {
+            if (!n_clicks) return window.dash_clientside.no_update;
+            var panel = document.getElementById('manual-config-panel');
+            if (panel) {
+                panel.classList.toggle('d-none');
+            }
+            return window.dash_clientside.no_update;
+        }
+        """,
+        Output('manual-config-panel', 'className'),
+        Input('toggle-manual-config', 'n_clicks')
+    )
+    
+    # Callback de autoconexión inteligente
     @app.callback(
-        Output('connect-status', 'children'),
+        Output('serial-ports', 'options', allow_duplicate=True),
+        Output('serial-ports', 'value', allow_duplicate=True),
+        Output('detected-port', 'children'),
+        Output('detected-port', 'className'),
+        Output('auto-connect-status', 'children'),
+        Output('auto-connect-status', 'className'),
+        Output('auto-connect-progress', 'style'),
+        Output('auto-connect-spinner', 'style'),
+        Output('connection-test-result', 'children'),
+        Output('connect-btn', 'disabled'),
+        Output('connect-btn', 'children'),
+        Output('connection-success-trigger', 'data', allow_duplicate=True),
+        Input('connect-modal', 'className'),
+        Input('refresh-ports-btn', 'n_clicks'),
         Input('connection-status-interval', 'n_intervals'),
         prevent_initial_call=True
     )
-    def update_connect_status(n):
-        """Actualiza el estado de conexión mostrado en el modal"""
+    def auto_detect_and_connect(modal_class, refresh_clicks, interval_n):
+        """
+        Autodetección y AUTOCONEXIÓN inteligente de ADMX2001:
+        1. Escanea puertos USB
+        2. Identifica candidatos (FTDI, CP210x, etc.)
+        3. Testea conexión con *idn
+        4. Si responde correctamente, SE CONECTA AUTOMÁTICAMENTE
+        """
         global device
         
-        if device and is_connected.is_set():
-            try:
-                # Intentar obtener información del dispositivo
-                info = "✅ Dispositivo conectado y listo"
-                return info
-            except Exception as e:
-                return f"⚠️ Dispositivo conectado pero con problemas: {str(e)[:30]}..."
-        else:
-            return "🔌 Dispositivo no conectado - Seleccione un puerto y haga clic en 'Conectar'"
-
-    # Callbacks para command prompt modal
-    @app.callback(
-        [Output('command-output', 'children'),
-         Output('command-input', 'value')],
-        [Input('send-command-btn', 'n_clicks'),
-         Input('quick-measure-btn', 'n_clicks'),
-         Input('quick-help-btn', 'n_clicks'),
-         Input('clear-terminal-btn', 'n_clicks')],
-        [State('command-input', 'value'),
-         State('command-output', 'children')],
-        prevent_initial_call=True
-    )
-    def handle_command(send_clicks, measure_clicks, help_clicks, clear_clicks, command_text, current_output):
-        """Maneja los comandos enviados al dispositivo ADMX2001"""
-        global device
+        if ctx.triggered_id is None:
+            raise PreventUpdate
         
-        if not ctx.triggered:
-            return current_output or "", ""
-        
-        triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
-        
-        # Inicializar output si es None
-        if current_output is None:
-            current_output = ""
-        
-        # Limpiar terminal
-        if triggered_id == 'clear-terminal-btn':
-            return "", ""
-        
-        # Comandos rápidos
-        if triggered_id == 'quick-measure-btn':
-            command = "z"
-        elif triggered_id == 'quick-help-btn':
-            command = "help"
-        else:
-            # Comando desde input
-            command = command_text or ""
-        
-        if not command.strip():
-            return current_output, ""
-        
-        # Verificar conexión
-        if not device or not is_connected.is_set():
-            new_output = f"{current_output}\n❌ ERROR: Dispositivo no conectado\n"
-            return new_output, ""
+        # Si ya hay dispositivo conectado, no hacer nada
+        if device_state.is_connected and device_state.device is not None:
+            return (
+                [], '',
+                'Ya conectado', 'has-device',
+                "✓ Conectado", "fw-semibold text-success",
+                {'width': '100%'}, {'display': 'none'},
+                html.Small("Dispositivo ya conectado"),
+                True, [html.I(className="fas fa-check me-2"), "Conectado"],
+                False
+            )
         
         try:
-            # Enviar comando al dispositivo
-            response = device.send_command(command.strip())
+            # Detectar puertos
+            all_ports = list(serial.tools.list_ports.comports())
             
-            # Procesar respuesta como lista y limpiar códigos ANSI
-            cleaned_lines = [clean_response_line(line) for line in response]
-            response_text = '\n'.join(cleaned_lines)
+            if not all_ports:
+                return (
+                    [{'label': '❌ No hay puertos', 'value': '', 'disabled': True}], '',
+                    'Ninguno', '',
+                    "❌ Sin dispositivos", "fw-semibold text-danger",
+                    {'width': '0%'}, {'display': 'none'},
+                    "Conecte el cable USB del ADMX2001",
+                    True, [html.I(className="fas fa-plug me-2"), "Conectar"],
+                    False
+                )
             
-            # Formatear output
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            new_output = f"{current_output}\n[{timestamp}] ADMX2001> {command}\n{response_text}\n"
+            # Crear opciones para dropdown
+            options = []
+            candidate_ports = []
             
-            # Limitar el tamaño del output (últimas 50 líneas)
-            lines = new_output.split('\n')
-            if len(lines) > 50:
-                new_output = '\n'.join(lines[-50:])
+            for port in all_ports:
+                desc = port.description.upper() if port.description else ""
+                manufacturer = port.manufacturer.upper() if port.manufacturer else ""
+                
+                # Detectar si es candidato ADMX2001
+                is_candidate = any([
+                    'FTDI' in manufacturer,
+                    'CP210' in desc,
+                    'SILICON' in manufacturer,
+                    'USB' in desc and 'SERIAL' in desc,
+                    'TTL232' in desc,
+                    'FT232' in desc,
+                    'CH340' in desc,
+                ])
+                
+                label = f"{'✓' if is_candidate else '○'} {port.device} - {port.description[:20]}"
+                options.append({'label': label, 'value': port.device, 'disabled': False})
+                
+                if is_candidate:
+                    candidate_ports.append(port)
             
-            return new_output, ""
+            # Probar candidatos y conectar automáticamente al primero válido
+            connected_port = None
+            test_result = ""
+            connection_success = False
+            
+            if candidate_ports:
+                for port in candidate_ports[:3]:  # Probar max 3
+                    try:
+                        test_result += f"Probando {port.device}... "
+                        
+                        # Intentar conexión
+                        test_device = ADMX2001(port.device, baudrate=115200, timeout=2.0)
+                        
+                        # Test con *idn
+                        response = test_device.send_command('*idn')
+                        
+                        if response and any(x in str(response).upper() for x in ['ADMX', '2001', 'ANALOG']):
+                            # ¡ÉXITO! Conectar permanentemente
+                            test_device.set_mdelay(1)
+                            test_device.set_tdelay(0)
+                            
+                            # Guardar en variables globales
+                            device = test_device
+                            is_connected.set()
+                            
+                            # Registrar en estado global
+                            device_state.set_device(device, True)
+                            
+                            connected_port = port.device
+                            test_result += "✓ Conectado!"
+                            connection_success = True
+                            logger.info(f"Auto-conexión exitosa en {port.device}")
+                            break
+                        else:
+                            test_device.close()
+                            test_result += "✗ No responde; "
+                            
+                    except Exception as e:
+                        test_result += f"✗ {str(e)[:20]}; "
+                        continue
+            
+            # Si se conectó exitosamente
+            if connected_port:
+                return (
+                    options, connected_port,
+                    connected_port, 'has-device',
+                    "✓ Conectado", "fw-semibold text-success",
+                    {'width': '100%'}, {'display': 'none'},
+                    html.Small(test_result, className="text-muted"),
+                    True, [html.I(className="fas fa-check-circle me-2"), "Conectado"],
+                    True  # Trigger notificación
+                )
+            
+            # Si no se pudo conectar a ninguno
+            return (
+                options, '',
+                'Sin respuesta', '',
+                "⚠ No detectado", "fw-semibold text-warning",
+                {'width': '100%'}, {'display': 'none'},
+                html.Small(test_result or "Ningún dispositivo respondió"),
+                False, [html.I(className="fas fa-plug me-2"), "Conectar Manual"],
+                False
+            )
             
         except Exception as e:
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            new_output = f"{current_output}\n[{timestamp}] ERROR: {str(e)}\n"
-            return new_output, ""
-
-    # Callback para inicializar el terminal al abrir el modal
-    @app.callback(
-        Output('command-output', 'children', allow_duplicate=True),
-        Input('command-modal', 'style'),
-        State('command-output', 'children'),
-        prevent_initial_call=True
-    )
-    def initialize_terminal(modal_style, current_output):
-        """Inicializa el terminal cuando se abre el modal"""
-        if modal_style and modal_style.get('display') == 'block':
-            # Si el modal se abre y no hay contenido, mostrar mensaje de bienvenida
-            if not current_output or current_output.strip() == "":
-                welcome_msg = "🖥️ Terminal ADMX2001 - Conectado y listo para comandos\n"
-                welcome_msg += "💡 Comandos útiles: 'z' (medir), 'help' (ayuda), 'frequency 1000' (cambiar frecuencia)\n"
-                welcome_msg += "💡 Use los botones rápidos o escriba comandos directamente\n\n"
-                return welcome_msg
-        return current_output or ""
-
+            logger.error(f"Error en autoconexión: {e}")
+            return (
+                [{'label': f'❌ Error: {str(e)[:20]}', 'value': '', 'disabled': True}], '',
+                'Error', '',
+                "❌ Error de escaneo", "fw-semibold text-danger",
+                {'width': '0%'}, {'display': 'none'},
+                str(e)[:50],
+                False, [html.I(className="fas fa-times me-2"), "Reintentar"],
+                False
+            )
+    
+    # =============================================================================
+    # NOTA: Callbacks del terminal movidos a app.py (global)
+    # =============================================================================
+    
     # Callback para abrir modal de CSV
     @app.callback(
         Output('csv-modal', 'style', allow_duplicate=True),

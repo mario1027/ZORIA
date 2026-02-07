@@ -995,9 +995,15 @@ class ADMX2001:
         
         if timeout is None:
             # Ajustar timeout basado en número de puntos
-            # Base: 60s + 2s por punto para mediciones con averaging
-            timeout = max(SWEEP_TIMEOUT, 60 + expected_count * 2)
-            logger.info(f"Timeout ajustado a {timeout:.1f}s para {expected_count} puntos")
+            # CRÍTICO: Para sweeps grandes, necesitamos timeouts generosos
+            # Asumiendo ~3s por punto en el peor caso (con averaging alto)
+            if expected_count > 1000:
+                timeout = 60 + expected_count * 4  # 4s por punto para seguridad
+            elif expected_count > 500:
+                timeout = 60 + expected_count * 3  # 3s por punto
+            else:
+                timeout = max(SWEEP_TIMEOUT, 60 + expected_count * 2)  # 2s por punto
+            logger.info(f"Timeout ajustado a {timeout:.1f}s ({timeout/60:.1f} min) para {expected_count} puntos")
         
         # Ejecutar sweep con método oficial optimizado
         # DESCUBRIMIENTO: Un solo comando 'z' devuelve TODOS los puntos del sweep
@@ -1029,12 +1035,17 @@ class ADMX2001:
             # Usamos un timeout generoso pero monitoreamos actividad
             # Aumentar timeout de inactividad para sweeps con averaging/promediado
             # El dispositivo puede tardar varios segundos entre puntos cuando promedia
-            if expected_count > 100:
-                idle_timeout = 60.0  # 60 segundos para sweeps grandes
+            # CRÍTICO: Para sweeps muy grandes (>1000 puntos), necesitamos timeouts mucho más largos
+            if expected_count > 1000:
+                idle_timeout = 180.0  # 3 minutos para sweeps muy grandes (2000-10000 pts)
+            elif expected_count > 500:
+                idle_timeout = 120.0  # 2 minutos para sweeps grandes (500-1000 pts)
+            elif expected_count > 100:
+                idle_timeout = 60.0   # 1 minuto para sweeps medianos
             elif expected_count > 50:
-                idle_timeout = 45.0  # 45 segundos para sweeps medianos
+                idle_timeout = 45.0   # 45 segundos para sweeps pequeños
             else:
-                idle_timeout = 30.0  # 30 segundos para sweeps pequeños
+                idle_timeout = 30.0   # 30 segundos para sweeps mínimos
             
             logger.info("Leyendo datos del sweep...")
             

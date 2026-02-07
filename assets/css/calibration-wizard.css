@@ -1,0 +1,223 @@
+/* =============================================================================
+   WIZARD DE CALIBRACIÓN - Mejoras UI/UX
+   ============================================================================= */
+
+/* Estilos para los inputs del wizard */
+.calibration-window .form-control {
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+.calibration-window .form-control:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.calibration-window .form-label {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 6px;
+}
+
+/* Indicador de ganancia */
+#cal-wizard-gain-panel {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #bae6fd;
+    border-radius: 10px;
+}
+
+#cal-wizard-gain-panel .badge {
+    font-size: 0.9rem;
+    padding: 6px 12px;
+}
+
+/* Botón de iniciar calibración */
+#cal-wizard-start {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    border: none;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+    transition: all 0.2s ease;
+}
+
+#cal-wizard-start:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+#cal-wizard-start:active {
+    transform: translateY(0);
+}
+
+/* Diagramas de conexión */
+.terminal-diagram {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+/* Botones de acción en cada paso */
+.wizard-action-btn {
+    min-width: 140px;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.wizard-action-btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Estado de calibración */
+.cal-status-pending {
+    color: #6b7280;
+}
+
+.cal-status-active {
+    color: #3b82f6;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.cal-status-done {
+    color: #10b981;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Estilos para wizard maximizado */
+.calibration-window.window-maximized .wizard-content {
+    padding: 24px 60px; /* Márgenes horizontales más amplios cuando está maximizado */
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Mejoras para paneles de pasos */
+.wizard-content .card {
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s ease;
+}
+
+.wizard-content .card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.wizard-content .card-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 2px solid #e2e8f0;
+    border-radius: 10px 10px 0 0 !important;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.wizard-content .alert {
+    border-radius: 10px;
+    border-width: 2px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.wizard-content .alert-info {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-color: #93c5fd;
+    color: #1e40af;
+}
+
+.wizard-content .alert-warning {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border-color: #fcd34d;
+    color: #92400e;
+}
+
+.wizard-content .alert-success {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border-color: #86efac;
+    color: #14532d;
+}
+
+/* Tablas de calibración */
+.wizard-content .table {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.wizard-content .table thead {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    color: white;
+}
+
+.wizard-content .table thead th {
+    border: none;
+    font-weight: 600;
+    padding: 12px;
+}
+
+.wizard-content .table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.wizard-content .table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+/* Spinners y loaders */
+.wizard-content .spinner-border {
+    border-width: 3px;
+}
+
+
+.calibration-window.window-maximized .wizard-footer {
+    padding: 16px 60px; /* Consistente con el contenido */
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* Responsive para wizard */
+@media (max-width: 768px) {
+    .calibration-window {
+        width: calc(100vw - 20px) !important;
+        left: 10px !important;
+    }
+    
+    .wizard-steps {
+        flex-wrap: nowrap;
+        gap: 4px;
+        padding: 8px 4px;
+        overflow-x: auto;
+    }
+    
+    .wizard-step-indicator,
+    .wizard-step-number {
+        width: 32px;
+        height: 32px;
+        font-size: 13px;
+    }
+    
+    .wizard-step-label {
+        font-size: 10px;
+    }
+    
+    .wizard-step-connector {
+        width: 30px;
+        margin: 0 -5px;
+        margin-bottom: 22px;
+    }
+    
+    /* Anular márgenes amplios en móviles */
+    .calibration-window.window-maximized .wizard-content,
+    .calibration-window.window-maximized .wizard-footer {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+}

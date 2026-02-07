@@ -9,6 +9,8 @@ from dash_spa import register_page
 from pages.common.sidebar import sideBar
 from pages.common.mobile_nav import mobileNavBar
 from pages.common.footer import footer
+from pages.common.terminal_component import global_terminal_component
+from pages.common.floating_terminal_button import floating_terminal_button
 
 # Registrar la página
 register_page(
@@ -783,7 +785,13 @@ def layout():
         ], className="d-flex flex-grow-1"),
 
         # Footer
-        footer()
+        footer(),
+        
+        # Terminal CLI Global
+        global_terminal_component(),
+        
+        # Botón flotante del terminal
+        floating_terminal_button()
     ], className="d-flex flex-column min-vh-100")
 
 
