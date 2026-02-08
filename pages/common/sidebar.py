@@ -1,7 +1,6 @@
 """
 Sidebar compartido entre Dashboard ZORIA y Simulador RLC
 Basado 100% en dash-plantilla VOLT Bootstrap 5
-Versión mejorada con descripciones claras y organización profesional
 """
 from typing import List
 from dash import html, dcc
@@ -10,61 +9,49 @@ from .dropdown_folder_aoi import DropdownFolderContext, DropdownFolderAIO, Sideb
 from ..icons.hero import ICON
 from .mobile_nav import mobileSidebarHeader
 
-# Constantes de configuración con descripciones completas
+# Constantes de configuración
 SIDEBAR_ITEMS = [
     {
         "text": "Dashboard",
         "icon": ICON.CHART_PIE,
-        "href": "/",
-        "description": "Panel principal de mediciones en tiempo real",
-        "badge": None
+        "href": "/"
     },
     {
         "text": "Calibración",
         "icon": ICON.GEAR,
-        "href": "/calibration",
-        "description": "Procedimientos de calibración Open-Short-Load",
-        "badge": None
+        "href": "/calibration"
     },
     {
         "text": "Simulador RLC",
         "icon": ICON.VIEW_GRID,
-        "href": "/simulator",
-        "description": "Calculadora de circuitos y impedancias teóricas",
-        "badge": None
+        "href": "/simulator"
     },
     {
         "text": "Documentación",
         "icon": ICON.DOCUMENT,
-        "href": "/documentacion",
-        "description": "Guías completas y procedimientos detallados",
-        "badge": "New"
+        "href": "/documentacion"
     },
     {
         "text": "Terminal CLI",
         "icon": ICON.CONSOLE,
         "href": "#",
         "id": "sidebar-terminal-btn",
-        "className": "nav-link",
-        "description": "Interfaz de línea de comandos integrada",
-        "badge": None
+        "className": "nav-link"
     },
 ]
 
-# Dropdowns vacíos por ahora - se pueden agregar más secciones después
+# Dropdowns vacíos por ahora
 DROPDOWN_ITEMS = []
 
 # Funciones auxiliares
-def create_sidebar_link(text, icon, href, description="", badge=None, hyperlink=False, target="", **kwargs):
+def create_sidebar_link(text, icon, href, hyperlink=False, target="", **kwargs):
     """
-    Crea un enlace mejorado en la barra lateral con tooltip y badge opcional.
+    Crea un enlace en la barra lateral.
 
     Args:
         text (str): Texto del enlace.
         icon: Ícono asociado al enlace.
         href (str): Ruta del enlace.
-        description (str): Descripción para tooltip.
-        badge (str, opcional): Texto del badge (ej: "New", "Beta").
         hyperlink (bool, opcional): Si el enlace debe ser un `html.A`. Por defecto es `False`.
         target (str, opcional): Target del enlace. Por defecto es una cadena vacía.
         **kwargs: Atributos adicionales como data-bs-toggle, data-bs-target, id, etc.
@@ -83,8 +70,7 @@ def create_sidebar_link(text, icon, href, description="", badge=None, hyperlink=
     
     attributes = {
         "href": href, 
-        "className": kwargs.pop('className', 'nav-link'),
-        "title": description  # Tooltip nativo
+        "className": kwargs.pop('className', 'nav-link')
     }
     if target:
         attributes["target"] = target
@@ -92,17 +78,10 @@ def create_sidebar_link(text, icon, href, description="", badge=None, hyperlink=
     # Agregar atributos adicionales
     attributes.update(kwargs)
 
-    # Construir children con badge opcional
     children = [
         html.Span(icon, className="sidebar-icon"),
         html.Span(text, className="mt-1 ms-1 sidebar-text")
     ]
-    
-    if badge:
-        children.append(
-            html.Span(badge, className="badge bg-primary rounded-pill ms-auto", 
-                     style={"fontSize": "0.65rem", "padding": "0.25em 0.5em"})
-        )
 
     el = element(children, **attributes)
 
@@ -190,90 +169,22 @@ def connection_panel():
     ], className="sidebar-connection-section")
 
 
-# Componente de Información y Ayuda Rápida
-def sidebar_footer_info():
-    """
-    Sección informativa al pie del sidebar con versión, links útiles y ayuda rápida.
-    """
-    return html.Div([
-        # Separador
-        html.Hr(className="sidebar-divider my-3 opacity-25"),
-        
-        # Ayuda rápida
-        html.Div([
-            html.Div([
-                html.I(className="fas fa-question-circle me-2 text-primary"),
-                html.Small("AYUDA RÁPIDA", className="text-uppercase text-muted fw-bold")
-            ], className="d-flex align-items-center mb-2"),
-            
-            html.Div([
-                # Links de ayuda compactos
-                html.Small([
-                    html.A([
-                        html.I(className="fas fa-book me-1"),
-                        "Docs"
-                    ], href="/documentacion", className="text-decoration-none text-muted hover-primary"),
-                    html.Span(" • ", className="text-muted mx-1"),
-                    html.A([
-                        html.I(className="fas fa-external-link-alt me-1"),
-                        "Wiki"
-                    ], href="https://wiki.analog.com/resources/eval/user-guides/admx/eval-admx2001ebz", 
-                       target="_blank", className="text-decoration-none text-muted hover-primary"),
-                    html.Span(" • ", className="text-muted mx-1"),
-                    html.A([
-                        html.I(className="fab fa-github me-1"),
-                        "GitHub"
-                    ], href="https://github.com/mario1027/ZORIA", 
-                       target="_blank", className="text-decoration-none text-muted hover-primary"),
-                ], className="d-block")
-            ], className="mb-2"),
-            
-            # Atajos de teclado
-            html.Small([
-                html.Span([
-                    html.Kbd("Ctrl", className="kbd-key"),
-                    html.Span("+", className="mx-1"),
-                    html.Kbd("`", className="kbd-key"),
-                ], className="me-2"),
-                html.Span("Terminal", className="text-muted small")
-            ], className="d-block"),
-            
-        ], className="px-3 mb-2"),
-        
-        # Versión y créditos
-        html.Div([
-            html.Div([
-                html.Span("ZORIA", className="fw-bold text-white"),
-                html.Span(" v1.3.2", className="text-muted ms-1"),
-            ], className="mb-1 small"),
-            html.Small([
-                "© 2024-2026 ",
-                html.A("ZORIA Team", href="https://github.com/mario1027/ZORIA", 
-                      target="_blank", className="text-muted text-decoration-none")
-            ], className="text-muted d-block", style={"fontSize": "0.7rem"}),
-        ], className="px-3 py-2 bg-dark rounded mx-2 mb-2 border border-secondary"),
-        
-    ], className="sidebar-footer-info mt-auto pb-3")
-
-
-# Sidebar principal mejorado
+# Sidebar principal
 @DropdownFolderContext.Provider()
 def sideBar():
     """
-    Construye la barra lateral principal con organización clara y profesional.
-    Incluye navegación, panel de conexión y sección informativa.
+    Construye la barra lateral principal.
 
     Returns:
-        html.Nav: Componente HTML representando la barra lateral completa.
+        html.Nav: Componente HTML representando la barra lateral.
     """
     return html.Nav([
         html.Div([
-            # Logo/Brand del sidebar (visible en desktop) con título mejorado
+            # Logo/Brand del sidebar (visible en desktop)
             dcc.Link([
                 html.Img(
                     src="/assets/logo.png",
-                    alt="ZORIA Logo",
-                    title="ZORIA - Impedance Analysis Platform",
+                    alt="Logo",
                     style={
                         'height': '40px',
                         'width': 'auto',
@@ -284,31 +195,26 @@ def sideBar():
             
             mobileSidebarHeader(),
             
-            # Contenedor flexible para toda la navegación
+            # Contenedor flexible para navegación + panel de conexión
             html.Div([
-                # Sección de navegación principal
-                html.Div([
-                    html.Ul(
-                        [
-                            # Enlaces individuales con descripciones mejoradas
-                            *[create_sidebar_link(**item) for item in SIDEBAR_ITEMS],
+                # Navegación principal
+                html.Ul(
+                    [
+                        # Enlaces individuales
+                        *[create_sidebar_link(**item) for item in SIDEBAR_ITEMS],
 
-                            # Dropdowns dinámicos (vacío por ahora, expandible en futuro)
-                            *[create_dropdown(item["title"], item["icon"], item["entries"], item["id_suffix"]) 
-                              for item in DROPDOWN_ITEMS]
-                        ],
-                        className="nav flex-column pt-3 pt-md-0"
-                    ),
-                ]),
+                        # Dropdowns dinámicos (vacío por ahora)
+                        *[create_dropdown(item["title"], item["icon"], item["entries"], item["id_suffix"]) 
+                          for item in DROPDOWN_ITEMS]
+                    ],
+                    className="nav flex-column pt-3 pt-md-0"
+                ),
                 
-                # Panel de conexión (espaciado automático)
+                # Panel de conexión (al final del sidebar)
                 connection_panel(),
                 
-                # Footer informativo con ayuda y versión
-                sidebar_footer_info(),
-                
             ], className="sidebar-content d-flex flex-column", 
-               style={'height': 'calc(100vh - 90px)', 'overflowY': 'auto', 'overflowX': 'hidden'}),
+               style={'height': 'calc(100vh - 90px)', 'overflowY': 'auto'}),
             
         ], className="sidebar-inner px-4 pt-3 h-100")
     ], id="sidebarMenu", className="sidebar d-lg-block sidebar-dark text-white collapse")
