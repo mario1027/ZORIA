@@ -65,12 +65,14 @@ def global_terminal_component():
                             html.Div([
                                 html.Pre("""
 ╔══════════════════════════════════════════════════╗
-║  ADMX2001 - Terminal v2.0                        ║
+║  ADMX2001 - Terminal Interactivo v2.0            ║
 ║  Impedance Analyzer CLI                          ║
+║  Analog Devices Evaluation Board                 ║
 ╚══════════════════════════════════════════════════╝
                                 """, className="terminal-banner text-success mb-2")
                             ]),
                             html.Div([
+                                # Estado del sistema
                                 html.Div([
                                     html.Span("$ ", className="text-success fw-bold"),
                                     html.Span("system", className="text-info"),
@@ -78,13 +80,43 @@ def global_terminal_component():
                                 ], className="terminal-line"),
                                 html.Div([
                                     html.Span("→ ", className="text-warning"),
-                                    html.Span("Esperando conexión...", className="text-muted")
+                                    html.Span("Esperando conexión con ADMX2001...", className="text-muted")
+                                ], className="terminal-line mb-2"),
+                                
+                                # Ayuda de comandos
+                                html.Div([
+                                    html.Span("💡 ", className="terminal-prompt-icon"),
+                                    html.Span("Comandos disponibles:", className="text-info fw-bold")
                                 ], className="terminal-line mb-1"),
                                 html.Div([
-                                    html.Span("→ ", className="text-warning"),
-                                    html.Span("Use ", className="text-muted"),
+                                    html.Span("   • ", className="text-muted"),
                                     html.Code("help", className="terminal-code"),
-                                    html.Span(" para comandos", className="text-muted")
+                                    html.Span(" - Lista todos los comandos", className="text-muted")
+                                ], className="terminal-line"),
+                                html.Div([
+                                    html.Span("   • ", className="text-muted"),
+                                    html.Code("z", className="terminal-code"),
+                                    html.Span(" - Medir impedancia actual", className="text-muted")
+                                ], className="terminal-line"),
+                                html.Div([
+                                    html.Span("   • ", className="text-muted"),
+                                    html.Code("status", className="terminal-code"),
+                                    html.Span(" - Ver estado del dispositivo", className="text-muted")
+                                ], className="terminal-line"),
+                                html.Div([
+                                    html.Span("   • ", className="text-muted"),
+                                    html.Code("sweep", className="terminal-code"),
+                                    html.Span(" - Iniciar barrido de frecuencia", className="text-muted")
+                                ], className="terminal-line mb-2"),
+                                
+                                # Atajos de teclado
+                                html.Div([
+                                    html.Span("⌨️  ", className="terminal-prompt-icon"),
+                                    html.Span("Atajos: ", className="text-info"),
+                                    html.Kbd("Ctrl+`", className="terminal-kbd me-2"),
+                                    html.Span("Abrir/Cerrar ", className="text-muted small"),
+                                    html.Kbd("↑↓", className="terminal-kbd me-2"),
+                                    html.Span("Historial", className="text-muted small")
                                 ], className="terminal-line text-muted"),
                             ], className="terminal-content-area")
                         ]
