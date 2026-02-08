@@ -202,7 +202,7 @@ def sideBar():
                 # Panel de conexión (al final del sidebar)
                 connection_panel(),
                 
-            ], className="sidebar-content d-flex flex-column", style={'height': 'calc(100vh - 90px)', 'overflow-y': 'auto'}),
+            ], className="sidebar-content d-flex flex-column", style={'height': 'calc(100vh - 90px)', 'overflowY': 'auto'}),
             
         ], className="sidebar-inner px-4 pt-3 h-100")
     ], id="sidebarMenu", className="sidebar d-lg-block sidebar-dark text-white collapse")

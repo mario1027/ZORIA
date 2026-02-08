@@ -24,10 +24,10 @@
 }
 
 /* Clase especial para terminal - oculto al inicio */
+/* NOTA: Ya no se usa - el terminal se oculta solo con inline style display:none */
 .terminal-hidden-initial {
-    display: none;
-    visibility: hidden;
-    opacity: 0;
+    visibility: hidden !important;
+    opacity: 0 !important;
 }
 
 /* Cuando la ventana está siendo arrastrada o maximizada */

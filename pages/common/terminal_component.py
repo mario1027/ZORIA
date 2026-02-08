@@ -150,7 +150,7 @@ def global_terminal_component():
             html.Div(className="window-resize-handle")
         ], 
         id=MODAL_ID,
-        className='draggable-window terminal-window terminal-hidden-initial',
-        style={'display': 'none'}
+        className='draggable-window terminal-window',
+        style={'display': 'none', 'visibility': 'visible', 'opacity': '1'}
         )
     ])

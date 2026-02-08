@@ -129,7 +129,8 @@ class ICON:
             Path(d='M3 5a2 2 0 012-2h1a1 1 0 010 2H5v7h2l1 2h4l1-2h2V5h-1a1 1 0 110-2h1a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V5z')
         ], className='icon icon-xl text-gray-200', fill='currentColor', viewBox='0 0 20 20', xmlns='http://www.w3.org/2000/svg')
 
-    LIGHTENING = html.Img(src='/assets/img/brand/light.svg', height="20", width="20", alt="Volt Logo")
+    # LIGHTENING = html.Img(src='/assets/img/brand/light.svg', height="20", width="20", alt="Volt Logo")  # Comentado - archivo no existe
+    LIGHTENING = html.I(className='fas fa-bolt', style={'width': '20px', 'height': '20px'})
 
     LOCK_CLOSED = Svg([
             Path(fillRule='evenodd', d='M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z', clipRule='evenodd')

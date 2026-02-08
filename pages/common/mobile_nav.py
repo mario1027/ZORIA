@@ -5,8 +5,7 @@ def mobileNavBar():
     """ Mobile only navbar - Volt logo & burger button """
     return html.Nav([
         html.A([
-            html.Img(className='navbar-brand-dark', src='/assets/img/brand/light.svg', alt='Volt logo'),
-            html.Img(className='navbar-brand-light', src='/assets/img/brand/dark.svg', alt='Volt logo')
+            html.Img(src='/assets/logo.png', alt='ZORIA Logo', style={'height': '32px', 'width': 'auto'})
         ], className='navbar-brand me-lg-5', href='/'),
         html.Div([
             html.Button([
@@ -24,9 +23,8 @@ def mobileSidebarHeader():
         html.Div([
             html.Div([
                 html.A([
-                    html.Img(className='icon icon-sm', src='/assets/img/icons/sign_out.svg', 
-                            height='20', width='20', alt='sign out'),
-                    "Sign Out"
+                    html.I(className='fas fa-sign-out-alt me-2'),
+                    "Cerrar Sesión"
                 ], href='/', className='btn btn-secondary btn-sm d-inline-flex align-items-center')
             ], className='d-block')
         ], className='d-flex align-items-center'),

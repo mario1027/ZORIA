@@ -787,9 +787,6 @@ def layout():
         # Footer
         footer(),
         
-        # Terminal CLI Global
-        global_terminal_component(),
-        
         # Botón flotante del terminal
         floating_terminal_button()
     ], className="d-flex flex-column min-vh-100")

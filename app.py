@@ -119,18 +119,29 @@ def register_global_terminal_callbacks(app):
     from datetime import datetime
     from lib.device_state import device_state
     
-    # Clientside callback para inicializar el terminal (teclado)
+    # Clientside callback para inicializar terminal (teclado + arrastre)
     app.clientside_callback(
         """
-        function(trigger) {
-            // Inicializar teclado del terminal cuando se muestre
+        function(style) {
+            console.log('[Terminal] Callback ejecutado, style:', style);
+            
+            // Solo ejecutar cuando está visible
+            if (!style || style.display !== 'flex') {
+                return window.dash_clientside.no_update;
+            }
+            
+            console.log('[Terminal] Ventana mostrada, inicializando...');
+            
             setTimeout(function() {
                 var input = document.getElementById('command-input');
                 var terminal = document.getElementById('command-modal');
                 
-                if (!input || !terminal) return;
+                if (!input || !terminal) {
+                    console.warn('[Terminal] Elementos no encontrados');
+                    return;
+                }
                 
-                // Configurar manejador de teclas
+                // === INICIALIZAR TECLADO ===
                 input.onkeydown = function(e) {
                     var historyData = JSON.parse(JSON.stringify(
                         document.getElementById('command-history-store').data || {'commands': [], 'index': -1}
@@ -140,7 +151,6 @@ def register_global_terminal_callbacks(app):
                     if (currentIndex === undefined) currentIndex = commands.length;
                     
                     if (e.key === 'Enter') {
-                        // El submit se maneja por Dash
                         return;
                     }
                     
@@ -193,7 +203,38 @@ def register_global_terminal_callbacks(app):
                         return false;
                     }
                 };
-            }, 300);
+                
+                // === INICIALIZAR SISTEMA DE ARRASTRE ===
+                terminal.classList.remove('terminal-hidden-initial');
+                
+                if (!window.DraggableWindows) {
+                    console.error('[Terminal] DraggableWindows no disponible');
+                    return;
+                }
+                
+                if (window.DraggableWindows.isInitialized('command-modal')) {
+                    console.log('[Terminal] Ya inicializado - traer al frente');
+                    window.DraggableWindows.bringToFront('command-modal');
+                } else {
+                    console.log('[Terminal] Inicializando sistema de arrastre...');
+                    var success = window.DraggableWindows.init('command-modal', 'terminal-header-drag', {
+                        width: 700,
+                        height: 500
+                    });
+                    
+                    if (success) {
+                        console.log('[Terminal] ✅ Sistema inicializado');
+                    }
+                }
+                
+                // Enfocar input
+                setTimeout(function() {
+                    if (input) {
+                        input.focus();
+                    }
+                }, 100);
+                
+            }, 250);
             
             return window.dash_clientside.no_update;
         }
@@ -205,6 +246,7 @@ def register_global_terminal_callbacks(app):
     # Callback para abrir/cerrar terminal desde cualquier página
     @app.callback(
         Output('command-modal', 'style', allow_duplicate=True),
+        Output('command-modal', 'className', allow_duplicate=True),
         Input('sidebar-terminal-btn', 'n_clicks'),
         Input('floating-terminal-btn', 'n_clicks'),
         Input('terminal-close-btn', 'n_clicks'),
@@ -215,66 +257,22 @@ def register_global_terminal_callbacks(app):
         if not ctx.triggered:
             raise PreventUpdate
         
+        # Ignorar si todos son None o 0 (inicialización)
+        if ((sidebar_clicks is None or sidebar_clicks == 0) and 
+            (floating_clicks is None or floating_clicks == 0) and
+            (close_clicks is None or close_clicks == 0)):
+            raise PreventUpdate
+        
         triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
         
         if triggered_id in ['sidebar-terminal-btn', 'floating-terminal-btn']:
-            # Mostrar y enfocar
-            return {'display': 'flex'}
+            # Mostrar y enfocar - eliminar clase que oculta
+            return {'display': 'flex'}, 'draggable-window terminal-window'
         elif triggered_id == 'terminal-close-btn':
-            return {'display': 'none'}
+            # Ocultar manteniendo las clases
+            return {'display': 'none'}, 'draggable-window terminal-window'
         
         raise PreventUpdate
-    
-    # Clientside callback para inicializar y enfocar terminal cuando se muestra
-    app.clientside_callback(
-        """
-        function(style) {
-            console.log('[Terminal DEBUG] Callback ejecutado - style:', style);
-            
-            if (!style) {
-                console.log('[Terminal DEBUG] Style es null/undefined - ignorando');
-                return window.dash_clientside.no_update;
-            }
-            
-            console.log('[Terminal DEBUG] Style.display:', style.display);
-            
-            if (style.display !== 'flex') {
-                console.log('[Terminal DEBUG] Display no es flex - ignorando');
-                return window.dash_clientside.no_update;
-            }
-            
-            console.log('[Terminal] Ventana mostrada, inicializando...');
-            
-            // Remover clase de oculto inicial
-            var terminal = document.getElementById('command-modal');
-            if (terminal) {
-                terminal.classList.remove('terminal-hidden-initial');
-            }
-            
-            // Inicializar el sistema de arrastre si no está inicializado
-            setTimeout(function() {
-                if (window.DraggableWindows && !window.DraggableWindows.isInitialized('command-modal')) {
-                    console.log('[Terminal] Inicializando sistema de arrastre...');
-                    window.DraggableWindows.init('command-modal', 'terminal-header-drag', {
-                        width: 700,
-                        height: 500
-                    });
-                }
-                
-                // Enfocar input
-                var input = document.getElementById('command-input');
-                if (input) {
-                    input.focus();
-                }
-            }, 100);
-            
-            return window.dash_clientside.no_update;
-        }
-        """,
-        Output('terminal-initialized', 'data', allow_duplicate=True),
-        Input('command-modal', 'style'),
-        prevent_initial_call=True
-    )
     
     # Callback para actualizar indicador de estado del terminal
     @app.callback(

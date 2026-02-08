@@ -117,9 +117,6 @@ layout = html.Div([
     # Footer al final, fuera del flex sidebar-content
     footer(),
     
-    # Terminal CLI Global
-    global_terminal_component(),
-    
     # Botón flotante del terminal
     floating_terminal_button()
 
