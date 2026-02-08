@@ -257,19 +257,15 @@ def register_global_terminal_callbacks(app):
         if not ctx.triggered:
             raise PreventUpdate
         
-        # Ignorar si todos son None o 0 (inicialización)
-        if ((sidebar_clicks is None or sidebar_clicks == 0) and 
-            (floating_clicks is None or floating_clicks == 0) and
-            (close_clicks is None or close_clicks == 0)):
-            raise PreventUpdate
-        
         triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
         
+        # Solo abrir cuando se hace clic específicamente en los botones de abrir
         if triggered_id in ['sidebar-terminal-btn', 'floating-terminal-btn']:
-            # Mostrar y enfocar - eliminar clase que oculta
-            return {'display': 'flex'}, 'draggable-window terminal-window'
-        elif triggered_id == 'terminal-close-btn':
-            # Ocultar manteniendo las clases
+            if (triggered_id == 'sidebar-terminal-btn' and sidebar_clicks and sidebar_clicks > 0) or \
+               (triggered_id == 'floating-terminal-btn' and floating_clicks and floating_clicks > 0):
+                return {'display': 'flex'}, 'draggable-window terminal-window'
+        # Cerrar por botón de cerrar
+        elif triggered_id == 'terminal-close-btn' and close_clicks and close_clicks > 0:
             return {'display': 'none'}, 'draggable-window terminal-window'
         
         raise PreventUpdate

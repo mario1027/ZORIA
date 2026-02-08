@@ -1374,51 +1374,43 @@ def register_callbacks(app):
         raise PreventUpdate
 
     # =========================================================================
-    # CALLBACK ÚNICO DE CONEXIÓN - Consolida todas las formas de conectar
+    # CALLBACK ÚNICO DE CONEXIÓN - Solo sidebar (disponible en todas las páginas)
     # =========================================================================
     @app.callback(
-        [Output('sidebar-connection-text', 'children'),
-         Output('sidebar-connection-dot', 'className'),
-         Output('sidebar-device-port', 'children'),
-         Output('sidebar-disconnect-btn', 'disabled'),
-         Output('connection-error-trigger', 'data'),
-         Output('connection-success-trigger', 'data')],
-        [Input('connect-btn', 'n_clicks'),
-         Input('sidebar-quick-connect-btn', 'n_clicks'),
+        [Output('sidebar-connection-text', 'children', allow_duplicate=True),
+         Output('sidebar-connection-dot', 'className', allow_duplicate=True),
+         Output('sidebar-device-port', 'children', allow_duplicate=True),
+         Output('sidebar-disconnect-btn', 'disabled', allow_duplicate=True),
+         Output('connection-error-trigger', 'data', allow_duplicate=True),
+         Output('connection-success-trigger', 'data', allow_duplicate=True)],
+        [Input('sidebar-quick-connect-btn', 'n_clicks'),
          Input('sidebar-disconnect-btn', 'n_clicks'),
-         Input('disconnect-modal-btn', 'n_clicks'),
          Input('auto-connect-on-start', 'data')],
-        State('serial-ports', 'value'),
         prevent_initial_call=True
     )
-    def unified_connection_handler(connect_clicks, sidebar_quick_clicks,
-                                   sidebar_disconnect_clicks,
-                                   disconnect_modal_clicks, auto_start, port):
+    def sidebar_connection_handler(sidebar_quick_clicks, sidebar_disconnect_clicks, auto_start):
         """
-        Callback único que maneja TODAS las formas de conexión:
-        - Conexión manual desde modal (connect-btn)
+        Callback de conexión desde el sidebar (disponible globalmente):
         - Conexión rápida sidebar (sidebar-quick-connect-btn) 
         - Auto-conexión al inicio (auto-connect-on-start)
-        - Desconexión (sidebar-disconnect-btn, disconnect-modal-btn)
+        - Desconexión (sidebar-disconnect-btn)
         """
         global device
         
         triggered = ctx.triggered_id
-        logger.info(f"Connection handler triggered by: {triggered}")
+        logger.info(f"Sidebar connection handler triggered by: {triggered}")
         
         # Si ya está conectado y no es desconexión, mostrar estado
-        if triggered not in ['sidebar-disconnect-btn', 'disconnect-modal-btn']:
+        if triggered != 'sidebar-disconnect-btn':
             if device_state.is_connected and device_state.device is not None:
-                # Verificar que realmente esté conectado
                 is_conn, status_msg, port_info = device_state.verify_connection()
                 if is_conn:
                     return ("Conectado", "connection-pulse connected",
                             port_info if port_info else "ADMX2001",
                             False, False, False)
-                # Si falló verificación, continuar con reconexión
         
         # ===== DESCONEXIÓN =====
-        if triggered in ['sidebar-disconnect-btn', 'disconnect-modal-btn']:
+        if triggered == 'sidebar-disconnect-btn':
             try:
                 if device:
                     device.close()
@@ -1430,27 +1422,6 @@ def register_callbacks(app):
                         "ADMX2001", True, False, False)
             except Exception as e:
                 logger.error(f"Error desconectando: {e}")
-                return ("Error", "connection-pulse error",
-                        "ADMX2001", True, True, False)
-        
-        # ===== CONEXIÓN MANUAL (desde modal) =====
-        if triggered == 'connect-btn':
-            if not port or port == '':
-                return ("Seleccione puerto", "connection-pulse disconnected",
-                        "ADMX2001", True, True, False)
-            
-            try:
-                logger.info(f"Conectando manualmente a {port}...")
-                device = ADMX2001(port, baudrate=115200, timeout=5.0)
-                is_connected.set()
-                device_state.set_device(device, True)
-                device.set_mdelay(1)
-                device.set_tdelay(0)
-                logger.info(f"✅ Conectado a {port}")
-                return ("Conectado", "connection-pulse connected",
-                        port, False, False, True)
-            except Exception as e:
-                logger.error(f"Error conectando: {e}")
                 return ("Error", "connection-pulse error",
                         "ADMX2001", True, True, False)
         
@@ -1572,53 +1543,102 @@ def register_callbacks(app):
             return True
         raise PreventUpdate
 
-    # Callback consolidado para ventana de conexión (abrir/cerrar)
-    app.clientside_callback(
-        """
-        function(open_clicks, close_clicks, disconnect_clicks, status_text) {
-            // Abrir modal (desde sidebar)
-            if (open_clicks) {
-                setTimeout(function() {
-                    var modal = document.getElementById('connect-modal');
-                    if (!modal) return;
-                    
-                    if (window.DraggableWindows && window.DraggableWindows.show) {
-                        window.DraggableWindows.show('connect-modal');
-                    } else {
-                        modal.style.display = 'block';
-                        modal.style.position = 'fixed';
-                        modal.style.zIndex = '10000';
-                        modal.style.left = '50%';
-                        modal.style.top = '50%';
-                        modal.style.transform = 'translate(-50%, -50%)';
-                    }
-                }, 50);
-            }
-            
-            // Cerrar por botones
-            if (close_clicks || disconnect_clicks) {
-                var modal = document.getElementById('connect-modal');
-                if (modal) modal.style.display = 'none';
-            }
-            
-            // Auto-cerrar al conectar
-            if (status_text && status_text.indexOf('Conectado') !== -1) {
-                setTimeout(function() {
-                    var modal = document.getElementById('connect-modal');
-                    if (modal) modal.style.display = 'none';
-                }, 1500);
-            }
-            
-            return window.dash_clientside.no_update;
-        }
-        """,
-        Output('connect-modal-dummy', 'data'),
+    # Callback consolidado para ventana de conexión (abrir/cerrar) - CONVERTIDO A PYTHON
+    @app.callback(
+        Output('connect-modal', 'style', allow_duplicate=True),
         Input('sidebar-config-btn', 'n_clicks'),
         Input('connect-modal-close', 'n_clicks'),
         Input('disconnect-modal-btn', 'n_clicks'),
         Input('sidebar-connection-text', 'children'),
         prevent_initial_call=True
     )
+    def toggle_connect_modal(open_clicks, close_clicks, disconnect_clicks, status_text):
+        """Controla la apertura/cierre del modal de conexión ADMX2001"""
+        if not ctx.triggered:
+            raise PreventUpdate
+        
+        triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+        
+        # Abrir modal
+        if triggered_id == 'sidebar-config-btn' and open_clicks and open_clicks > 0:
+            return {'display': 'block', 'position': 'fixed', 'zIndex': '10000', 
+                    'left': '50%', 'top': '50%', 'transform': 'translate(-50%, -50%)'}
+        
+        # Cerrar por botones de cierre o desconectar
+        elif triggered_id in ['connect-modal-close', 'disconnect-modal-btn']:
+            if (triggered_id == 'connect-modal-close' and close_clicks and close_clicks > 0) or \
+               (triggered_id == 'disconnect-modal-btn' and disconnect_clicks and disconnect_clicks > 0):
+                return {'display': 'none'}
+        
+        # Auto-cerrar al conectar
+        elif triggered_id == 'sidebar-connection-text':
+            if status_text and 'Conectado' in str(status_text):
+                return {'display': 'none'}
+        
+        raise PreventUpdate
+    
+    # Callback para conectar desde el modal (solo disponible en Dashboard)
+    @app.callback(
+        [Output('sidebar-connection-text', 'children', allow_duplicate=True),
+         Output('sidebar-connection-dot', 'className', allow_duplicate=True),
+         Output('sidebar-device-port', 'children', allow_duplicate=True),
+         Output('sidebar-disconnect-btn', 'disabled', allow_duplicate=True),
+         Output('connection-error-trigger', 'data', allow_duplicate=True),
+         Output('connection-success-trigger', 'data', allow_duplicate=True)],
+        [Input('connect-btn', 'n_clicks'),
+         Input('disconnect-modal-btn', 'n_clicks')],
+        State('serial-ports', 'value'),
+        prevent_initial_call=True
+    )
+    def modal_connection_handler(connect_clicks, disconnect_clicks, port):
+        """
+        Callback de conexión desde el modal (solo disponible en Dashboard):
+        - Conexión manual desde modal (connect-btn)
+        - Desconexión desde modal (disconnect-modal-btn)
+        """
+        global device
+        
+        triggered = ctx.triggered_id
+        logger.info(f"Modal connection handler triggered by: {triggered}")
+        
+        # ===== DESCONEXIÓN =====
+        if triggered == 'disconnect-modal-btn':
+            try:
+                if device:
+                    device.close()
+                is_connected.clear()
+                device = None
+                device_state.set_device(None, False)
+                logger.info("Dispositivo desconectado desde modal")
+                return ("Desconectado", "connection-pulse disconnected",
+                        "ADMX2001", True, False, False)
+            except Exception as e:
+                logger.error(f"Error desconectando: {e}")
+                return ("Error", "connection-pulse error",
+                        "ADMX2001", True, True, False)
+        
+        # ===== CONEXIÓN MANUAL =====
+        if triggered == 'connect-btn':
+            if not port or port == '':
+                return ("Seleccione puerto", "connection-pulse disconnected",
+                        "ADMX2001", True, True, False)
+            
+            try:
+                logger.info(f"Conectando manualmente a {port}...")
+                device = ADMX2001(port, baudrate=115200, timeout=5.0)
+                is_connected.set()
+                device_state.set_device(device, True)
+                device.set_mdelay(1)
+                device.set_tdelay(0)
+                logger.info(f"✅ Conectado a {port}")
+                return ("Conectado", "connection-pulse connected",
+                        port, False, False, True)
+            except Exception as e:
+                logger.error(f"Error conectando: {e}")
+                return ("Error", "connection-pulse error",
+                        "ADMX2001", True, True, False)
+        
+        raise PreventUpdate
     
     # Callback para controlar el interval de autoconexión según visibilidad del modal
     @app.callback(
