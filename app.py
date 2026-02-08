@@ -82,6 +82,7 @@ EXTERNAL_STYLESHEETS = [
     "/assets/css/calibration-wizard.css",
     "/assets/css/windows.css",
     "/assets/css/modal-connect.css",
+    "/assets/css/documentation.css",
 ]
 
 EXTERNAL_SCRIPTS = [

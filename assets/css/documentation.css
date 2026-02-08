@@ -1,0 +1,175 @@
+/* ==========================================================================
+   ESTILOS DE DOCUMENTACIÓN ZORIA
+   Mejoras de UI/UX para la página de documentación
+   ========================================================================== */
+
+/* Navegación de pestañas */
+.nav-pills {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 1px solid #dee2e6;
+}
+
+.nav-pills .btn {
+    transition: all 0.3s ease;
+    border-radius: 8px;
+}
+
+.nav-pills .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.nav-pills .btn.active {
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+}
+
+/* Tarjetas de pasos */
+.step-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.step-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1) !important;
+}
+
+.step-badge {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Alertas estilizadas */
+.alert {
+    border-radius: 8px;
+}
+
+.alert-heading {
+    font-size: 1.1rem;
+}
+
+/* Bloques de terminal */
+.terminal-block {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    border-left: 4px solid #28a745;
+}
+
+.terminal-block .command-line {
+    display: flex;
+    align-items: baseline;
+}
+
+/* Tips */
+.quick-tip {
+    border-radius: 0 8px 8px 0;
+    font-size: 0.95rem;
+}
+
+/* Tablas de documentación */
+.table-responsive {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Secciones */
+.section-anchor {
+    scroll-margin-top: 80px;
+}
+
+/* Headers */
+.display-5 {
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+/* Cards de especificaciones */
+.card {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.card-header {
+    font-weight: 600;
+}
+
+/* Imágenes de documentación */
+.image-container {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 2px dashed #dee2e6;
+    transition: border-color 0.2s ease;
+}
+
+.image-container:hover {
+    border-color: #0d6efd;
+}
+
+/* Enlaces de TOC */
+.toc-link {
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.toc-link:hover {
+    background-color: rgba(13, 110, 253, 0.1);
+    padding-left: 0.5rem;
+}
+
+/* Modos de display en grid */
+.display-mode-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .display-5 {
+        font-size: 1.8rem;
+    }
+    
+    .step-badge {
+        width: 50px !important;
+        height: 50px !important;
+        min-width: 50px !important;
+    }
+    
+    .step-badge .display-4 {
+        font-size: 1.5rem;
+    }
+    
+    .nav-pills .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.doc-content > div {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Scrollbar personalizada */
+.main-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.main-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.main-content::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.main-content::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}

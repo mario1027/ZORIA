@@ -39,6 +39,14 @@ IMAGES = {
 
 def doc_section(title, icon, content, id=None, bg_color="white"):
     """Sección de documentación con estilo mejorado"""
+    # Construir props dinámicamente solo si id no es None
+    props = {
+        "className": f"doc-section mb-4 p-4 rounded shadow-sm bg-{bg_color}",
+        "style": {"border": "1px solid #e9ecef"}
+    }
+    if id is not None:
+        props["id"] = id
+    
     return html.Div([
         html.Div([
             html.Div([
@@ -46,7 +54,7 @@ def doc_section(title, icon, content, id=None, bg_color="white"):
                 html.H4(title, className="mb-0 d-inline-block fw-bold")
             ], className="section-header mb-4 pb-3 border-bottom border-3 border-primary"),
             html.Div(content, className="section-content")
-        ], className=f"doc-section mb-4 p-4 rounded shadow-sm bg-{bg_color}", id=id, style={"border": "1px solid #e9ecef"})
+        ], **props)
     ])
 
 
@@ -243,7 +251,7 @@ def tab_quickstart():
                     html.Li("Descarga el instalador para tu sistema operativo (Windows/Linux/macOS)"),
                     html.Li("Ejecuta el instalador y sigue las instrucciones"),
                     html.Li([html.Strong("Conecta"), " el cable USB-UART al PC"]),
-                    html.Li("Abre el Administrador de Dispositivos (Windows) o ejecuta ", html.Code("ls /dev/ttyUSB* (Linux)")),
+                    html.Li(["Abre el Administrador de Dispositivos (Windows) o ejecuta ", html.Code("ls /dev/ttyUSB* (Linux)")]),
                     html.Li(["Verifica que aparezca un ", html.Strong("puerto COM/ttyUSB"), " nuevo"]),
                 ]),
                 info_box([
@@ -1012,7 +1020,7 @@ def tab_calibration():
                     [
                         html.P("Configuración para impedancia muy baja:", className="fw-bold mb-3"),
                         html.Ul([
-                            html.Li("Reducir magnitud: ", html.Code("magnitude 0.2")),
+                            html.Li(["Reducir magnitud: ", html.Code("magnitude 0.2")]),
                             html.Li("Conectar TODAS las terminales juntas (H_POT, H_CUR, L_POT, L_CUR)"),
                             html.Li("Usar alambre grueso de cobre de longitud mínima (<5cm)"),
                         ]),
@@ -1039,7 +1047,7 @@ def tab_calibration():
                     [
                         html.P("Conecta un estándar certificado conocido:", className="fw-bold mb-3"),
                         html.Ul([
-                            html.Li("Restaurar magnitud: ", html.Code("magnitude 1")),
+                            html.Li(["Restaurar magnitud: ", html.Code("magnitude 1")]),
                             html.Li("Seleccionar resistor de precisión 1% o mejor"),
                             html.Li("Valor cercano a impedancia del DUT que medirás"),
                             html.Li("Resistor de 1kΩ es un buen estándar general"),
@@ -1665,7 +1673,7 @@ def tab_support():
                         html.P("Soluciones:", className="fw-bold mb-2"),
                         html.Ul([
                             html.Li("Verifica que los drivers FTDI estén instalados"),
-                            html.Li("En Linux, agrega tu usuario al grupo 'dialout': ", html.Code("sudo usermod -a -G dialout $USER")),
+                            html.Li(["En Linux, agrega tu usuario al grupo 'dialout': ", html.Code("sudo usermod -a -G dialout $USER")]),
                             html.Li("Reinicia la aplicación después de conectar el cable"),
                             html.Li("Prueba con otro puerto USB"),
                             html.Li("Verifica el cable USB-UART (puede estar dañado)"),
@@ -1691,7 +1699,7 @@ def tab_support():
                         html.Ol([
                             html.Li("Posicionar switches en OPEN y GND"),
                             html.Li("Reiniciar la placa"),
-                            html.Li("Ejecutar: ", html.Code("selftest run")),
+                            html.Li(["Ejecutar: ", html.Code("selftest run")]),
                         ])
                     ],
                     "faq-2",
@@ -1725,7 +1733,7 @@ def tab_support():
                             html.Li("Confirma que el USB Blaster esté conectado y detectado"),
                             html.Li("En Linux, configura udev rules para USB Blaster"),
                             html.Li("Reinicia la placa y reintenta"),
-                            html.Li("Contacta ", html.A("admx-support@analog.com", href="mailto:admx-support@analog.com"), " si persiste"),
+                            html.Li(["Contacta ", html.A("admx-support@analog.com", href="mailto:admx-support@analog.com"), " si persiste"]),
                         ])
                     ],
                     "faq-4",
