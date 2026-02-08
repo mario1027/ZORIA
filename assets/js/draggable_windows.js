@@ -260,15 +260,17 @@
             });
         }
         
-        // Botón cerrar
+        // Botón cerrar - NO interceptar para 'command-modal', dejarlo a Dash
         const closeBtn = element.querySelector('.window-btn-close');
-        if (closeBtn) {
+        if (closeBtn && windowId !== 'command-modal') {
             closeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 e.preventDefault();
                 console.log(`[DraggableWindows] Cerrar: ${windowId}`);
                 closeWindow(windowId);
             });
+        } else if (closeBtn && windowId === 'command-modal') {
+            console.log(`[DraggableWindows] Botón cerrar del terminal manejado por Dash`);
         }
         
         // Marcar como configurado

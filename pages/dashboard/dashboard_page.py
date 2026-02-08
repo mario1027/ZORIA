@@ -998,7 +998,7 @@ layout = html.Div([
             dcc.Interval(id='ports-interval', interval=2000, n_intervals=0),
             dcc.Interval(id='measurement-interval', interval=500, n_intervals=0, disabled=True),
             dcc.Interval(id='sweep-interval', interval=1000, n_intervals=0, disabled=True),  # Deshabilitado por defecto - se activa solo durante barrido
-            dcc.Interval(id='connection-status-interval', interval=1000, n_intervals=0),
+            dcc.Interval(id='connection-status-interval', interval=1000, n_intervals=0, disabled=True),  # Deshabilitado por defecto - solo activo cuando el modal está abierto
             dcc.Interval(id='connection-monitor-interval', interval=3000, n_intervals=0),  # Monitor activo de conexión
             dcc.Interval(id='modal-close-interval', interval=1000, n_intervals=0, disabled=True),  # Para cerrar modal con delay
             dcc.Store(id='sweep-data-store', storage_type='session', data={'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}),  # Persistir datos entre páginas
@@ -1619,6 +1619,33 @@ def register_callbacks(app):
         Input('sidebar-connection-text', 'children'),
         prevent_initial_call=True
     )
+    
+    # Callback para controlar el interval de autoconexión según visibilidad del modal
+    @app.callback(
+        Output('connection-status-interval', 'disabled', allow_duplicate=True),
+        Input('connect-modal', 'style'),
+        State('connection-status-interval', 'disabled'),
+        prevent_initial_call=True
+    )
+    def control_connection_interval(modal_style, current_disabled):
+        """
+        Controla el interval de autoconexión:
+        - Habilitado solo cuando el modal está visible
+        - Deshabilitado cuando el modal está cerrado (para evitar bucles)
+        """
+        if not modal_style:
+            return True  # Deshabilitar si no hay estilo
+        
+        is_visible = modal_style.get('display') != 'none'
+        
+        # Habilitar interval solo si el modal está visible
+        should_be_disabled = not is_visible
+        
+        # Solo actualizar si cambió el estado
+        if should_be_disabled != current_disabled:
+            return should_be_disabled
+        
+        raise PreventUpdate
 
     # Callback para gestionar barrido y actualizar gráficos
     @app.callback(
@@ -2283,12 +2310,14 @@ def register_callbacks(app):
         Output('connect-btn', 'disabled'),
         Output('connect-btn', 'children'),
         Output('connection-success-trigger', 'data', allow_duplicate=True),
-        Input('connect-modal', 'className'),
+        Output('connection-status-interval', 'disabled', allow_duplicate=True),
+        Input('connect-modal', 'style'),
         Input('refresh-ports-btn', 'n_clicks'),
         Input('connection-status-interval', 'n_intervals'),
+        State('serial-ports', 'options'),
         prevent_initial_call=True
     )
-    def auto_detect_and_connect(modal_class, refresh_clicks, interval_n):
+    def auto_detect_and_connect(modal_style, refresh_clicks, interval_n, current_options):
         """
         Autodetección y AUTOCONEXIÓN inteligente de ADMX2001:
         1. Escanea puertos USB
@@ -2301,16 +2330,24 @@ def register_callbacks(app):
         if ctx.triggered_id is None:
             raise PreventUpdate
         
-        # Si ya hay dispositivo conectado, no hacer nada
+        # Solo ejecutar si el modal está visible o si se presionó refresh
+        modal_visible = modal_style and modal_style.get('display') != 'none'
+        is_refresh = ctx.triggered_id == 'refresh-ports-btn'
+        
+        if not modal_visible and not is_refresh:
+            raise PreventUpdate
+        
+        # Si ya hay dispositivo conectado, deshabilitar interval y retornar estado actual
         if device_state.is_connected and device_state.device is not None:
             return (
-                [], '',
+                current_options or [], NOUPDATE,
                 'Ya conectado', 'has-device',
                 "✓ Conectado", "fw-semibold text-success",
                 {'width': '100%'}, {'display': 'none'},
                 html.Small("Dispositivo ya conectado"),
                 True, [html.I(className="fas fa-check me-2"), "Conectado"],
-                False
+                False,
+                True  # Deshabilitar interval
             )
         
         try:
@@ -2325,7 +2362,8 @@ def register_callbacks(app):
                     {'width': '0%'}, {'display': 'none'},
                     "Conecte el cable USB del ADMX2001",
                     True, [html.I(className="fas fa-plug me-2"), "Conectar"],
-                    False
+                    False,
+                    False  # Mantener interval activo para detectar cuando conectan
                 )
             
             # Crear opciones para dropdown
@@ -2352,6 +2390,14 @@ def register_callbacks(app):
                 
                 if is_candidate:
                     candidate_ports.append(port)
+            
+            # Si las opciones no cambiaron y no es un refresh manual, no actualizar
+            if not is_refresh and current_options:
+                current_values = {opt.get('value') for opt in current_options if isinstance(opt, dict)}
+                new_values = {opt['value'] for opt in options}
+                if current_values == new_values:
+                    # Opciones no cambiaron, no actualizar
+                    options = NOUPDATE
             
             # Probar candidatos y conectar automáticamente al primero válido
             connected_port = None
@@ -2397,24 +2443,26 @@ def register_callbacks(app):
             # Si se conectó exitosamente
             if connected_port:
                 return (
-                    options, connected_port,
+                    options if options != NOUPDATE else current_options, connected_port,
                     connected_port, 'has-device',
                     "✓ Conectado", "fw-semibold text-success",
                     {'width': '100%'}, {'display': 'none'},
                     html.Small(test_result, className="text-muted"),
                     True, [html.I(className="fas fa-check-circle me-2"), "Conectado"],
-                    True  # Trigger notificación
+                    True,  # Trigger notificación
+                    True  # Deshabilitar interval al conectar
                 )
             
             # Si no se pudo conectar a ninguno
             return (
-                options, '',
+                options if options != NOUPDATE else current_options, '',
                 'Sin respuesta', '',
                 "⚠ No detectado", "fw-semibold text-warning",
                 {'width': '100%'}, {'display': 'none'},
                 html.Small(test_result or "Ningún dispositivo respondió"),
                 False, [html.I(className="fas fa-plug me-2"), "Conectar Manual"],
-                False
+                False,
+                False  # Mantener interval activo para seguir buscando
             )
             
         except Exception as e:
@@ -2426,7 +2474,8 @@ def register_callbacks(app):
                 {'width': '0%'}, {'display': 'none'},
                 str(e)[:50],
                 False, [html.I(className="fas fa-times me-2"), "Reintentar"],
-                False
+                False,
+                False  # Mantener interval activo
             )
     
     # =============================================================================
