@@ -22,7 +22,6 @@ from typing import Optional
 # IMPORTS DE TERCEROS
 # =============================================================================
 from dash_spa import DashSPA, page_container
-from dash_spa.components import SPA_ALERT, SPA_NOTIFY
 from dash import html, dcc
 
 # =============================================================================
@@ -169,7 +168,8 @@ def register_global_connection_callbacks(app):
         
         # Ignorar si auto_start es True pero no fue el trigger activo
         # Esto evita re-ejecuciones cuando otros botones se presionan
-        if triggered != 'auto-connect-on-start' and auto_start is True:
+        # EXCEPCIÓN: permitir que la desconexión siempre proceda
+        if triggered != 'auto-connect-on-start' and triggered != 'sidebar-disconnect-btn' and auto_start is True:
             # auto-connect-on-start está en True pero no fue quien disparó este callback
             # Solo actualizar estado sin intentar conectar de nuevo
             if device_state.is_connected and device_state.device is not None:
@@ -211,6 +211,12 @@ def register_global_connection_callbacks(app):
             show_error_on_fail = (triggered == 'sidebar-quick-connect-btn')
             logger.info(f"Iniciando conexión, show_error_on_fail={show_error_on_fail}")
             
+            # Adquirir lock para evitar conexiones simultáneas
+            if not device_state._operation_lock.acquire(blocking=False):
+                logger.warning("Otra operación en curso, saltando intento de conexión")
+                return ("Ocupado", "connection-pulse disconnected",
+                        "ADMX2001", True, False, False)
+            
             try:
                 logger.info("Iniciando conexión automática...")
                 all_ports = list(serial.tools.list_ports.comports())
@@ -232,12 +238,12 @@ def register_global_connection_callbacks(app):
                 
                 logger.info(f"Puertos USB detectados: {[p.device for p in usb_ports]}")
                 
-                # Priorizar candidatos FTDI/USB-Serial
+                # Priorizar candidatos FTDI/USB-Serial/TTL232R
                 candidates = []
                 for p in usb_ports:
                     desc = p.description.upper() if p.description else ""
                     manuf = p.manufacturer.upper() if p.manufacturer else ""
-                    if any(x in desc or x in manuf for x in ['FTDI', 'CP210', 'SILICON', 'USB-SERIAL', 'FT232']):
+                    if any(x in desc or x in manuf for x in ['FTDI', 'CP210', 'SILICON', 'USB-SERIAL', 'FT232', 'TTL232']):
                         candidates.append(p)
                 
                 # Probar candidatos primero, luego todos los USB
@@ -274,6 +280,10 @@ def register_global_connection_callbacks(app):
                 logger.error(f"Error autoconnect: {e}")
                 return ("Error", "connection-pulse error",
                         "ADMX2001", True, show_error_on_fail, False)
+            
+            finally:
+                # Liberar lock de operación
+                device_state._operation_lock.release()
         
         return ("Desconectado", "connection-pulse disconnected",
                 "ADMX2001", True, False, False)
@@ -291,7 +301,7 @@ def register_global_connection_callbacks(app):
     )
     def monitor_connection_health(n_intervals):
         """
-        Monitorea activamente la salud de la conexión cada 3 segundos.
+        Monitorea activamente la salud de la conexión cada 5 segundos.
         Verifica que el dispositivo siga respondiendo y actualiza el badge y sidebar.
         """
         if n_intervals is None or n_intervals == 0:
@@ -498,11 +508,11 @@ def register_global_terminal_callbacks(app):
         
         raise PreventUpdate
     
-    # Callback clientside para inicializar ventana arrastrable cuando se muestra
+    # Callback clientside para inicializar ventana arrastrable del Terminal cuando se muestra
     app.clientside_callback(
         """
         function(style) {
-            if (style && style.display === 'flex') {
+            if (style && (style.display === 'flex' || style.display === 'block')) {
                 // Dar tiempo a que el DOM se actualice
                 setTimeout(function() {
                     if (window.DraggableWindows && !window.DraggableWindows.isInitialized('command-modal')) {
@@ -521,6 +531,32 @@ def register_global_terminal_callbacks(app):
         prevent_initial_call=True
     )
     
+    # Callback clientside para auto-scroll del terminal cuando se actualiza el output
+    app.clientside_callback(
+        """
+        function(children) {
+            if (!children || children.length === 0) {
+                return window.dash_clientside.no_update;
+            }
+            
+            // Hacer scroll suave hacia abajo después de un pequeño delay
+            setTimeout(function() {
+                var terminalScreen = document.querySelector('.terminal-float-screen');
+                if (terminalScreen) {
+                    terminalScreen.scrollTo({
+                        top: terminalScreen.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                }
+            }, 50);
+            
+            return window.dash_clientside.no_update;
+        }
+        """,
+        Output('terminal-scroll-trigger', 'data'),
+        Input('command-output', 'children')
+    )
+    
     # Callback para actualizar indicador de estado del terminal
     @app.callback(
         [Output('terminal-status-dot', 'className'),
@@ -533,8 +569,8 @@ def register_global_terminal_callbacks(app):
         from lib.device_state import device_state
         
         if style and style.get('display') == 'flex':
-            # Verificar estado real del dispositivo
-            is_conn, status_msg, port = device_state.verify_connection()
+            # Verificar estado sin forzar (usa caché para evitar conflictos)
+            is_conn, status_msg, port = device_state.verify_connection(force=False)
             
             if is_conn:
                 port_text = f" ({port})" if port else ""
@@ -543,11 +579,112 @@ def register_global_terminal_callbacks(app):
                 return "status-pulse status-disconnected", "desconectado"
         return "status-pulse", ""
     
+    # Callback de streaming - Poll de nuevas líneas cada 100ms
+    @app.callback(
+        [Output('command-output', 'children', allow_duplicate=True),
+         Output('terminal-streaming-interval', 'disabled'),
+         Output('terminal-streaming-state', 'data', allow_duplicate=True)],
+        Input('terminal-streaming-interval', 'n_intervals'),
+        [State('command-output', 'children'),
+         State('terminal-streaming-state', 'data')],
+        prevent_initial_call=True
+    )
+    def poll_streaming_lines(n_intervals, current_output, streaming_state):
+        """
+        Consulta nuevas líneas del streaming cada 100ms y las agrega al terminal.
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Log para debugging del polling
+        logger.info(f"[Terminal Poll] n_intervals={n_intervals}, streaming_active={streaming_state.get('active') if streaming_state else False}")
+        
+        if not streaming_state or not streaming_state.get('active'):
+            raise PreventUpdate
+        
+        # Obtener nuevas líneas
+        new_lines = device_state.get_streaming_lines()
+        logger.info(f"[Terminal Poll] Recibidas {len(new_lines)} líneas nuevas")
+        
+        if not new_lines and not device_state.is_streaming_complete():
+            # No hay nuevas líneas pero el comando sigue en progreso
+            raise PreventUpdate
+        
+        # Normalizar output
+        if current_output is None:
+            current_output = []
+        elif not isinstance(current_output, list):
+            current_output = [current_output]
+        
+        # Procesar nuevas líneas
+        for line_data in new_lines:
+            line_type = line_data.get('type')
+            line_text = line_data.get('line', '')
+            
+            logger.info(f"[Terminal Poll] Procesando línea tipo={line_type}, texto='{line_text[:60]}'")
+            
+            if line_type == 'error':
+                current_output.append(
+                    html.Div([
+                        html.Span("✗ ", className="terminal-error-icon"),
+                        html.Span(f"Error: {line_text}", className="terminal-error-text")
+                    ], className="terminal-line terminal-error-line")
+                )
+            elif line_type == 'data' and line_text:
+                # Filtrar eco del comando (doble check por si acaso)
+                cmd = streaming_state.get('command', '').strip().lower()
+                if line_text.strip().lower() == cmd:
+                    logger.info(f"[Terminal Poll] Eco del comando filtrado: '{line_text}'")
+                    continue
+                
+                # Determinar clase CSS
+                line_lower = line_text.lower()
+                if any(err in line_lower for err in ['error', 'fail', 'invalid', 'unknown']):
+                    css_class = "terminal-response-line terminal-response-error"
+                    prefix = html.Span("✗ ", className="terminal-error-icon")
+                elif any(ok in line_lower for ok in ['ok', 'success', 'done', 'ready', 'pass']):
+                    css_class = "terminal-response-line terminal-response-success"
+                    prefix = html.Span("✓ ", className="terminal-success-icon")
+                elif any(warn in line_lower for warn in ['warning', 'warn', 'caution']):
+                    css_class = "terminal-response-line terminal-response-warning"
+                    prefix = html.Span("⚠ ", className="terminal-warning-icon")
+                else:
+                    css_class = "terminal-response-line"
+                    prefix = html.Span("  ", className="terminal-indent")
+                
+                current_output.append(
+                    html.Div([prefix, html.Span(line_text, className=css_class)], className="terminal-line")
+                )
+        
+        # Verificar si el comando terminó
+        if device_state.is_streaming_complete():
+            logger.info("[Terminal] Streaming completado, desactivando polling")
+            
+            # Agregar separador
+            current_output.append(html.Div(className="terminal-separator"))
+            
+            # Limitar output
+            if len(current_output) > 80:
+                current_output = current_output[-80:]
+            
+            # Desactivar streaming
+            streaming_state['active'] = False
+            return current_output, True, streaming_state  # True = deshabilitar Interval
+        
+        # Limitar output mientras va creciendo
+        if len(current_output) > 80:
+            current_output = current_output[-80:]
+        
+        # Continuar polling
+        return current_output, False, streaming_state  # False = mantener Interval activo
+    
     # Callback principal para manejar comandos del terminal
     @app.callback(
         [Output('command-output', 'children', allow_duplicate=True),
          Output('command-input', 'value', allow_duplicate=True),
-         Output('command-history-store', 'data', allow_duplicate=True)],
+         Output('command-history-store', 'data', allow_duplicate=True),
+         Output('terminal-streaming-state', 'data', allow_duplicate=True),
+         Output('terminal-streaming-interval', 'disabled', allow_duplicate=True)],
         [Input('command-input', 'n_submit'),
          Input('quick-measure-btn', 'n_clicks'),
          Input('quick-help-btn', 'n_clicks'),
@@ -565,14 +702,17 @@ def register_global_terminal_callbacks(app):
     ):
         """
         Maneja todos los comandos del terminal CLI globalmente.
-        Versión simplificada - funciona en todas las páginas.
+        Versión optimizada con procesamiento rápido.
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
         # Inicializar historial
         if history_store is None:
             history_store = {'commands': [], 'index': -1}
         
         if not ctx.triggered:
-            return current_output or [], "", history_store
+            return current_output or [], "", history_store, {'active': False, 'command': ''}, True
         
         triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
         
@@ -593,7 +733,7 @@ def register_global_terminal_callbacks(app):
                     html.Span("→ Terminal limpiada", className="text-muted")
                 ], className="terminal-line mb-2")
             ])
-            return [welcome], "", history_store
+            return [welcome], "", history_store, {'active': False, 'command': ''}, True
         
         # ===== DETERMINAR COMANDO =====
         quick_commands = {
@@ -608,9 +748,11 @@ def register_global_terminal_callbacks(app):
         elif triggered_id == 'command-input' and n_submit and n_submit > 0:
             command = (command_text or "").strip()
             if not command:
-                return current_output, "", history_store
+                return current_output, "", history_store, {'active': False, 'command': ''}, True
+            # Log para debug
+            logger.info(f"[Terminal] Comando recibido: '{command}'")
         else:
-            return current_output, "", history_store
+            return current_output, "", history_store, {'active': False, 'command': ''}, True
         
         # ===== AGREGAR AL HISTORIAL =====
         if triggered_id == 'command-input':
@@ -637,8 +779,30 @@ def register_global_terminal_callbacks(app):
         ])
         current_output.append(cmd_block)
         
-        # ===== COMANDOS LOCALES (funcionan siempre, con o sin hardware) =====
+        # ===== CORRECCIÓN DE COMANDOS COMUNES =====
         cmd_lower = command.lower()
+        
+        # Detectar "calibration" y sugerir "calibrate"
+        if cmd_lower.startswith('calibration '):
+            current_output.append(
+                html.Div([
+                    html.Span("⚠ Warn: ", className="text-warning fw-bold"),
+                    html.Span("Command 'calibration' not found", className="terminal-response-line")
+                ], className="terminal-line")
+            )
+            current_output.append(
+                html.Div([
+                    html.Span("💡 ", className="text-info"),
+                    html.Span("Did you mean: ", className="text-muted"),
+                    html.Code(f"calibrate {' '.join(command.split()[1:])}", className="terminal-code text-info")
+                ], className="terminal-line")
+            )
+            current_output.append(html.Div(className="terminal-separator"))
+            if len(current_output) > 80:
+                current_output = current_output[-80:]
+            return current_output, "", history_store, {'active': False, 'command': ''}, True
+        
+        # ===== COMANDOS LOCALES (funcionan siempre, con o sin hardware) =====
         
         if cmd_lower == 'version':
             # Comando version: mostrar información local y del hardware
@@ -722,30 +886,97 @@ def register_global_terminal_callbacks(app):
             current_output.append(html.Div(className="terminal-separator"))
             if len(current_output) > 80:
                 current_output = current_output[-80:]
-            return current_output, "", history_store
+            return current_output, "", history_store, {'active': False, 'command': ''}, True
         
         # Verificar si hay dispositivo conectado
         if is_device_connected and device is not None:
             # ===== MODO REAL: Usar dispositivo ADMX2001 =====
+            
+            # Detectar comandos que deben usar STREAMING (respuestas en tiempo real)
+            cmd_lower_check = cmd_lower if 'cmd_lower' in locals() else command.lower()
+            use_streaming = cmd_lower_check in ['z', 'sweep']  # Comandos que envían múltiples líneas
+            
+            if use_streaming:
+                # ===== MODO STREAMING: Mostrar datos en tiempo real =====
+                logger.info(f"[Terminal] 🎬 Iniciando streaming para: '{command}'")
+                
+                # Agregar mensaje de ejecución
+                current_output.append(
+                    html.Div([
+                        html.Span("⏳ ", className="text-warning"),
+                        html.Span(f"Ejecutando: {command}...", className="text-muted fst-italic")
+                    ], className="terminal-line")
+                )
+                
+                # Iniciar streaming en thread separado
+                device_state.start_streaming_command(command, timeout=30.0)
+                
+                # Activar polling interval
+                streaming_state = {'active': True, 'command': command}
+                return current_output, "", history_store, streaming_state, False  # False = activar Interval
+            
+            # ===== MODO NORMAL: Esperar respuesta completa =====
             try:
-                response = device_state.send_command(command)
+                logger.info(f"[Terminal] ▶ Enviando: '{command}'")
+                
+                # Determinar timeout según el comando
+                if cmd_lower_check.startswith('calibrate') or cmd_lower_check == '*idn':
+                    timeout = 30.0
+                    logger.info(f"[Terminal] ⏱️ Usando timeout extendido: {timeout}s")
+                    response = device_state.send_command(command, timeout=timeout)
+                else:
+                    # Comandos rápidos, usar timeout default
+                    response = device_state.send_command(command)
+                
+                logger.info(f"[Terminal] ◀ Recibido: {len(response) if response else 0} líneas")
+                
+                # Log de respuesta cruda para debug (primeras 10 líneas)
+                if response:
+                    for idx, line in enumerate(response[:10]):
+                        logger.debug(f"[Terminal] RAW[{idx}]: '{line}'")
+                    if len(response) > 10:
+                        logger.debug(f"[Terminal] ... y {len(response)-10} líneas más")
                 
                 if response:
-                    # Limpiar y procesar respuesta
+                    # Procesar líneas de respuesta de forma optimizada
+                    # Filtrar eco del comando que puede aparecer al inicio O al final
                     cleaned_lines = []
-                    for line in response:
-                        if line.strip():
-                            # Limpiar línea según utils
-                            line_clean = line.strip()
-                            cleaned_lines.append(line_clean)
+                    
+                    for idx, line in enumerate(response):
+                        line_stripped = line.strip()
+                        
+                        # Saltar líneas completamente vacías
+                        if not line_stripped:
+                            # Para comandos de calibración, mantener como separadores si ya hay contenido
+                            if cmd_lower_check.startswith('calibrate') and cleaned_lines:
+                                cleaned_lines.append("")
+                            continue
+                        
+                        # Filtrar eco: puede estar al inicio (líneas 0-1) o al final (última línea)
+                        is_first_lines = idx < 2
+                        is_last_line = idx == len(response) - 1
+                        
+                        if line_stripped.lower() == command.lower():
+                            if is_first_lines or is_last_line:
+                                logger.info(f"[Terminal] 🔇 Filtrando eco en línea {idx}: '{line_stripped}'")
+                                continue
+                        
+                        # Agregar línea con contenido
+                        cleaned_lines.append(line_stripped)
+                    
+                    logger.info(f"[Terminal] 📝 Líneas procesadas: {len(cleaned_lines)} (de {len(response)} originales)")
                     
                     if cleaned_lines:
                         response_children = []
                         for line in cleaned_lines:
-                            line_lower = line.lower()
-                            css_class = "terminal-response-line"
-                            prefix = html.Span("  ", className="terminal-indent")
+                            # Mantener líneas vacías como separadores visuales
+                            if not line:
+                                response_children.append(html.Div(style={'height': '0.5em'}))
+                                continue
                             
+                            line_lower = line.lower()
+                            
+                            # Determinar clase CSS basada en contenido
                             if any(err in line_lower for err in ['error', 'fail', 'invalid', 'unknown']):
                                 css_class = "terminal-response-line terminal-response-error"
                                 prefix = html.Span("✗ ", className="terminal-error-icon")
@@ -755,25 +986,82 @@ def register_global_terminal_callbacks(app):
                             elif any(warn in line_lower for warn in ['warning', 'warn', 'caution']):
                                 css_class = "terminal-response-line terminal-response-warning"
                                 prefix = html.Span("⚠ ", className="terminal-warning-icon")
+                            # Detectar líneas de calibración (empiezan con números o contienen "ch0" "ch1")
+                            elif cmd_lower_check.startswith('calibrate') and (line[0].isdigit() or 'ch0' in line_lower or 'ch1' in line_lower or 'gain' in line_lower):
+                                css_class = "terminal-response-line text-info"
+                                prefix = html.Span("  ", className="terminal-indent")
+                            else:
+                                css_class = "terminal-response-line"
+                                prefix = html.Span("  ", className="terminal-indent")
                             
                             response_children.append(
                                 html.Div([prefix, html.Span(line, className=css_class)], className="terminal-line")
                             )
                         current_output.append(html.Div(response_children))
                     else:
+                        # No hay líneas después del filtrado - mostrar info de debug
+                        logger.warning(f"[Terminal] ⚠️ Sin líneas después de filtrar - respuesta original tenía {len(response)} líneas")
+                        
+                        # Mostrar mensaje principal
                         current_output.append(
                             html.Div([
                                 html.Span("  ", className="terminal-indent"),
-                                html.Span("(comando ejecutado - sin salida)", className="terminal-empty-response")
+                                html.Span("(sin salida del comando)", className="terminal-empty-response text-muted")
                             ], className="terminal-line")
                         )
+                        
+                        # Mostrar detalles de debug expandibles con las líneas originales
+                        raw_lines_preview = []
+                        for idx, line in enumerate(response[:10]):
+                            raw_lines_preview.append(
+                                html.Div([
+                                    html.Span(f"    [{idx}] ", className="text-muted small"),
+                                    html.Code(repr(line), className="text-warning small")
+                                ], className="terminal-line")
+                            )
+                        
+                        if len(response) > 10:
+                            raw_lines_preview.append(
+                                html.Div([
+                                    html.Span(f"    ... y {len(response)-10} líneas más", className="text-muted small fst-italic")
+                                ], className="terminal-line")
+                            )
+                        
+                        current_output.append(
+                            html.Details([
+                                html.Summary([
+                                    html.Span("🐛 ", className="text-warning"),
+                                    html.Span(f"Debug: Ver {len(response)} líneas originales", className="text-muted small")
+                                ], style={'cursor': 'pointer', 'userSelect': 'none'}),
+                                html.Div(raw_lines_preview, className="ms-3 mt-2")
+                            ], className="terminal-debug-details")
+                        )
                 else:
+                    # Respuesta None o vacía desde el dispositivo
+                    logger.warning(f"[Terminal] ⚠️ Dispositivo retornó respuesta vacía o None para comando: '{command}'")
                     current_output.append(
                         html.Div([
                             html.Span("  ", className="terminal-indent"),
-                            html.Span("(sin respuesta)", className="terminal-empty-response")
+                            html.Span("(sin respuesta del dispositivo)", className="terminal-empty-response text-muted")
                         ], className="terminal-line")
                     )
+                    current_output.append(
+                        html.Div([
+                            html.Span("💡 ", className="text-info"),
+                            html.Span("Verifique que el comando sea correcto. Use ", className="text-muted"),
+                            html.Code("help", className="terminal-code"),
+                            html.Span(" para ver comandos disponibles.", className="text-muted")
+                        ], className="terminal-line")
+                    )
+                
+                # Agregar separador
+                current_output.append(html.Div(className="terminal-separator"))
+                
+                # Limitar output
+                if len(current_output) > 80:
+                    current_output = current_output[-80:]
+                
+                return current_output, "", history_store, {'active': False, 'command': ''}, True
                     
             except Exception as e:
                 error_msg = str(e)
@@ -786,106 +1074,150 @@ def register_global_terminal_callbacks(app):
                         html.Span(f"Error: {error_msg}", className="terminal-error-text")
                     ], className="terminal-line terminal-error-line")
                 )
-        else:
-            # ===== MODO SIMULACIÓN: Respuestas simuladas =====
-            cmd_lower = command.lower()
-            
-            if cmd_lower == 'help':
-                response_lines = [
-                    "═══════════════════════════════════════════════════",
-                    "  ADMX2001 - Comandos CLI (Documentación v1.3.2)",
-                    "═══════════════════════════════════════════════════",
-                    "",
-                    "MEDICIÓN:",
-                    "  z                      Medir impedancia",
-                    "  frequency <Hz>         Configurar frecuencia (ej: 100 = 100kHz)",
-                    "  magnitude <V>          Configurar magnitud señal (0.01-2V)",
-                    "  offset <V>             Offset DC (-5V a +5V)",
-                    "  average <1-256>        Promedio de muestras",
-                    "  count <n>              Número de lecturas",
-                    "  mdelay <ms>            Delay entre mediciones",
-                    "  tdelay <ms>            Delay post-trigger",
-                    "",
-                    "DISPLAY:",
-                    "  display <0-17>         Modo de display:",
-                    "                         0=Cs-Rs, 3=Ls-Rs, 6=R-X (default)",
-                    "                         7=Z-deg, 9=Cp-Rp, 15=G-B",
-                    "",
-                    "GANANCIA:",
-                    "  setgain ch0 <0-3>      Ganancia voltaje (0=1x, 3=8x)",
-                    "  setgain ch1 <0-3>      Ganancia corriente (0=25mA, 3=25uA)",
-                    "  setgain auto           Auto-ranging",
-                    "",
-                    "BARRIDOS:",
-                    "  sweep_type freq <s> <e>  Barrido de frecuencia",
-                    "  sweep_scale log|linear   Escala del barrido",
-                    "",
-                    "CALIBRACIÓN:",
-                    "  calibrate open         Medición open",
-                    "  calibrate short        Medición short", 
-                    "  calibrate rt <R> xt <X>  Medición load",
-                    "  calibrate commit <ts>  Guardar calibración",
-                    "  calibrate list         Listar calibraciones",
-                    "",
-                    "SISTEMA:",
-                    "  *idn                   Identificación del hardware ADMX2001",
-                    "  version                Información del Dashboard ZORIA",
-                    "  help                   Esta ayuda",
-                    "  status                 Estado del sistema",
-                    "  reset                  Reset del sistema",
-                    "",
-                    "═══════════════════════════════════════════════════",
-                    "Modo: SIMULACIÓN - Conecte el dispositivo en Dashboard",
-                    "═══════════════════════════════════════════════════"
-                ]
-            elif cmd_lower == 'z':
-                response_lines = [
-                    "0,1.000021e+03,8.220137e-01",
-                    "[SIMULADO] Z = 1.000kΩ + 0.822jΩ"
-                ]
-            elif cmd_lower == '*idn':
-                response_lines = [
-                    "ADMX2001B,FW=1.3.2,HW=Rev.A (SIMULADO)",
-                ]
-            elif cmd_lower == 'status':
-                response_lines = [
-                    "Sistema: Listo (modo simulación)",
-                    "Conexión: No conectado a hardware",
-                    "Para conectar: vaya al Dashboard principal"
-                ]
-            elif cmd_lower.startswith('frequency'):
-                parts = command.split()
-                freq_val = parts[1] if len(parts) > 1 else '1000'
-                response_lines = [f"frequency = {freq_val}.0000Hz"]
-            elif cmd_lower.startswith('setgain'):
-                response_lines = ["setgain: configuración actualizada (simulado)"]
-            elif cmd_lower.startswith('display'):
-                response_lines = ["display: modo actualizado (simulado)"]
-            elif cmd_lower.startswith('average'):
-                response_lines = [f"average = {command.split()[1] if len(command.split()) > 1 else '1'}"]
-            elif cmd_lower.startswith('calibrate'):
+                
+                # Agregar separador
+                current_output.append(html.Div(className="terminal-separator"))
+                
+                # Limitar output  
+                if len(current_output) > 80:
+                    current_output = current_output[-80:]
+                
+                return current_output, "", history_store, {'active': False, 'command': ''}, True
+        
+        # ===== MODO SIMULACIÓN: Respuestas simuladas =====
+        cmd_lower = command.lower()
+        
+        if cmd_lower == 'help':
+            response_lines = [
+                "═══════════════════════════════════════════════════",
+                "  ADMX2001 - Comandos CLI (Documentación v1.3.2)",
+                "═══════════════════════════════════════════════════",
+                "",
+                "MEDICIÓN:",
+                "  z                      Medir impedancia",
+                "  frequency <Hz>         Configurar frecuencia (ej: 100 = 100kHz)",
+                "  magnitude <V>          Configurar magnitud señal (0.01-2V)",
+                "  offset <V>             Offset DC (-5V a +5V)",
+                "  average <1-256>        Promedio de muestras",
+                "  count <n>              Número de lecturas",
+                "  mdelay <ms>            Delay entre mediciones",
+                "  tdelay <ms>            Delay post-trigger",
+                "",
+                "DISPLAY:",
+                "  display <0-17>         Modo de display:",
+                "                         0=Cs-Rs, 3=Ls-Rs, 6=R-X (default)",
+                "                         7=Z-deg, 9=Cp-Rp, 15=G-B",
+                "",
+                "GANANCIA:",
+                "  setgain ch0 <0-3>      Ganancia voltaje (0=1x, 3=8x)",
+                "  setgain ch1 <0-3>      Ganancia corriente (0=25mA, 3=25uA)",
+                "  setgain auto           Auto-ranging",
+                "",
+                "BARRIDOS:",
+                "  sweep_type freq <s> <e>  Barrido de frecuencia",
+                "  sweep_scale log|linear   Escala del barrido",
+                "",
+                "CALIBRACIÓN:",
+                "  calibrate open         Medición open",
+                "  calibrate short        Medición short", 
+                "  calibrate rt <R> xt <X>  Medición load",
+                "  calibrate commit <ts>  Guardar calibración",
+                "  calibrate list         Listar calibraciones",
+                "",
+                "SISTEMA:",
+                "  *idn                   Identificación del hardware ADMX2001",
+                "  version                Información del Dashboard ZORIA",
+                "  help                   Esta ayuda",
+                "  status                 Estado del sistema",
+                "  reset                  Reset del sistema",
+                "",
+                "═══════════════════════════════════════════════════",
+                "Modo: SIMULACIÓN - Conecte el dispositivo en Dashboard",
+                "═══════════════════════════════════════════════════"
+            ]
+        elif cmd_lower == 'z':
+            response_lines = [
+                "0,1.000021e+03,8.220137e-01",
+                "[SIMULADO] Z = 1.000kΩ + 0.822jΩ"
+            ]
+        elif cmd_lower == '*idn':
+            response_lines = [
+                "ADMX2001B,FW=1.3.2,HW=Rev.A (SIMULADO)",
+            ]
+        elif cmd_lower == 'status':
+            response_lines = [
+                "Sistema: Listo (modo simulación)",
+                "Conexión: No conectado a hardware",
+                "Para conectar: vaya al Dashboard principal"
+            ]
+        elif cmd_lower.startswith('frequency'):
+            parts = command.split()
+            freq_val = parts[1] if len(parts) > 1 else '1000'
+            response_lines = [f"frequency = {freq_val}.0000Hz"]
+        elif cmd_lower.startswith('setgain'):
+            response_lines = ["setgain: configuración actualizada (simulado)"]
+        elif cmd_lower.startswith('display'):
+            response_lines = ["display: modo actualizado (simulado)"]
+        elif cmd_lower.startswith('average'):
+            response_lines = [f"average = {command.split()[1] if len(command.split()) > 1 else '1'}"]
+        elif cmd_lower.startswith('calibrate'):
+            # Detectar subcomandos específicos de calibración
+            parts = command.split()
+            if len(parts) > 1:
+                subcmd = parts[1].lower()
+                if subcmd == 'list':
+                    response_lines = [
+                        "═══════════════════════════════════════",
+                        "CALIBRACIONES (Modo Simulación)",
+                        "═══════════════════════════════════════",
+                        "No hay calibraciones disponibles en modo simulación.",
+                        "",
+                        "Conecte el dispositivo para:",
+                        "  • Ver calibraciones guardadas",
+                        "  • Ejecutar wizard de calibración",
+                        "  • Gestionar calibraciones existentes"
+                    ]
+                elif subcmd in ['open', 'short', 'load']:
+                    response_lines = [
+                        f"calibrate {subcmd}: requiere hardware conectado",
+                        "",
+                        "💡 Use el Wizard de Calibración en la interfaz:",
+                        "   Dashboard > Calibración > Iniciar Wizard"
+                    ]
+                else:
+                    response_lines = [
+                        "calibrate: use el Dashboard para calibración completa",
+                        "Wizard disponible en: Calibración > Iniciar Wizard",
+                        "",
+                        "Comandos de calibración disponibles:",
+                        "  • calibrate list - Listar calibraciones",
+                        "  • calibrate open - Medición open",
+                        "  • calibrate short - Medición short",
+                        "  • calibrate load - Medición con carga conocida"
+                    ]
+            else:
                 response_lines = [
                     "calibrate: use el Dashboard para calibración completa",
                     "Wizard disponible en: Calibración > Iniciar Wizard"
                 ]
-            else:
-                response_lines = [
-                    f"Comando: {command}",
-                    "",
-                    "Nota: Conecte el dispositivo en el Dashboard",
-                    "para obtener respuestas reales del hardware."
-                ]
-            
-            # Renderizar respuesta simulada
-            response_children = []
-            for line in response_lines:
-                response_children.append(
-                    html.Div([
-                        html.Span("  ", className="terminal-indent"),
-                        html.Span(line, className="terminal-response-line")
-                    ], className="terminal-line")
-                )
-            current_output.append(html.Div(response_children))
+        else:
+            response_lines = [
+                f"Comando: {command}",
+                "",
+                "Nota: Conecte el dispositivo en el Dashboard",
+                "para obtener respuestas reales del hardware."
+            ]
+        
+        # Renderizar respuesta simulada
+        response_children = []
+        for line in response_lines:
+            response_children.append(
+                html.Div([
+                    html.Span("  ", className="terminal-indent"),
+                    html.Span(line, className="terminal-response-line")
+                ], className="terminal-line")
+            )
+        current_output.append(html.Div(response_children))
         
         # Línea separadora
         current_output.append(html.Div(className="terminal-separator"))
@@ -894,7 +1226,7 @@ def register_global_terminal_callbacks(app):
         if len(current_output) > 80:
             current_output = current_output[-80:]
         
-        return current_output, "", history_store
+        return current_output, "", history_store, {'active': False, 'command': ''}, True
 
 
 def set_global_device(device, is_connected=False):
@@ -1033,17 +1365,16 @@ def create_app() -> DashSPA:
         
         # Establecer layout principal con terminal global
         # El terminal se inyecta en el layout para estar disponible en todas las páginas
+        # NOTA: page_container de DashSPA ya incluye SPA_ALERT y SPA_NOTIFY internamente
         original_layout = page_container
         app.layout = html.Div([
-            SPA_ALERT,
-            SPA_NOTIFY,
             # Stores globales
             dcc.Store(id='auto-connect-on-start', data=False),  # Trigger para auto-conexión al iniciar
             dcc.Store(id='connection-error-trigger', data=False),  # Store para activar alerta de error de conexión
             dcc.Store(id='connection-success-trigger', data=False),  # Store para activar notificación de conexión exitosa
             # Intervals globales
             dcc.Interval(id='ports-interval', interval=2000, n_intervals=0),  # Detección de puertos
-            dcc.Interval(id='connection-monitor-interval', interval=3000, n_intervals=0),  # Monitor activo de conexión
+            dcc.Interval(id='connection-monitor-interval', interval=5000, n_intervals=0),  # Monitor activo de conexión (cada 5s)
             # Terminal global
             global_terminal_component(),
             original_layout

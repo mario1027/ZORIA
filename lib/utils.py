@@ -77,8 +77,9 @@ def find_admx2001_devices() -> List[str]:
                 '/dev/cu.usbserial' in device or '/dev/cu.usbmodem' in device):
             continue
         
-        # ADMX2001 usa cable FTDI USB-to-UART (TTL-232R-RPI)
-        if 'FTDI' in port.description or 'USB Serial' in port.description:
+        # ADMX2001 usa cable FTDI USB-to-UART (TTL-232R-RPI o TTL232R-3V3)
+        desc_upper = port.description.upper() if port.description else ""
+        if 'FTDI' in desc_upper or 'USB SERIAL' in desc_upper or 'TTL232' in desc_upper:
             potential_devices.append(port.device)
     return potential_devices
 

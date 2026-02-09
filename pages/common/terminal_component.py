@@ -17,6 +17,11 @@ def global_terminal_component():
         dcc.Store(id='terminal-initialized', data=False),
         dcc.Store(id='terminal-focus-trigger', data=None),
         dcc.Store(id='terminal-drag-init', data=0),  # Para inicialización de ventana arrastrable
+        dcc.Store(id='terminal-scroll-trigger', data=0),  # Para auto-scroll del terminal
+        dcc.Store(id='terminal-streaming-state', data={'active': False, 'command': ''}),  # Estado de streaming
+        
+        # Interval para polling de líneas en streaming (100ms)
+        dcc.Interval(id='terminal-streaming-interval', interval=100, disabled=True, n_intervals=0),
         
         # Terminal ventana arrastrable
         html.Div([

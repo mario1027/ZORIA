@@ -955,9 +955,14 @@ class ADMX2001:
         logger.info(f"Sweep configurado: {sweep_type.value}, "
                    f"{start}->{end}, escala {scale.value}, {count} puntos")
     
-    def perform_sweep(self, timeout: float = None) -> List[Dict[str, any]]:
+    def perform_sweep(self, timeout: float = None, point_callback=None) -> List[Dict[str, any]]:
         """
         Ejecuta el barrido configurado y retorna resultados.
+        
+        Args:
+            timeout: Timeout máximo para el sweep completo
+            point_callback: Función opcional a llamar por cada punto recibido.
+                          Recibe un dict con 'sweep_value' y 'measurement'
         
         Returns:
             Lista de diccionarios, cada uno con:
@@ -974,6 +979,9 @@ class ADMX2001:
             
             IMPORTANTE: Este método espera a recibir TODOS los puntos solicitados
             antes de finalizar, según el valor de 'count' configurado previamente.
+            
+            Si se proporciona point_callback, se llamará inmediatamente cuando
+            cada punto es recibido y parseado (streaming en tiempo real).
         
         Example:
             >>> dev.configure_sweep(SweepType.FREQUENCY, 100, 1000, 
@@ -1066,15 +1074,25 @@ class ADMX2001:
                             not line.startswith('ADMX') and
                             line not in ['z', 'abort'] and
                             not line.startswith('Warn')):
-                            # Intentar parsear para validar
+                            # Intentar parsear para validar E INMEDIATAMENTE PROCESAR
                             try:
-                                parts = line.split(',')
-                                if len(parts) == 3:
-                                    float(parts[0])  # sweep value (freq, magnitude, etc)
-                                    float(parts[1])  # real part
-                                    float(parts[2])  # imaginary part
+                                from .utils import parse_measurement_line
+                                parts = parse_measurement_line(line)
+                                if parts and len(parts) >= 2:
+                                    # Línea válida - guardar y notificar callback
                                     all_data_lines.append(line)
                                     logger.debug(f"✓ Datos: {line[:60]}...")
+                                    
+                                    # CALLBACK INMEDIATO para streaming real-time
+                                    if point_callback:
+                                        try:
+                                            result = {
+                                                'sweep_value': parts[0],
+                                                'measurement': tuple(parts[1:])
+                                            }
+                                            point_callback(result)
+                                        except Exception as e:
+                                            logger.warning(f"Error en point_callback: {e}")
                             except ValueError:
                                 pass  # No es línea de datos válida
                         

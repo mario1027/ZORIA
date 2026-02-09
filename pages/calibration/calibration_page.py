@@ -8,6 +8,11 @@ from dash.exceptions import PreventUpdate
 from dash_spa import register_page
 from datetime import datetime
 import json
+import logging
+import re
+
+# Logger
+logger = logging.getLogger(__name__)
 
 # Importar componentes comunes
 from pages.common.sidebar import sideBar
@@ -854,15 +859,16 @@ def register_calibration_callbacks(app):
         """Actualiza la tabla de calibraciones almacenadas desde el dispositivo"""
         
         import re
+        from lib.device_state import device_state
         
         try:
-            # Importar device desde dashboard
-            from pages.dashboard.dashboard_page import device
+            # Obtener dispositivo desde device_state global
+            device = device_state.device
             
-            if device is None or not hasattr(device, 'calibration'):
+            if device is None or not device_state.is_connected or not hasattr(device, 'calibration'):
                 return [
                     html.Tr([
-                        html.Td("", colSpan="7", className="text-center text-muted", children=[
+                        html.Td(colSpan="7", className="text-center text-muted", children=[
                             html.I(className="fas fa-exclamation-triangle me-2"),
                             "Dispositivo no conectado. Conecta el ADMX2001 desde el Dashboard."
                         ])
@@ -872,10 +878,43 @@ def register_calibration_callbacks(app):
             # Obtener calibraciones del dispositivo
             calibrations_raw = device.calibration.list_calibrations()
             
+            # Log debug para ver qué se recibe
+            logger.info(f"[Cal] Recibido {len(calibrations_raw) if calibrations_raw else 0} líneas de 'calibrate list'")
+            if calibrations_raw:
+                for idx, line in enumerate(calibrations_raw[:5]):
+                    logger.debug(f"[Cal] Línea {idx}: '{line}'")
+                if len(calibrations_raw) > 5:
+                    logger.debug(f"[Cal] ... y {len(calibrations_raw)-5} líneas más")
+            
+            # Verificar si hay errores en la respuesta
+            if calibrations_raw:
+                has_error = any('error' in line.lower() or 'failed' in line.lower() for line in calibrations_raw)
+                if has_error:
+                    error_msg = next((line for line in calibrations_raw if 'error' in line.lower() or 'failed' in line.lower()), 'Error desconocido')
+                    return [
+                        html.Tr([
+                            html.Td(colSpan="7", className="text-center text-warning", children=[
+                                html.I(className="fas fa-exclamation-triangle me-2"),
+                                html.Div([
+                                    html.P("El dispositivo reportó un error al listar calibraciones:", className="mb-2"),
+                                    html.Code(error_msg, className="d-block bg-dark text-warning p-2 rounded mb-2"),
+                                    html.Small([
+                                        "Esto puede ocurrir si:",
+                                        html.Ul([
+                                            html.Li("No hay calibraciones guardadas en el dispositivo"),
+                                            html.Li("La calibración está corrupta o incompleta"),
+                                            html.Li("El ADC está saturado (desconecta la carga y reinicia)")
+                                        ], className="text-start mt-2")
+                                    ], className="text-muted")
+                                ])
+                            ])
+                        ])
+                    ]
+            
             if not calibrations_raw or len(calibrations_raw) == 0:
                 return [
                     html.Tr([
-                        html.Td("", colSpan="7", className="text-center text-muted", children=[
+                        html.Td(colSpan="7", className="text-center text-muted", children=[
                             html.I(className="fas fa-info-circle me-2"),
                             "No hay calibraciones almacenadas en el dispositivo."
                         ])
@@ -886,11 +925,21 @@ def register_calibration_callbacks(app):
             rows = []
             frequencies_with_configs = {}  # Agrupar por frecuencia
             
+            # Palabras clave que indican que NO es una línea de calibración
+            invalid_keywords = ['idn', 'admx', 'firmware', 'hardware', 'error', 'command', 
+                              'unknown', 'invalid', 'not found', 'failed']
+            
             for idx, cal_line in enumerate(calibrations_raw, 1):
                 try:
                     # Limpiar y preparar línea
                     line = cal_line.strip()
                     if not line or line.startswith('#'):
+                        continue
+                    
+                    # Filtrar líneas que claramente no son calibraciones
+                    line_lower = line.lower()
+                    if any(keyword in line_lower for keyword in invalid_keywords):
+                        logger.debug(f"[Cal] Ignorando línea no válida: {line}")
                         continue
                     
                     # DETECCIÓN DE FORMATO
@@ -913,6 +962,18 @@ def register_calibration_callbacks(app):
                         ch0 = parsed_data.get('CH0', '?')
                         ch1 = parsed_data.get('CH1', '?')
                         res = parsed_data.get('RES', parsed_data.get('RESISTANCE', '?'))
+                        
+                        # Validar frecuencia
+                        if freq:
+                            try:
+                                freq_value = float(freq)
+                                # Validar rango ADMX2001: 0.2 Hz - 10 MHz
+                                if freq_value < 0.2 or freq_value > 10000000:
+                                    logger.debug(f"[Cal] Frecuencia fuera de rango: {freq_value} Hz")
+                                    continue
+                            except ValueError:
+                                logger.debug(f"[Cal] Frecuencia no numérica: {freq}")
+                                continue
                         
                         # Agrupar por frecuencia
                         if freq:
@@ -938,16 +999,22 @@ def register_calibration_callbacks(app):
                     else:
                         # Formato simple: solo frecuencia
                         # Intentar extraer número de frecuencia
-                        freq_match = re.search(r'(\d+\.?\d*)\s*(Hz|kHz|MHz)?', line)
+                        # Ser más estricto: debe ser solo números (opcionalmente con unidad)
+                        freq_match = re.search(r'^(\d+\.?\d*)\s*(Hz|kHz|MHz)?$', line, re.IGNORECASE)
                         if freq_match:
                             freq_value = float(freq_match.group(1))
                             unit = freq_match.group(2) if freq_match.group(2) else 'Hz'
                             
                             # Convertir a Hz
-                            if unit == 'kHz':
+                            if unit.lower() == 'khz':
                                 freq_value *= 1000
-                            elif unit == 'MHz':
+                            elif unit.lower() == 'mhz':
                                 freq_value *= 1000000
+                            
+                            # Validar rango ADMX2001: 0.2 Hz - 10 MHz
+                            if freq_value < 0.2 or freq_value > 10000000:
+                                logger.debug(f"[Cal] Frecuencia fuera de rango: {freq_value} Hz")
+                                continue
                             
                             freq_str = str(int(freq_value))
                             if freq_str not in frequencies_with_configs:
@@ -956,22 +1023,13 @@ def register_calibration_callbacks(app):
                             if not frequencies_with_configs[freq_str]:
                                 frequencies_with_configs[freq_str] = [{'placeholder': True}]
                         else:
-                            # No se pudo parsear
-                            raise ValueError(f"Formato no reconocido: {line}")
+                            # No se pudo parsear - ignorar silenciosamente
+                            logger.debug(f"[Cal] No se pudo parsear: {line}")
+                            continue
                 
                 except Exception as e:
-                    # Agregar fila con datos crudos si falla
-                    rows.append(
-                        html.Tr([
-                            html.Td(str(len(rows) + 1), className="text-center"),
-                            html.Td("-", className="text-muted"),
-                            html.Td(cal_line[:50], colSpan="4", className="font-monospace small"),
-                            html.Td([
-                                html.Span("⚠", className="text-warning", 
-                                         title=f"Formato no reconocido: {str(e)}")
-                            ], className="text-center")
-                        ])
-                    )
+                    # Solo registrar el error, no mostrar fila errónea
+                    logger.warning(f"[Cal] Error parseando línea '{cal_line}': {e}")
             
             # Crear filas organizadas por frecuencia
             row_num = 1
@@ -1034,11 +1092,22 @@ def register_calibration_callbacks(app):
                         )
                         row_num += 1
             
+            # Verificar si encontramos calibraciones válidas
+            if not rows:
+                logger.info(f"[Cal] No se encontraron calibraciones válidas después del filtrado. Total líneas recibidas: {len(calibrations_raw)}")
+            
             return rows if rows else [
                 html.Tr([
-                    html.Td("", colSpan="7", className="text-center text-muted", children=[
+                    html.Td(colSpan="7", className="text-center text-muted", children=[
                         html.I(className="fas fa-info-circle me-2"),
-                        "No se pudieron parsear las calibraciones. Revisa el formato."
+                        html.Div([
+                            html.P("No hay calibraciones válidas almacenadas.", className="mb-1"),
+                            html.Small([
+                                "El dispositivo devolvió ",
+                                html.Code(f"{len(calibrations_raw)} líneas", className="text-warning"),
+                                " pero ninguna coincide con el formato esperado de calibración."
+                            ], className="text-muted")
+                        ])
                     ])
                 ])
             ]

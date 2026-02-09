@@ -43,8 +43,9 @@ logger = logging.getLogger(__name__)
 APP_START_TIME = time.time()
 
 # Variables globales para el estado del sistema
-device = None
-is_connected = threading.Event()
+# NOTA: 'device' e 'is_connected' locales están obsoletas - usar device_state global
+# device = None  # OBSOLETO - usar device_state.device
+# is_connected = threading.Event()  # OBSOLETO - usar device_state.is_connected
 measurement_thread = None
 stop_measurement = threading.Event()
 sweep_thread = None
@@ -61,6 +62,11 @@ sweep_data = {'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}
 # Estado del progreso del sweep
 sweep_progress = 0
 sweep_completed_successfully = False
+
+# Variables para detectar sweeps "abandonados" (sin actualizaciones)
+last_sweep_point_count = 0
+intervals_without_new_points = 0
+MAX_INTERVALS_WITHOUT_DATA = 300  # 30 segundos @ 100ms por interval
 
 # Configuración de medición
 measurement_config = {
@@ -272,9 +278,13 @@ def create_nyquist_plot(z_real, z_imag, freq=None, theme='dark'):
 
     fig = go.Figure()
 
-    # Preparar datos para el gráfico - formato estándar de Nyquist
-    y_data = [-z for z in z_imag]  # -Z'' para formato estándar
-    print(f"Datos Y calculados (-z_imag): {y_data[:3]}...")
+    # Preparar datos para el gráfico - FORMATO ESTÁNDAR DE NYQUIST
+    # Eje X = Z' (parte real) - horizontal
+    # Eje Y = -Z'' (parte imaginaria negativa) - vertical
+    x_data = z_real  # Z' en eje X (horizontal)
+    y_data = [-z for z in z_imag]  # -Z'' en eje Y (vertical)
+    print(f"Datos X (z_real): {x_data[:3]}...")
+    print(f"Datos Y (-z_imag): {y_data[:3]}...")
 
     # Crear colormap basado en frecuencia si está disponible
     if freq and len(freq) == len(z_real):
@@ -289,7 +299,7 @@ def create_nyquist_plot(z_real, z_imag, freq=None, theme='dark'):
         ]
         
         fig.add_trace(go.Scatter(
-            x=z_real,
+            x=x_data,
             y=y_data,
             mode='lines+markers',
             name='Impedancia',
@@ -311,7 +321,7 @@ def create_nyquist_plot(z_real, z_imag, freq=None, theme='dark'):
     else:
         # Sin información de frecuencia, usar colores fijos
         fig.add_trace(go.Scatter(
-            x=z_real,
+            x=x_data,
             y=y_data,
             mode='lines+markers',
             name='Impedancia',
@@ -368,7 +378,7 @@ def create_nyquist_plot(z_real, z_imag, freq=None, theme='dark'):
 
 def measurement_worker(config):
     """Worker para mediciones continuas"""
-    global device, measurement_data
+    global measurement_data
 
     try:
         display_mode = config['display_mode']
@@ -378,22 +388,22 @@ def measurement_worker(config):
         magnitude = config['magnitude']
 
         while not stop_measurement.is_set():
-            if device and is_connected.is_set():
+            if device_state.device and device_state.is_connected:
                 try:
                     # Configurar medición
-                    device.set_display_mode(display_mode)
-                    device.set_frequency(frequency)
+                    device_state.device.set_display_mode(display_mode)
+                    device_state.device.set_frequency(frequency)
                     if mdelay >= 0:
-                        device.set_measurement_delay(mdelay)
+                        device_state.device.set_measurement_delay(mdelay)
                     if tdelay >= 0:
-                        device.set_trigger_delay(tdelay)
+                        device_state.device.set_trigger_delay(tdelay)
                     if magnitude and magnitude != 'auto':
                         # Convertir a float si es string
                         mag_value = float(magnitude) if isinstance(magnitude, str) else magnitude
-                        device.set_magnitude(mag_value)
+                        device_state.device.set_magnitude(mag_value)
 
                     # Realizar medición
-                    measurement = device.measure()
+                    measurement = device_state.device.measure()
 
                     # Procesar resultado
                     timestamp = datetime.now()
@@ -430,8 +440,11 @@ def measurement_worker(config):
 
 def sweep_worker(config):
     """Worker para barridos de frecuencia"""
-    global device, sweep_data
+    global sweep_data
 
+    # Adquirir lock para operaciones exclusivas con el dispositivo
+    device_state._operation_lock.acquire()
+    
     try:
         # Extraer parámetros de la configuración recibida
         start = config['start']
@@ -453,20 +466,35 @@ def sweep_worker(config):
         global sweep_data
         sweep_data = {'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}
 
+        # === INICIAR STREAMING DEL SWEEP ===
+        # Limpiar buffer de streaming antes de iniciar
+        device_state.clear_sweep_buffer()
+        device_state.start_sweep_streaming(points)
+        print(f"📡 Streaming iniciado para {points} puntos - buffer limpio")
+
         # Configurar dispositivo para barrido
-        if device:
+        if device_state.device:
             from lib.enums import SweepType, SweepScale
             import numpy as np
 
-            # Configurar delays ANTES del sweep (PRIMERO)
+            # Configurar display mode PRIMERO (modo 6 = R, X coordenadas rectangulares)
+            try:
+                # Convertir display_mode a entero si viene como string
+                display_mode_int = int(display_mode) if isinstance(display_mode, str) else display_mode
+                print(f"🔧 Configurando display mode: {display_mode_int} (R-X)")
+                device_state.device.set_display_mode(display_mode_int)
+            except Exception as e:
+                print(f"⚠️ Error configurando display mode: {e}")
+
+            # Configurar delays ANTES del sweep
             try:
                 if mdelay >= 0:
                     print(f"🔧 Configurando measurement delay: {mdelay} ms")
-                    device.set_measurement_delay(mdelay)
+                    device_state.device.set_measurement_delay(mdelay)
                     time.sleep(0.0005)  # Esperar 0.5ms para estabilización del delay
                 if tdelay >= 0:
                     print(f"🔧 Configurando trigger delay: {tdelay} ms")
-                    device.set_trigger_delay(tdelay)
+                    device_state.device.set_trigger_delay(tdelay)
             except Exception as e:
                 print(f"⚠️ Error configurando delays: {e}")
 
@@ -475,7 +503,7 @@ def sweep_worker(config):
                 try:
                     mag_value = float(magnitude) if isinstance(magnitude, str) else magnitude
                     print(f"🔧 Configurando magnitud: {mag_value} V")
-                    device.set_magnitude(mag_value)
+                    device_state.device.set_magnitude(mag_value)
                 except Exception as e:
                     print(f"⚠️ Error configurando magnitud: {e}")
 
@@ -525,7 +553,7 @@ def sweep_worker(config):
                 print(f"   Scale: {sweep_scale}")
                 print(f"   Count: {seg_points} puntos ← IMPORTANTE")
                 
-                device.configure_sweep(
+                device_state.device.configure_sweep(
                     SweepType.FREQUENCY,
                     seg_start / 1000,  # Convertir Hz a kHz
                     seg_end / 1000,    # Convertir Hz a kHz
@@ -563,7 +591,40 @@ def sweep_worker(config):
                 
                 def acquire_segment():
                     nonlocal segment_results
-                    segment_results = device.perform_sweep(timeout=sweep_timeout)
+                    
+                    # Callback para procesar puntos en tiempo real
+                    point_counter = [0]  # Lista para permitir modificación en nested function
+                    def process_point_realtime(point):
+                        """Procesa y envía puntos al buffer de streaming inmediatamente"""
+                        try:
+                            # sweep_value viene en Hz (frequency sweep)
+                            freq_hz = point['sweep_value']
+                            measurement = point['measurement']
+                            
+                            # Para display_mode=6 (R_X): measurement contiene (R, X)
+                            if len(measurement) >= 2:
+                                z_real = measurement[0]  # R (resistencia/parte real Z')
+                                z_imag = measurement[1]  # X (reactancia/parte imaginaria Z'')
+                                
+                                # Calcular magnitud y fase
+                                z_mag = np.sqrt(z_real**2 + z_imag**2)
+                                phase = np.arctan2(z_imag, z_real)
+                                
+                                # ENVIAR INMEDIATAMENTE AL BUFFER DE STREAMING
+                                device_state.add_sweep_point(freq_hz, z_real, z_imag, z_mag, phase)
+                                
+                                point_counter[0] += 1
+                                # Log cada 10 puntos
+                                if point_counter[0] % 10 == 0 or point_counter[0] == 1:
+                                    print(f"[Real-time Callback] ✅ Punto {point_counter[0]} procesado y enviado al buffer")
+                        except Exception as e:
+                            print(f"⚠️ Error procesando punto en tiempo real: {e}")
+                    
+                    # Ejecutar sweep con callback para streaming real-time
+                    segment_results = device_state.device.perform_sweep(
+                        timeout=sweep_timeout,
+                        point_callback=process_point_realtime
+                    )
                     acquisition_complete.set()
                 
                 # Iniciar adquisición en thread separado
@@ -625,8 +686,8 @@ def sweep_worker(config):
             results = all_results
             print(f"✅ Barrido completo: {len(results)} puntos totales obtenidos")
 
-            # Procesar resultados DE UNA SOLA VEZ (sin enviar mensajes individuales)
-            print(f"📊 Procesando {len(results)} puntos de una sola vez...")
+            # Consolidar resultados finales en sweep_data (ya se enviaron al streaming en tiempo real)
+            print(f"📊 Consolidando {len(results)} puntos en datos finales...")
             try:
                 for i, point in enumerate(results):
                     # sweep_value viene directamente en Hz (no en kHz)
@@ -634,23 +695,25 @@ def sweep_worker(config):
                     measurement = point['measurement']  # Tupla con valores medidos
 
                     # Los valores medidos dependen del display_mode
-                    # Para display_mode=6 (R_X), measurement contiene (Z_real, Z_imag)
+                    # Para display_mode=6 (R_X), según documentación measurement contiene (R, X)
+                    # R = resistencia = parte real (Z')
+                    # X = reactancia = parte imaginaria (Z'')
                     if len(measurement) >= 2:
-                        z_real = measurement[0]
-                        z_imag = measurement[1]
+                        z_real = measurement[0]  # R (resistencia/parte real Z') está en primer lugar
+                        z_imag = measurement[1]  # X (reactancia/parte imaginaria Z'') está en segundo lugar
 
                         # Calcular magnitud y fase
                         z_mag = np.sqrt(z_real**2 + z_imag**2)
                         phase = np.arctan2(z_imag, z_real)
 
-                        # Agregar a datos
+                        # Agregar a datos finales (ya se enviaron al streaming durante adquisición)
                         sweep_data['param'].append(freq_hz)
                         sweep_data['z_real'].append(z_real)
                         sweep_data['z_imag'].append(z_imag)
                         sweep_data['z_mag'].append(z_mag)
                         sweep_data['phase'].append(phase)
 
-                print(f"✅ Procesamiento completado: {len(sweep_data['param'])} puntos listos")
+                print(f"✅ Consolidación completada: {len(sweep_data['param'])} puntos finales")
                 
                 # IMPORTANTE: Enviar progreso final al 100% antes del mensaje 'completed'
                 sweep_queue.put({
@@ -671,6 +734,11 @@ def sweep_worker(config):
                 return        # Barrido completado
         final_points = len(sweep_data['param'])
         print(f"WORKER: Barrido completado exitosamente con {final_points} puntos - enviando mensaje completed")
+        
+        # === FINALIZAR STREAMING ===
+        device_state.end_sweep_streaming()
+        print(f"📡 Streaming finalizado")
+        
         sweep_queue.put({'completed': True, 'points': final_points})
         print(f"WORKER: Mensaje completed enviado a la cola")
 
@@ -679,6 +747,11 @@ def sweep_worker(config):
         import traceback
         traceback.print_exc()
         sweep_queue.put({'error': True, 'message': str(e)})
+    
+    finally:
+        # Liberar lock de operación
+        device_state._operation_lock.release()
+        print("🔓 Lock de operación liberado")
 
 # ==================== COMPONENTES DE UI ====================
 # NOTA: El terminal CLI ahora es global (ver terminal_component.py)
@@ -1001,9 +1074,11 @@ layout = html.Div([
             # ports-interval y connection-monitor-interval están definidos globalmente en app.py
             dcc.Interval(id='measurement-interval', interval=500, n_intervals=0, disabled=True),
             dcc.Interval(id='sweep-interval', interval=1000, n_intervals=0, disabled=True),  # Deshabilitado por defecto - se activa solo durante barrido
+            dcc.Interval(id='sweep-streaming-interval', interval=100, n_intervals=0, disabled=True),  # Para polling de puntos en streaming (100ms)
             dcc.Interval(id='connection-status-interval', interval=1000, n_intervals=0, disabled=True),  # Deshabilitado por defecto - solo activo cuando el modal está abierto
             dcc.Interval(id='modal-close-interval', interval=1000, n_intervals=0, disabled=True),  # Para cerrar modal con delay
             dcc.Store(id='sweep-data-store', storage_type='session', data={'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}),  # Persistir datos entre páginas
+            dcc.Store(id='sweep-streaming-state', data={'active': False}),  # Estado del streaming de sweep
             dcc.Store(id='phase-negative-store', storage_type='session', data=False),  # Persistir configuración de fase entre páginas
             dcc.Store(id='sweep-completed-trigger', data=False),  # Store para activar alerta de sweep completado
             dcc.Store(id='ports-cache-store', data=[]),  # Cache de puertos para evitar recargas innecesarias
@@ -1196,12 +1271,7 @@ layout = html.Div([
     id="chart-modal",
     className="draggable-window chart-window",
     style={'display': 'none'}
-    ),
-    
-    # Componente SPA_ALERT para notificaciones
-    SPA_ALERT,
-    # Componente SPA_NOTIFY para toasts
-    SPA_NOTIFY
+    )
 
 ], className="sc-chart sc-theme-dark d-flex flex-column min-vh-100", id="main-layout")
 
@@ -1453,6 +1523,29 @@ def register_callbacks(app):
         
         raise PreventUpdate
     
+    # Inicializar ventana arrastrable de conexión (clientside)
+    app.clientside_callback(
+        """
+        function(style) {
+            if (style && (style.display === 'flex' || style.display === 'block')) {
+                // Dar tiempo a que el DOM se actualice
+                setTimeout(function() {
+                    if (window.DraggableWindows && !window.DraggableWindows.isInitialized('connect-modal')) {
+                        window.DraggableWindows.init('connect-modal', 'connect-modal-header', {width: 380, height: 420});
+                        window.DraggableWindows.show('connect-modal');
+                    } else if (window.DraggableWindows) {
+                        window.DraggableWindows.show('connect-modal');
+                    }
+                }, 100);
+            }
+            return 1;
+        }
+        """,
+        Output('connect-modal-dummy', 'data'),
+        Input('connect-modal', 'style'),
+        prevent_initial_call=True
+    )
+    
     # Callback para conectar desde el modal (solo disponible en Dashboard)
     @app.callback(
         [Output('sidebar-connection-text', 'children', allow_duplicate=True),
@@ -1472,7 +1565,6 @@ def register_callbacks(app):
         - Conexión manual desde modal (connect-btn)
         - Desconexión desde modal (disconnect-modal-btn)
         """
-        global device
         
         triggered = ctx.triggered_id
         logger.info(f"Modal connection handler triggered by: {triggered}")
@@ -1485,10 +1577,8 @@ def register_callbacks(app):
         # ===== DESCONEXIÓN =====
         if triggered == 'disconnect-modal-btn':
             try:
-                if device:
-                    device.close()
-                is_connected.clear()
-                device = None
+                if device_state.device:
+                    device_state.device.close()
                 device_state.set_device(None, False)
                 logger.info("Dispositivo desconectado desde modal")
                 return ("Desconectado", "connection-pulse disconnected",
@@ -1507,13 +1597,18 @@ def register_callbacks(app):
                 return ("Seleccione puerto", "connection-pulse disconnected",
                         "ADMX2001", True, False, False)
             
+            # Adquirir lock para evitar conexiones simultáneas
+            if not device_state._operation_lock.acquire(blocking=False):
+                logger.warning("Otra operación en curso, saltando conexión manual")
+                return ("Ocupado", "connection-pulse disconnected",
+                        "ADMX2001", True, False, False)
+            
             try:
                 logger.info(f"Conectando manualmente a {port}...")
-                device = ADMX2001(port, baudrate=115200, timeout=5.0)
-                is_connected.set()
-                device_state.set_device(device, True)
-                device.set_mdelay(1)
-                device.set_tdelay(0)
+                new_device = ADMX2001(port, baudrate=115200, timeout=5.0)
+                device_state.set_device(new_device, True)
+                new_device.set_mdelay(1)
+                new_device.set_tdelay(0)
                 logger.info(f"✅ Conectado a {port}")
                 return ("Conectado", "connection-pulse connected",
                         port, False, False, True)
@@ -1522,6 +1617,9 @@ def register_callbacks(app):
                 # SÍ activar error modal - falló una conexión manual explícita
                 return ("Error", "connection-pulse error",
                         "ADMX2001", True, True, False)
+            finally:
+                # Liberar lock de operación
+                device_state._operation_lock.release()
         
         raise PreventUpdate
     
@@ -1566,7 +1664,8 @@ def register_callbacks(app):
          Output('sweep-data-store', 'data'),
          Output('sweep-completed-trigger', 'data'),
          Output('sweep-interval', 'disabled'),  # Control del interval - solo activo durante barrido
-         Output('modal-close-interval', 'disabled')],  # Control del cierre retardado del modal
+         Output('modal-close-interval', 'disabled'),  # Control del cierre retardado del modal
+         Output('sweep-streaming-interval', 'disabled')],  # Control del interval de streaming
         [Input('sweep-interval', 'n_intervals'),
          Input('sweep-btn', 'n_clicks'),
          Input('cancel-sweep-btn', 'n_clicks'),
@@ -1699,6 +1798,11 @@ def register_callbacks(app):
                             status_text = f"✅ Barrido completado: {data['points']} puntos"
                             sweep_completed = True  # Marcar que el sweep se completó
                             sweep_completed_successfully = True  # Marcar que se completó exitosamente
+                            
+                            # CRÍTICO: Marcar sweep como NO en progreso para detener polling
+                            device_state.end_sweep_streaming()
+                            print(f"📡 Sweep streaming finalizado desde callback (redundancia)")
+                            
                             # modal_style y modal_class se establecerán al final
                             print(f"🎉 BARRIDO COMPLETADO: 100%")
                             # Forzar actualización inmediata de gráficos cuando se completa el sweep
@@ -1768,13 +1872,14 @@ def register_callbacks(app):
 
             # Iniciar sweep
             if triggered == 'sweep-btn':
-                if not device or not is_connected.is_set():
+                # Usar device_state global en lugar de variables locales
+                if not device_state.device or not device_state.is_connected:
                     status_text = "❌ Dispositivo no conectado"
                     progress_style = {'width': '0%'}
                     progress_text = "0%"
                     modal_style = {'display': 'none'}
                     modal_class = 'modal fade'
-                    return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, "0", status_text, status_text, stored_data, False, True, True)  # interval disabled, modal-close-interval disabled
+                    return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, "0", status_text, status_text, stored_data, False, True, True, True)  # interval disabled, modal-close-interval disabled, streaming-interval disabled
 
                 try:
                     # Tomar valores ACTUALES de los inputs, con fallback a valores por defecto
@@ -1804,7 +1909,7 @@ def register_callbacks(app):
                         progress_text = "0%"
                         modal_style = {'display': 'none'}
                         modal_class = 'modal fade'
-                        return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, "0", status_text, status_text, stored_data, False, True, True)  # interval disabled, modal-close-interval disabled
+                        return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, "0", status_text, status_text, stored_data, False, True, True, True)  # interval disabled, modal-close-interval disabled, streaming disabled
 
                     if end < min_freq or end > max_freq:
                         status_text = f"❌ Frecuencia final debe estar entre {min_freq} Hz y {max_freq/1000000} MHz"
@@ -1812,7 +1917,7 @@ def register_callbacks(app):
                         progress_text = "0%"
                         modal_style = {'display': 'none'}
                         modal_class = 'modal fade'
-                        return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, "0", status_text, status_text, stored_data, False, True, True)  # interval disabled, modal-close-interval disabled
+                        return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, "0", status_text, status_text, stored_data, False, True, True, True)  # interval disabled, modal-close-interval disabled, streaming disabled
 
                     if start >= end or points < 2:
                         status_text = "❌ Parámetros inválidos"
@@ -1820,7 +1925,7 @@ def register_callbacks(app):
                         progress_text = "0%"
                         modal_style = {'display': 'none'}
                         modal_class = 'modal fade'
-                        return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, "0", status_text, status_text, stored_data, False, True, True)  # interval disabled, modal-close-interval disabled
+                        return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, "0", status_text, status_text, stored_data, False, True, True, True)  # interval disabled, modal-close-interval disabled, streaming disabled
 
                     # Crear configuración con los valores actuales
                     config = {
@@ -1838,11 +1943,18 @@ def register_callbacks(app):
                     if sweep_thread and sweep_thread.is_alive():
                         print(f"⚠️ BARRIDO YA EN PROGRESO - Ignorando solicitud duplicada")
                         status_text = "⚠️ Barrido ya en progreso..."
-                        # Retornar estado actual sin cambios
-                        return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, str(progress_value), status_text, status_text, stored_data, False, False, True)  # interval enabled, modal-close-interval disabled
+                        # Retornar estado actual sin cambios - mantener streaming activo
+                        return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, str(progress_value), status_text, status_text, stored_data, False, False, True, False)  # interval enabled, modal-close disabled, streaming ENABLED
                     
                     # Iniciar nuevo barrido
                     stop_sweep.clear()
+                    
+                    # LIMPIAR DATOS Y GRÁFICOS AL INICIAR NUEVO BARRIDO
+                    stored_data = {'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}
+                    bode_fig = create_empty_figure("Esperando datos...", theme)
+                    nyquist_fig = create_empty_figure("Esperando datos...", theme)
+                    print(f"🧹 Datos y gráficos limpiados para nuevo barrido")
+                    
                     print(f"✅ Iniciando thread de barrido con configuración:")
                     print(f"   Config completa: {config}")
                     sweep_thread = threading.Thread(target=sweep_worker, args=(config,), daemon=True)
@@ -1856,6 +1968,7 @@ def register_callbacks(app):
                     progress_value = sweep_progress  # Usar el progreso actual (0 si es nuevo)
                     status_text = "Iniciando barrido..."
                     interval_disabled = False  # HABILITAR interval durante el barrido
+                    streaming_interval_disabled = False  # HABILITAR interval de streaming durante el barrido
 
                 except Exception as e:
                     status_text = f"❌ Error: {str(e)}"
@@ -1863,7 +1976,7 @@ def register_callbacks(app):
                     progress_text = "0%"
                     modal_style = {'display': 'none'}
                     modal_class = 'modal fade'
-                    return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, "0", status_text, status_text, stored_data, False, True, True)  # interval disabled, modal-close-interval disabled
+                    return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, "0", status_text, status_text, stored_data, False, True, True, True)  # interval disabled, modal-close disabled, streaming disabled
 
             # Detener sweep
             elif triggered in ['cancel-sweep-btn', 'cancel-sweep-modal-btn']:
@@ -1872,6 +1985,7 @@ def register_callbacks(app):
                 modal_class = 'modal fade'
                 sweep_progress = 0  # Reiniciar progreso al cancelar
                 interval_disabled = True  # DESHABILITAR interval cuando se cancela
+                streaming_interval_disabled = True  # DESHABILITAR interval de streaming cuando se cancela
                 progress_value = 0
                 progress_text = "0%"
                 status_text = "Barrido cancelado"
@@ -1891,6 +2005,11 @@ def register_callbacks(app):
                 modal_style = {'display': 'block'} if has_active_sweep else {'display': 'none'}
             if 'modal_class' not in locals():
                 modal_class = 'modal fade show' if has_active_sweep else 'modal fade'
+            
+            # Establecer streaming_interval_disabled basándose en el estado del sweep
+            if 'streaming_interval_disabled' not in locals():
+                # Habilitar streaming solo si hay un sweep activo
+                streaming_interval_disabled = not has_active_sweep
             
             print(f"🔍 Valores finales - Progress: {progress_value}%, Style width: {progress_style.get('width')}, Text: {progress_text}")
             
@@ -1930,7 +2049,7 @@ def register_callbacks(app):
             # Solo se activa cuando el sweep se completa exitosamente (100%)
             modal_close_interval_disabled = not sweep_completed  # False cuando sweep completo (habilitar intervalo)
             
-            return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, str(progress_value), status_text, status_text, stored_data, sweep_completed_trigger, interval_disabled, modal_close_interval_disabled)
+            return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, str(progress_value), status_text, status_text, stored_data, sweep_completed_trigger, interval_disabled, modal_close_interval_disabled, streaming_interval_disabled)
 
         except (BrokenPipeError, IOError):
             # Ignorar errores de pipe roto (terminal cerrado)
@@ -1938,7 +2057,7 @@ def register_callbacks(app):
             empty_nyquist = create_empty_figure("Error")
             return (empty_bode, empty_nyquist, {'display': 'none'}, 'modal fade', {'width': '0%'}, "0%", "0",
                     "❌ Error de comunicación", "❌ Error de comunicación",
-                    {'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}, False, True, True)  # interval disabled, modal-close-interval disabled
+                    {'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}, False, True, True, True)  # all intervals disabled
         except Exception as e:
             try:
                 print(f"Error en callback manage_sweep: {e}")
@@ -1950,7 +2069,7 @@ def register_callbacks(app):
             empty_nyquist = create_empty_figure("Error")
             return (empty_bode, empty_nyquist, {'display': 'none'}, 'modal fade', {'width': '0%'}, "0%", "0",
                     f"❌ Error interno: {str(e)}", f"❌ Error interno: {str(e)}",
-                    {'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}, False, True)  # interval disabled on error
+                    {'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}, False, True, True, True)  # all inte rvals disabled
 
     # Callback para alternar tema de gráficos
     @app.callback(
@@ -2245,7 +2364,6 @@ def register_callbacks(app):
         3. Testea conexión con *idn
         4. Si responde correctamente, SE CONECTA AUTOMÁTICAMENTE
         """
-        global device
         
         if ctx.triggered_id is None:
             raise PreventUpdate
@@ -2340,12 +2458,8 @@ def register_callbacks(app):
                             test_device.set_mdelay(1)
                             test_device.set_tdelay(0)
                             
-                            # Guardar en variables globales
-                            device = test_device
-                            is_connected.set()
-                            
                             # Registrar en estado global
-                            device_state.set_device(device, True)
+                            device_state.set_device(test_device, True)
                             
                             connected_port = port.device
                             test_result += "✓ Conectado!"
@@ -2588,6 +2702,107 @@ def register_callbacks(app):
         except Exception as e:
             print(f"Error cargando datos CSV: {e}")
             raise PreventUpdate
+
+    # ========== CALLBACK PARA STREAMING DE SWEEP EN TIEMPO REAL ==========
+    @app.callback(
+        [Output('bode-plot', 'figure', allow_duplicate=True),
+         Output('nyquist-plot', 'figure', allow_duplicate=True),
+         Output('sweep-data-store', 'data', allow_duplicate=True),
+         Output('sweep-progress-bar', 'style', allow_duplicate=True),
+         Output('sweep-progress-bar', 'children', allow_duplicate=True),
+         Output('sweep-progress-bar', 'aria-valuenow', allow_duplicate=True),
+         Output('sweep-streaming-interval', 'disabled', allow_duplicate=True)],
+        Input('sweep-streaming-interval', 'n_intervals'),
+        [State('sweep-data-store', 'data'),
+         State('phase-negative-store', 'data'),
+         State('theme-store', 'data'),
+         State('bode-plot', 'figure'),
+         State('nyquist-plot', 'figure')],
+        prevent_initial_call=True
+    )
+    def poll_sweep_streaming(n_intervals, current_data, negative_phase, theme, bode_fig, nyquist_fig):
+        """Poll para obtener nuevos puntos del sweep y actualizar gráficos en tiempo real"""
+        import numpy as np
+        
+        global last_sweep_point_count, intervals_without_new_points
+        
+        # Inicializar current_data si es None o vacío
+        if not current_data:
+            current_data = {'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}
+        
+        current_point_count = len(current_data.get('param', []))
+        
+        print(f"[Sweep Poll] n_intervals={n_intervals}, sweep_in_progress={device_state.is_sweep_in_progress()}, puntos_actuales={current_point_count}")
+        
+        # Verificar si hay sweep en progreso
+        if not device_state.is_sweep_in_progress():
+            # No hay sweep, desactivar interval y resetear contadores
+            print(f"[Sweep Poll] Sweep no en progreso - desactivando interval")
+            last_sweep_point_count = 0
+            intervals_without_new_points = 0
+            return bode_fig, nyquist_fig, dash.no_update, dash.no_update, dash.no_update, dash.no_update, True
+        
+        # Detectar sweeps "abandonados" (sin nuevos puntos por tiempo prolongado)
+        if current_point_count == last_sweep_point_count:
+            intervals_without_new_points += 1
+            
+            # Si han pasado muchos intervalos sin nuevos datos Y hay progreso significativo
+            if intervals_without_new_points > MAX_INTERVALS_WITHOUT_DATA:
+                current, total, pct = device_state.get_sweep_progress()
+                if pct >= 90 and current_point_count > 0:
+                    print(f"[Sweep Poll] ⚠️ Sweep abandonado detectado - {intervals_without_new_points} intervalos sin datos, progreso={pct}%")
+                    print(f"[Sweep Poll] Finalizando sweep automáticamente...")
+                    device_state.end_sweep_streaming()
+                    intervals_without_new_points = 0
+                    last_sweep_point_count = 0
+                    return bode_fig, nyquist_fig, dash.no_update, dash.no_update, dash.no_update, dash.no_update, True
+        else:
+            # Hay nuevos puntos, resetear contador
+            intervals_without_new_points = 0
+            last_sweep_point_count = current_point_count
+        
+        # Obtener nuevos puntos del buffer
+        new_points = device_state.get_sweep_points()
+        
+        if not new_points:
+            # No hay puntos nuevos, mantener estado actual
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, False
+        
+        print(f"[Sweep Poll] ✅ Actualizando gráficos con {len(new_points)} nuevos puntos")
+        
+        # Agregar nuevos puntos a los datos actuales
+        for point in new_points:
+            current_data['param'].append(point['freq'])
+            current_data['z_real'].append(point['z_real'])
+            current_data['z_imag'].append(point['z_imag'])
+            current_data['z_mag'].append(point['z_mag'])
+            current_data['phase'].append(point['phase'])
+        
+        print(f"[Sweep Poll] Total de puntos en gráficos: {len(current_data['param'])}")
+        
+        # Actualizar gráficos con todos los datos (incluidos los nuevos)
+        if len(current_data['param']) > 0:
+            bode_fig = create_bode_plot(
+                current_data['param'],
+                current_data['z_mag'],
+                current_data['phase'],
+                negative_phase,
+                theme
+            )
+            nyquist_fig = create_nyquist_plot(
+                current_data['z_real'],
+                current_data['z_imag'],
+                current_data['param'],
+                theme
+            )
+        
+        # Actualizar progreso
+        current, total, pct = device_state.get_sweep_progress()
+        progress_style = {'width': f'{pct}%'}
+        progress_text = f"{pct}%"
+        
+        # IMPORTANTE: Retornar current_data actualizado para que persista entre polls
+        return bode_fig, nyquist_fig, current_data, progress_style, progress_text, str(pct), False
 
 # ==================== FUNCIONES AUXILIARES ====================
 

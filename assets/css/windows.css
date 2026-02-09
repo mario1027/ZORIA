@@ -312,23 +312,28 @@ body.window-dragging-active * {
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     font-size: 13px;
     line-height: 1.5;
+    scroll-behavior: smooth; /* Scroll suave automático */
 }
 
 .terminal-float-screen .terminal-banner {
     font-size: 12px;
     line-height: 1.4;
     margin-bottom: 12px;
+    color: #10b981; /* Verde terminal */
 }
 
 .terminal-float-screen .terminal-line {
     margin-bottom: 4px;
+    color: #e5e5e5; /* Texto claro por defecto */
 }
 
 .terminal-float-screen .terminal-code {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(16, 185, 129, 0.15);
     padding: 2px 6px;
     border-radius: 4px;
     font-size: 12px;
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 /* Terminal input area */
@@ -415,6 +420,31 @@ body.window-dragging-active * {
     transform: translateY(-1px);
 }
 
+/* Colores específicos para iconos de los botones del footer */
+.terminal-float-quick-btn .text-warning {
+    color: #fbbf24 !important;
+}
+
+.terminal-float-quick-btn .text-info {
+    color: #60a5fa !important;
+}
+
+.terminal-float-quick-btn .text-primary {
+    color: #3b82f6 !important;
+}
+
+.terminal-float-quick-btn .text-secondary {
+    color: #9ca3af !important;
+}
+
+.terminal-float-quick-btn .text-danger {
+    color: #f87171 !important;
+}
+
+.terminal-float-quick-btn .text-success {
+    color: #34d399 !important;
+}
+
 .terminal-float-divider {
     width: 1px;
     height: 20px;
@@ -439,6 +469,191 @@ body.window-dragging-active * {
 .terminal-window.window-maximized .terminal-float-footer {
     width: 100%;
     padding: 8px 40px;
+}
+
+/* =============================================================================
+   ESTILOS DE CONTENIDO DEL TERMINAL - Texto y respuestas
+   ============================================================================= */
+
+/* Líneas del terminal */
+.terminal-line {
+    color: #e5e5e5;
+    margin-bottom: 2px;
+}
+
+/* Timestamp en comandos */
+.terminal-timestamp {
+    color: #6b7280;
+    font-size: 11px;
+}
+
+/* Símbolo del prompt */
+.terminal-prompt-symbol {
+    color: #10b981;
+    font-weight: bold;
+}
+
+/* Icono del prompt */
+.terminal-prompt-icon {
+    color: #10b981;
+    margin-right: 4px;
+}
+
+/* Path del prompt */
+.terminal-prompt-path {
+    color: #3b82f6;
+    font-weight: 500;
+}
+
+/* Texto del comando ingresado */
+.terminal-cmd-text {
+    color: #22d3ee;
+    font-weight: 500;
+}
+
+/* Líneas de respuesta del dispositivo */
+.terminal-response-line {
+    color: #10b981;
+    padding-left: 8px;
+}
+
+/* Respuestas de éxito */
+.terminal-response-success {
+    color: #22c55e !important;
+    font-weight: 500;
+}
+
+/* Respuestas de error */
+.terminal-response-error {
+    color: #ef4444 !important;
+    font-weight: 500;
+}
+
+/* Respuestas de advertencia */
+.terminal-response-warning {
+    color: #f59e0b !important;
+    font-weight: 500;
+}
+
+/* Texto de error completo */
+.terminal-error-text {
+    color: #ef4444;
+}
+
+/* Línea de error */
+.terminal-error-line {
+    background: rgba(239, 68, 68, 0.1);
+    padding: 4px 8px;
+    border-left: 3px solid #ef4444;
+}
+
+/* Iconos de estado */
+.terminal-success-icon {
+    color: #22c55e;
+    margin-right: 4px;
+}
+
+.terminal-error-icon {
+    color: #ef4444;
+    margin-right: 4px;
+}
+
+.terminal-warning-icon {
+    color: #f59e0b;
+    margin-right: 4px;
+}
+
+/* Indentación */
+.terminal-indent {
+    display: inline-block;
+    width: 8px;
+}
+
+/* Respuestas vacías o sin salida */
+.terminal-empty-response {
+    color: #6b7280;
+    font-style: italic;
+}
+
+/* Separador entre comandos */
+.terminal-separator {
+    height: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    margin: 8px 0;
+}
+
+/* Área de contenido del terminal */
+.terminal-content-area {
+    margin-top: 8px;
+}
+
+/* Status indicator */
+.status-pulse {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #6b7280;
+}
+
+.status-pulse.status-connected {
+    background: #22c55e;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.status-pulse.status-disconnected {
+    background: #ef4444;
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.status-text {
+    color: #9ca3af;
+    font-size: 12px;
+}
+
+/* Clases de color de Bootstrap aplicadas al terminal */
+.terminal-line .text-success {
+    color: #10b981 !important;
+}
+
+.terminal-line .text-info {
+    color: #3b82f6 !important;
+}
+
+.terminal-line .text-warning {
+    color: #f59e0b !important;
+}
+
+.terminal-line .text-danger {
+    color: #ef4444 !important;
+}
+
+.terminal-line .text-light {
+    color: #e5e5e5 !important;
+}
+
+.terminal-line .text-muted {
+    color: #9ca3af !important;
+}
+
+.terminal-line .fw-bold {
+    font-weight: 700 !important;
+}
+
+/* Estilo para elementos Small dentro del terminal */
+.terminal-line small,
+.terminal-line .small {
+    color: #d1d5db;
+    font-size: 0.875em;
 }
 
 /* =============================================================================

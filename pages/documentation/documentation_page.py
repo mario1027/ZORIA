@@ -1361,6 +1361,264 @@ commit : success
             ], "info")
         ], style={'marginBottom': '40px'}),
         
+        # ========== COMANDOS DE CALIBRACIÓN EN TERMINAL ==========
+        html.Div([
+            html.H5([
+                html.I(className="fas fa-balance-scale me-2", style={'color': '#f59e0b'}),
+                "Comandos de Calibración en Terminal"
+            ], className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.P([
+                "La calibración Open/Short/Load (OSL) puede realizarse directamente desde el terminal CLI. "
+                "Esta sección describe todos los comandos disponibles para calibración manual."
+            ], style={'color': '#475569', 'marginBottom': '20px'}),
+            
+            # Preparación
+            html.Div([
+                html.H6("Preparación para Calibración", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.Ol([
+                    html.Li([
+                        "Deshabilitar autorange y configurar ganancias manualmente:"
+                    ], style={'color': '#475569', 'marginBottom': '8px'}),
+                    html.Pre("""ADMX2001> setgain ch0 0
+ADMX2001> setgain ch1 1""", style={
+                        'background': '#1e293b',
+                        'color': '#10b981',
+                        'padding': '12px',
+                        'borderRadius': '6px',
+                        'fontFamily': 'monospace',
+                        'fontSize': '0.85rem',
+                        'marginBottom': '10px'
+                    }),
+                    html.Li([
+                        "Configurar frecuencia de calibración (ej: 1kHz):"
+                    ], style={'color': '#475569', 'marginBottom': '8px'}),
+                    html.Pre("ADMX2001> frequency 1000", style={
+                        'background': '#1e293b',
+                        'color': '#10b981',
+                        'padding': '8px 12px',
+                        'borderRadius': '6px',
+                        'fontFamily': 'monospace',
+                        'fontSize': '0.85rem',
+                        'marginBottom': '10px',
+                        'display': 'inline-block'
+                    }),
+                    html.Li([
+                        "Configurar promediado alto para mejor precisión:"
+                    ], style={'color': '#475569', 'marginBottom': '8px'}),
+                    html.Pre("ADMX2001> average 200", style={
+                        'background': '#1e293b',
+                        'color': '#10b981',
+                        'padding': '8px 12px',
+                        'borderRadius': '6px',
+                        'fontFamily': 'monospace',
+                        'fontSize': '0.85rem',
+                        'marginBottom': '10px',
+                        'display': 'inline-block'
+                    }),
+                    html.Li([
+                        "Asegurar que los switches S1 y S2 estén en posición DUT/GND"
+                    ], style={'color': '#475569'})
+                ], style={'marginLeft': '20px'})
+            ], style={'background': '#f8fafc', 'padding': '20px', 'borderRadius': '8px', 'marginBottom': '20px'}),
+            
+            # Comandos de calibración
+            html.Div([
+                html.H6("Comandos de Calibración OSL", className="fw-bold mb-3", style={'color': '#0f172a'}),
+                
+                # Calibrate Open
+                html.Div([
+                    html.Code("calibrate open", style={'background': '#1e293b', 'color': '#f59e0b', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P([
+                        "Ejecuta calibración de circuito abierto. ",
+                        html.Strong("Conexión: "), "H_POT/H_CUR juntos, L_POT/L_CUR juntos (sin conectar H con L)"
+                    ], style={'color': '#64748b', 'marginTop': '8px', 'marginBottom': '15px'})
+                ]),
+                
+                # Calibrate Short
+                html.Div([
+                    html.Code("calibrate short", style={'background': '#1e293b', 'color': '#f59e0b', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P([
+                        "Ejecuta calibración de cortocircuito. ",
+                        html.Strong("Conexión: "), "TODOS los terminales juntos (H_CUR, H_POT, L_POT, L_CUR)",
+                        html.Br(),
+                        html.Span("⚠️ Solo para ganancias CH1 = 0 o 1. Reducir magnitud a 0.2V antes.", style={'color': '#f59e0b', 'fontSize': '0.9rem'})
+                    ], style={'color': '#64748b', 'marginTop': '8px', 'marginBottom': '15px'})
+                ]),
+                
+                # Calibrate Load
+                html.Div([
+                    html.Code("calibrate rt <R> xt <X>", style={'background': '#1e293b', 'color': '#f59e0b', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P([
+                        "Ejecuta calibración de carga. ",
+                        html.Strong("Parámetros: "),
+                        html.Br(),
+                        html.Code("rt"), " = componente resistiva en Ohms",
+                        html.Br(),
+                        html.Code("xt"), " = componente reactiva en Ohms (0 para resistores puros)"
+                    ], style={'color': '#64748b', 'marginTop': '8px', 'marginBottom': '15px'}),
+                    html.P([
+                        html.Strong("Ejemplo: "),
+                        html.Code("calibrate rt 1e+3 xt 0", style={'background': '#f1f5f9', 'padding': '2px 6px', 'borderRadius': '4px'}),
+                        " - Calibra con resistor de 1kΩ"
+                    ], style={'color': '#475569', 'fontSize': '0.9rem', 'marginLeft': '20px'})
+                ]),
+                
+                # Calibrate Commit
+                html.Div([
+                    html.Code("calibrate commit [timestamp]", style={'background': '#1e293b', 'color': '#f59e0b', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P([
+                        "Guarda los coeficientes de calibración en memoria no volátil (flash).",
+                        html.Br(),
+                        "Solicitará password (por defecto: ", html.Code("Analog123"), ")"
+                    ], style={'color': '#64748b', 'marginTop': '8px', 'marginBottom': '15px'}),
+                    html.Pre("""ADMX2001> calibrate commit
+PASSWORD> Analog123
+commit : success""", style={
+                        'background': '#1e293b',
+                        'color': '#10b981',
+                        'padding': '12px',
+                        'borderRadius': '6px',
+                        'fontFamily': 'monospace',
+                        'fontSize': '0.85rem',
+                        'marginTop': '10px'
+                    })
+                ]),
+                
+                info_box([
+                    html.Strong("⚠️ Importante: "),
+                    "Los pasos deben realizarse en orden: ", html.Strong("open → short → load → commit"), 
+                    ". Cada punto de calibración es específico para la frecuencia y ganancias configuradas."
+                ], "warning")
+                
+            ], style={'background': '#ffffff', 'borderRadius': '12px', 'border': '1px solid #e2e8f0', 'padding': '20px', 'marginBottom': '20px'}),
+            
+            # Comandos adicionales de calibración
+            html.Div([
+                html.H6("Comandos Adicionales de Calibración", className="fw-bold mb-3", style={'color': '#0f172a'}),
+                
+                html.Div([
+                    html.Code("calibrate list", style={'background': '#1e293b', 'color': '#10b981', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P("Lista todas las frecuencias con datos de calibración guardados en flash", style={'color': '#64748b', 'marginTop': '8px', 'marginBottom': '15px'})
+                ]),
+                
+                html.Div([
+                    html.Code("calibrate list <freq>", style={'background': '#1e293b', 'color': '#10b981', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P("Muestra qué configuraciones de ganancia están calibradas para una frecuencia específica", style={'color': '#64748b', 'marginTop': '8px', 'marginBottom': '15px'})
+                ]),
+                
+                html.Div([
+                    html.Code("calibrate reload", style={'background': '#1e293b', 'color': '#10b981', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P("Carga los coeficientes de la frecuencia más cercana desde la memoria flash", style={'color': '#64748b', 'marginTop': '8px', 'marginBottom': '15px'})
+                ]),
+                
+                html.Div([
+                    html.Code("calibrate switch <evalkit|default>", style={'background': '#1e293b', 'color': '#10b981', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P([
+                        "Cambia entre coeficientes precargados (evalkit) o coeficientes de usuario (default)",
+                        html.Br(),
+                        html.Span("⚠️ Los coeficientes precargados pueden no aplicar a tu configuración específica.", style={'color': '#64748b', 'fontSize': '0.85rem'})
+                    ], style={'color': '#64748b', 'marginTop': '8px', 'marginBottom': '15px'})
+                ]),
+                
+                html.Div([
+                    html.Code("resetcal", style={'background': '#1e293b', 'color': '#ef4444', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P("Borra el conjunto de calibración cargado actualmente en RAM (no afecta flash)", style={'color': '#64748b', 'marginTop': '8px', 'marginBottom': '15px'})
+                ]),
+                
+                html.Div([
+                    html.Code("calibrate erase", style={'background': '#1e293b', 'color': '#ef4444', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P([
+                        html.Strong("⚠️ ¡PELIGRO! "), "Elimina PERMANENTEMENTE todos los conjuntos de calibración de la flash. Requiere password.",
+                        html.Br(),
+                        html.Span("Use con extrema precaución.", style={'color': '#ef4444', 'fontWeight': 'bold'})
+                    ], style={'color': '#64748b', 'marginTop': '8px'})
+                ])
+            ], style={'background': '#f8fafc', 'padding': '20px', 'borderRadius': '12px', 'border': '1px solid #e2e8f0', 'marginBottom': '20px'}),
+            
+            # Ejemplo completo de calibración en terminal
+            html.Div([
+                html.H6("Ejemplo Completo de Calibración en Terminal", className="fw-bold mb-3", style={'color': '#0f172a'}),
+                html.P("Calibración a 1kHz con resistor de 1kΩ (configuración CH0=0, CH1=1):", style={'color': '#475569', 'marginBottom': '15px'}),
+                html.Pre("""# 1. Configurar ganancias (autorange OFF durante calibración)
+ADMX2001> setgain ch0 0
+voltGain = 0
+
+ADMX2001> setgain ch1 1
+currGain = 1
+
+# 2. Configurar frecuencia y promediado
+ADMX2001> frequency 1000
+frequency = 1.0000kHz
+
+ADMX2001> average 200
+average = 200
+
+# 3. CALIBRACIÓN OPEN
+# Conectar: H_POT/H_CUR juntos, L_POT/L_CUR juntos
+ADMX2001> calibrate open
+0,-1.117998e-09,1.162904e-06
+Frequency = 1.0000kHz
+Cal Temp: 41.4 deg C
+open:Done
+short:Not Done
+load:Not Done
+
+# 4. CALIBRACIÓN SHORT (solo para CH1 = 0 o 1)
+# Reducir magnitud para proteger el circuito
+ADMX2001> magnitude 0.2
+magnitude = 0.2000
+
+# Conectar: TODOS los terminales juntos
+ADMX2001> calibrate short
+0,2.075835e-02,1.224807e-02
+Frequency = 1.0000kHz
+Cal Temp: 41.4 deg C
+open:Done
+short:Done
+load:Not Done
+
+# 5. CALIBRACIÓN LOAD
+# Restaurar magnitud
+ADMX2001> magnitude 1
+magnitude = 1.0000
+
+# Conectar: Resistor 1kΩ entre terminales H y L
+ADMX2001> calibrate rt 1000 xt 0
+0,1.000381e+03,-1.254483e+00
+Frequency = 1.0000kHz
+Cal Temp: 41.5 deg C
+open:Done
+short:Done
+load:Done
+
+# 6. GUARDAR EN FLASH
+ADMX2001> calibrate commit
+PASSWORD> Analog123
+commit : success
+
+# 7. Verificación
+ADMX2001> display 6
+ADMX2001> z
+0,1.000021e+03,8.220137e-01""", style={
+                    'background': '#1e293b',
+                    'color': '#e2e8f0',
+                    'padding': '20px',
+                    'borderRadius': '12px',
+                    'fontFamily': 'monospace',
+                    'fontSize': '0.85rem',
+                    'overflowX': 'auto',
+                    'lineHeight': '1.5'
+                })
+            ], style={'marginBottom': '20px'}),
+            
+            info_box([
+                html.Strong("💡 Consejo: "),
+                "Usa el comando ", html.Code("calibrate list"), " después de guardar para verificar que la calibración se almacenó correctamente. "
+                "La capacidad de almacenamiento es de 25 conjuntos (EEPROM) o 450 conjuntos (Flash) dependiendo del módulo."
+            ], "tip")
+            
+        ], style={'marginBottom': '40px'}),
+        
         # Ejemplo completo
         html.Div([
             html.H5("Ejemplo Completo de Calibración", className="fw-bold mb-3", style={'color': '#0f172a'}),

@@ -36,9 +36,30 @@
             return false;
         }
         
-        // Si ya está inicializada, no hacer nada
+        // Si ya está inicializada, verificar si el header sigue siendo el mismo
         if (windows.has(windowId)) {
-            console.log(`[DraggableWindows] Ventana ya inicializada (skipping): ${windowId}`);
+            const existingData = windows.get(windowId);
+            
+            // Si el header cambió (Dash re-renderizó), actualizar listeners
+            if (existingData.header !== header) {
+                console.log(`[DraggableWindows] Header re-renderizado para ${windowId}, actualizando listeners...`);
+                existingData.header = header;
+                
+                // Re-agregar listeners del header solo si no los tiene
+                if (!header._hasDragListeners) {
+                    header.addEventListener('mousedown', (e) => handleDragStart(e, windowId));
+                    header.addEventListener('touchstart', (e) => handleDragStart(e, windowId), { passive: false });
+                    header.addEventListener('selectstart', (e) => e.preventDefault());
+                    header._hasDragListeners = true;
+                }
+                
+                // Re-configurar controles de ventana
+                setupWindowControls(windowId);
+                
+                return true;
+            }
+            
+            console.log(`[DraggableWindows] Ventana ya inicializada correctamente: ${windowId}`);
             return true;
         }
         
@@ -75,14 +96,20 @@
         // Posición inicial (centrada)
         updateWindowPosition(win, state);
         
-        // Eventos del header para arrastre
-        header.addEventListener('mousedown', (e) => handleDragStart(e, windowId));
-        header.addEventListener('touchstart', (e) => handleDragStart(e, windowId), { passive: false });
-        header.addEventListener('selectstart', (e) => e.preventDefault());
+        // Eventos del header para arrastre (solo si no los tiene ya)
+        if (!header._hasDragListeners) {
+            header.addEventListener('mousedown', (e) => handleDragStart(e, windowId));
+            header.addEventListener('touchstart', (e) => handleDragStart(e, windowId), { passive: false });
+            header.addEventListener('selectstart', (e) => e.preventDefault());
+            header._hasDragListeners = true;
+        }
         
-        // Traer al frente al hacer clic
-        win.addEventListener('mousedown', () => bringToFront(windowId));
-        win.addEventListener('touchstart', () => bringToFront(windowId), { passive: true });
+        // Traer al frente al hacer clic (solo si no lo tiene ya)
+        if (!win._hasFrontListeners) {
+            win.addEventListener('mousedown', () => bringToFront(windowId));
+            win.addEventListener('touchstart', () => bringToFront(windowId), { passive: true });
+            win._hasFrontListeners = true;
+        }
         
         // Configurar controles de ventana
         setupWindowControls(windowId);
@@ -230,9 +257,10 @@
         
         const { element, state } = winData;
         
-        // Si ya se configuraron los controles, salir
-        if (element.dataset.controlsConfigured === 'true') {
-            console.log(`[DraggableWindows] Controles ya configurados: ${windowId}`);
+        // Verificar si el elemento sigue en el DOM (puede haber sido re-renderizado por Dash)
+        if (!document.body.contains(element)) {
+            console.warn(`[DraggableWindows] Elemento ${windowId} ya no está en DOM, limpiando...`);
+            windows.delete(windowId);
             return;
         }
         
@@ -240,37 +268,41 @@
         
         // Botón minimizar
         const minimizeBtn = element.querySelector('.window-btn-minimize');
-        if (minimizeBtn) {
+        if (minimizeBtn && !minimizeBtn._hasListener) {
             minimizeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 e.preventDefault();
                 console.log(`[DraggableWindows] Minimizar: ${windowId}`);
                 minimizeWindow(windowId);
             });
+            minimizeBtn._hasListener = true;
         }
         
         // Botón maximizar
         const maximizeBtn = element.querySelector('.window-btn-maximize');
-        if (maximizeBtn) {
+        if (maximizeBtn && !maximizeBtn._hasListener) {
             maximizeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 e.preventDefault();
                 console.log(`[DraggableWindows] Maximizar/Restaurar: ${windowId}`);
                 toggleMaximize(windowId);
             });
+            maximizeBtn._hasListener = true;
         }
         
-        // Botón cerrar - NO interceptar para 'command-modal', dejarlo a Dash
+        // Botón cerrar - NO interceptar para modales con callbacks Python, dejarlo a Dash
         const closeBtn = element.querySelector('.window-btn-close');
-        if (closeBtn && windowId !== 'command-modal') {
+        const dashManagedWindows = ['command-modal', 'connect-modal'];
+        if (closeBtn && !dashManagedWindows.includes(windowId) && !closeBtn._hasListener) {
             closeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 e.preventDefault();
                 console.log(`[DraggableWindows] Cerrar: ${windowId}`);
                 closeWindow(windowId);
             });
-        } else if (closeBtn && windowId === 'command-modal') {
-            console.log(`[DraggableWindows] Botón cerrar del terminal manejado por Dash`);
+            closeBtn._hasListener = true;
+        } else if (closeBtn && dashManagedWindows.includes(windowId)) {
+            console.log(`[DraggableWindows] Botón cerrar de ${windowId} manejado por Dash`);
         }
         
         // Marcar como configurado
