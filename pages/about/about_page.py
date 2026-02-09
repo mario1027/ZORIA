@@ -773,7 +773,7 @@ def cta_section():
                                 'color': '#d4af37',
                                 'marginBottom': '8px'
                             }),
-                            html.Div("Python 3.8+", style={
+                            html.Div("Python 3.13+", style={
                                 'fontSize': '0.75rem',
                                 'color': '#64748b'
                             })

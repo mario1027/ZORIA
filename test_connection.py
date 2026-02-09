@@ -14,14 +14,19 @@ def test_connection():
     print("TEST DE CONEXIÓN ADMX2001")
     print("=" * 60)
     
-    # Listar puertos
-    ports = list(serial.tools.list_ports.comports())
+    # Listar solo puertos USB
+    all_ports = list(serial.tools.list_ports.comports())
+    ports = [p for p in all_ports if ('ttyUSB' in p.device or 'ttyACM' in p.device or 
+                                       'COM' in p.device.upper() or 
+                                       '/dev/cu.usbserial' in p.device or 
+                                       '/dev/cu.usbmodem' in p.device)]
     
     if not ports:
-        print("❌ No se encontraron puertos seriales")
+        print("❌ No se encontraron puertos USB")
+        print(f"   (Se detectaron {len(all_ports)} puertos totales, pero ninguno USB)")
         return
     
-    print(f"\n📋 Puertos encontrados: {len(ports)}")
+    print(f"\n📋 Puertos USB encontrados: {len(ports)}")
     for p in ports:
         print(f"  - {p.device}: {p.description} ({p.manufacturer})")
     

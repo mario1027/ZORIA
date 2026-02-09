@@ -22,6 +22,8 @@ from typing import Optional
 # IMPORTS DE TERCEROS
 # =============================================================================
 from dash_spa import DashSPA, page_container
+from dash_spa.components import SPA_ALERT, SPA_NOTIFY
+from dash import html, dcc
 
 # =============================================================================
 # IMPORTS LOCALES
@@ -83,6 +85,7 @@ EXTERNAL_STYLESHEETS = [
     "/assets/css/windows.css",
     "/assets/css/modal-connect.css",
     "/assets/css/documentation.css",
+    "/assets/css/about.css",
 ]
 
 EXTERNAL_SCRIPTS = [
@@ -94,6 +97,8 @@ EXTERNAL_SCRIPTS = [
     "/assets/vendor/js/notyf.min.js",
     # Sistema de ventanas arrastrables (local)
     "/assets/js/draggable_windows.js",
+    # Atajos de teclado globales (local)
+    "/assets/js/keyboard_shortcuts.js",
 ]
 
 # =============================================================================
@@ -108,6 +113,228 @@ DEFAULT_CONFIG = {
     "debug": True,
     "use_reloader": False,
 }
+
+
+def register_global_connection_callbacks(app):
+    """
+    Registra los callbacks globales de conexión del sidebar.
+    Estos callbacks controlan la conexión/desconexión del dispositivo ADMX2001
+    desde el sidebar, disponible en todas las páginas.
+    """
+    from dash import Input, Output, ctx
+    from dash.exceptions import PreventUpdate
+    import serial.tools.list_ports
+    import time
+    from lib.device_state import device_state
+    from lib import ADMX2001
+    
+    logger = logging.getLogger(__name__)
+    
+    # Variable para rastrear si ya se intentó la auto-conexión
+    auto_connect_attempted = {'flag': False}
+    
+    # =========================================================================
+    # CALLBACK ÚNICO DE CONEXIÓN - Sidebar (disponible en todas las páginas)
+    # =========================================================================
+    @app.callback(
+        [Output('sidebar-connection-text', 'children', allow_duplicate=True),
+         Output('sidebar-connection-dot', 'className', allow_duplicate=True),
+         Output('sidebar-device-port', 'children', allow_duplicate=True),
+         Output('sidebar-disconnect-btn', 'disabled', allow_duplicate=True),
+         Output('connection-error-trigger', 'data', allow_duplicate=True),
+         Output('connection-success-trigger', 'data', allow_duplicate=True)],
+        [Input('sidebar-quick-connect-btn', 'n_clicks'),
+         Input('sidebar-disconnect-btn', 'n_clicks'),
+         Input('auto-connect-on-start', 'data')],
+        prevent_initial_call=True
+    )
+    def sidebar_connection_handler(sidebar_quick_clicks, sidebar_disconnect_clicks, auto_start):
+        """
+        Callback de conexión desde el sidebar (disponible globalmente):
+        - Conexión rápida sidebar (sidebar-quick-connect-btn) 
+        - Auto-conexión al inicio (auto-connect-on-start)
+        - Desconexión (sidebar-disconnect-btn)
+        """
+        triggered = ctx.triggered_id
+        logger.info(f"Sidebar connection handler triggered by: {triggered}, auto_start={auto_start}")
+        
+        # Ignorar auto-connect si ya se intentó anteriormente
+        if triggered == 'auto-connect-on-start' and auto_connect_attempted['flag']:
+            logger.info("Auto-connect ya fue intentado, ignorando ejecución duplicada")
+            raise PreventUpdate
+        
+        # Marcar que se intentó auto-connect
+        if triggered == 'auto-connect-on-start':
+            auto_connect_attempted['flag'] = True
+        
+        # Ignorar si auto_start es True pero no fue el trigger activo
+        # Esto evita re-ejecuciones cuando otros botones se presionan
+        if triggered != 'auto-connect-on-start' and auto_start is True:
+            # auto-connect-on-start está en True pero no fue quien disparó este callback
+            # Solo actualizar estado sin intentar conectar de nuevo
+            if device_state.is_connected and device_state.device is not None:
+                is_conn, status_msg, port_info = device_state.verify_connection()
+                if is_conn:
+                    return ("Conectado", "connection-pulse connected",
+                            port_info if port_info else "ADMX2001",
+                            False, False, False)
+            return ("Desconectado", "connection-pulse disconnected",
+                    "ADMX2001", True, False, False)
+        
+        # Si ya está conectado y no es desconexión, mostrar estado
+        if triggered != 'sidebar-disconnect-btn':
+            if device_state.is_connected and device_state.device is not None:
+                is_conn, status_msg, port_info = device_state.verify_connection()
+                if is_conn:
+                    return ("Conectado", "connection-pulse connected",
+                            port_info if port_info else "ADMX2001",
+                            False, False, False)
+        
+        # ===== DESCONEXIÓN =====
+        if triggered == 'sidebar-disconnect-btn':
+            try:
+                if device_state.device:
+                    device_state.device.close()
+                device_state.set_device(None, False)
+                logger.info("Dispositivo desconectado")
+                return ("Desconectado", "connection-pulse disconnected",
+                        "ADMX2001", True, False, False)
+            except Exception as e:
+                logger.error(f"Error desconectando: {e}")
+                # NO activar error modal - desconexión fallida no es crítica
+                return ("Error", "connection-pulse error",
+                        "ADMX2001", True, False, False)
+        
+        # ===== CONEXIÓN RÁPIDA / AUTO =====
+        if triggered in ['sidebar-quick-connect-btn', 'auto-connect-on-start']:
+            # Determinar si debe mostrar error modal (solo en conexión manual)
+            show_error_on_fail = (triggered == 'sidebar-quick-connect-btn')
+            logger.info(f"Iniciando conexión, show_error_on_fail={show_error_on_fail}")
+            
+            try:
+                logger.info("Iniciando conexión automática...")
+                all_ports = list(serial.tools.list_ports.comports())
+                
+                # Filtrar SOLO puertos USB (excluir ttyS* que causan errores I/O)
+                usb_ports = []
+                for p in all_ports:
+                    device_name = p.device
+                    # Solo USB: ttyUSB*, ttyACM* en Linux; COM* en Windows
+                    if ('ttyUSB' in device_name or 'ttyACM' in device_name or 
+                        'COM' in device_name.upper() or 
+                        '/dev/cu.usbserial' in device_name or '/dev/cu.usbmodem' in device_name):
+                        usb_ports.append(p)
+                
+                if not usb_ports:
+                    logger.warning("No hay puertos USB disponibles")
+                    return ("Sin puertos USB", "connection-pulse disconnected",
+                            "ADMX2001", True, show_error_on_fail, False)
+                
+                logger.info(f"Puertos USB detectados: {[p.device for p in usb_ports]}")
+                
+                # Priorizar candidatos FTDI/USB-Serial
+                candidates = []
+                for p in usb_ports:
+                    desc = p.description.upper() if p.description else ""
+                    manuf = p.manufacturer.upper() if p.manufacturer else ""
+                    if any(x in desc or x in manuf for x in ['FTDI', 'CP210', 'SILICON', 'USB-SERIAL', 'FT232']):
+                        candidates.append(p)
+                
+                # Probar candidatos primero, luego todos los USB
+                ports_to_try = candidates if candidates else usb_ports
+                logger.info(f"Probando {len(ports_to_try)} puerto(s) USB: {[p.device for p in ports_to_try[:3]]}")
+                
+                for p in ports_to_try[:3]:
+                    try:
+                        logger.info(f"Probando {p.device}...")
+                        dev = ADMX2001(p.device, baudrate=115200, timeout=3.0)
+                        time.sleep(0.3)
+                        
+                        resp = dev.send_command('*idn')
+                        logger.info(f"Respuesta: {resp}")
+                        
+                        if resp and any(x in str(resp).upper() for x in ['ADMX', '2001', 'ANALOG']):
+                            dev.set_mdelay(1)
+                            dev.set_tdelay(0)
+                            device_state.set_device(dev, True)
+                            logger.info(f"✅ Conectado a {p.device}")
+                            return ("Conectado", "connection-pulse connected",
+                                    p.device, False, False, True)
+                        else:
+                            dev.close()
+                    except Exception as e:
+                        logger.warning(f"Falló {p.device}: {e}")
+                        continue
+                
+                logger.warning("No se encontró dispositivo ADMX2001")
+                return ("No detectado", "connection-pulse disconnected",
+                        "ADMX2001", True, show_error_on_fail, False)
+                
+            except Exception as e:
+                logger.error(f"Error autoconnect: {e}")
+                return ("Error", "connection-pulse error",
+                        "ADMX2001", True, show_error_on_fail, False)
+        
+        return ("Desconectado", "connection-pulse disconnected",
+                "ADMX2001", True, False, False)
+
+    # =========================================================================
+    # MONITOR ACTIVO DE CONEXIÓN - Verifica estado real periódicamente
+    # =========================================================================
+    @app.callback(
+        [Output('sidebar-connection-text', 'children', allow_duplicate=True),
+         Output('sidebar-connection-dot', 'className', allow_duplicate=True),
+         Output('sidebar-device-port', 'children', allow_duplicate=True),
+         Output('sidebar-disconnect-btn', 'disabled', allow_duplicate=True)],
+        Input('connection-monitor-interval', 'n_intervals'),
+        prevent_initial_call=True
+    )
+    def monitor_connection_health(n_intervals):
+        """
+        Monitorea activamente la salud de la conexión cada 3 segundos.
+        Verifica que el dispositivo siga respondiendo y actualiza el badge y sidebar.
+        """
+        if n_intervals is None or n_intervals == 0:
+            raise PreventUpdate
+        
+        try:
+            # Verificar estado real del dispositivo
+            is_conn, status_msg, port = device_state.verify_connection()
+            
+            if is_conn:
+                # Dispositivo conectado y respondiendo
+                return ("Conectado", "connection-pulse connected",
+                        port if port else "ADMX2001", False)
+            else:
+                # Dispositivo no responde, actualizar estado
+                if status_msg == "Puerto cerrado":
+                    return ("Error", "connection-pulse error",
+                            "Puerto cerrado", True)
+                elif status_msg == "Sin respuesta":
+                    return ("Sin respuesta", "connection-pulse error",
+                            "Sin respuesta", True)
+                else:
+                    return ("Desconectado", "connection-pulse disconnected",
+                            "ADMX2001", True)
+        
+        except Exception as e:
+            logger.error(f"Error en monitor de conexión: {e}")
+            raise PreventUpdate
+
+    # =========================================================================
+    # AUTO-CONNECT TRIGGER - Activa auto-conexión al iniciar
+    # =========================================================================
+    @app.callback(
+        Output('auto-connect-on-start', 'data'),
+        Input('ports-interval', 'n_intervals'),
+        prevent_initial_call=True
+    )
+    def trigger_auto_connect(n_intervals):
+        """Trigger para auto-conexión al iniciar (solo una vez)"""
+        if n_intervals == 1 and not device_state.is_connected:
+            logger.info("Activando auto-connect al inicio (n_intervals=1)")
+            return True
+        raise PreventUpdate
 
 
 def register_global_terminal_callbacks(app):
@@ -240,7 +467,7 @@ def register_global_terminal_callbacks(app):
             return window.dash_clientside.no_update;
         }
         """,
-        Output('terminal-initialized', 'data'),
+        Output('terminal-drag-init', 'data'),
         Input('command-modal', 'style')
     )
     
@@ -270,6 +497,29 @@ def register_global_terminal_callbacks(app):
             return {'display': 'none'}, 'draggable-window terminal-window'
         
         raise PreventUpdate
+    
+    # Callback clientside para inicializar ventana arrastrable cuando se muestra
+    app.clientside_callback(
+        """
+        function(style) {
+            if (style && style.display === 'flex') {
+                // Dar tiempo a que el DOM se actualice
+                setTimeout(function() {
+                    if (window.DraggableWindows && !window.DraggableWindows.isInitialized('command-modal')) {
+                        window.DraggableWindows.init('command-modal', 'terminal-header-drag', {width: 700, height: 500});
+                        window.DraggableWindows.show('command-modal');
+                    } else if (window.DraggableWindows) {
+                        window.DraggableWindows.show('command-modal');
+                    }
+                }, 100);
+            }
+            return 1;
+        }
+        """,
+        Output('terminal-initialized', 'data'),
+        Input('command-modal', 'style'),
+        prevent_initial_call=True
+    )
     
     # Callback para actualizar indicador de estado del terminal
     @app.callback(
@@ -753,6 +1003,7 @@ def create_app() -> DashSPA:
             from pages.dashboard.dashboard_page import register_dashboard_page
             from pages.simulator.simulator_page import register_simulator_page
             from pages.calibration.calibration_page import register_calibration_page
+            from pages.about.about_page import register_about_page
             from pages.common.terminal_component import global_terminal_component
             from dash import html
             
@@ -764,6 +1015,13 @@ def create_app() -> DashSPA:
             
             register_calibration_page(app)
             logger.info("  ✓ Calibration registrado")
+            
+            register_about_page(app)
+            logger.info("  ✓ About registrado")
+            
+            # Registrar callbacks globales de conexión
+            register_global_connection_callbacks(app)
+            logger.info("  ✓ Conexión sidebar global registrada")
             
             # Registrar callbacks globales del terminal
             register_global_terminal_callbacks(app)
@@ -777,6 +1035,16 @@ def create_app() -> DashSPA:
         # El terminal se inyecta en el layout para estar disponible en todas las páginas
         original_layout = page_container
         app.layout = html.Div([
+            SPA_ALERT,
+            SPA_NOTIFY,
+            # Stores globales
+            dcc.Store(id='auto-connect-on-start', data=False),  # Trigger para auto-conexión al iniciar
+            dcc.Store(id='connection-error-trigger', data=False),  # Store para activar alerta de error de conexión
+            dcc.Store(id='connection-success-trigger', data=False),  # Store para activar notificación de conexión exitosa
+            # Intervals globales
+            dcc.Interval(id='ports-interval', interval=2000, n_intervals=0),  # Detección de puertos
+            dcc.Interval(id='connection-monitor-interval', interval=3000, n_intervals=0),  # Monitor activo de conexión
+            # Terminal global
             global_terminal_component(),
             original_layout
         ])

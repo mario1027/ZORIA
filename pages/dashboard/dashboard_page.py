@@ -39,6 +39,9 @@ from lib.device_state import device_state
 # Logger
 logger = logging.getLogger(__name__)
 
+# Timestamp de inicio de la aplicación (para evitar errores prematuros)
+APP_START_TIME = time.time()
+
 # Variables globales para el estado del sistema
 device = None
 is_connected = threading.Event()
@@ -994,23 +997,22 @@ layout = html.Div([
                 ], className="col-12 col-md-6 d-flex justify-content-md-end align-items-center")
             ], className="row align-items-center py-4"),
 
-            # Intervalos de actualización y stores
-            dcc.Interval(id='ports-interval', interval=2000, n_intervals=0),
+            # Intervalos de actualización y stores (solo específicos del dashboard)
+            # ports-interval y connection-monitor-interval están definidos globalmente en app.py
             dcc.Interval(id='measurement-interval', interval=500, n_intervals=0, disabled=True),
             dcc.Interval(id='sweep-interval', interval=1000, n_intervals=0, disabled=True),  # Deshabilitado por defecto - se activa solo durante barrido
             dcc.Interval(id='connection-status-interval', interval=1000, n_intervals=0, disabled=True),  # Deshabilitado por defecto - solo activo cuando el modal está abierto
-            dcc.Interval(id='connection-monitor-interval', interval=3000, n_intervals=0),  # Monitor activo de conexión
             dcc.Interval(id='modal-close-interval', interval=1000, n_intervals=0, disabled=True),  # Para cerrar modal con delay
             dcc.Store(id='sweep-data-store', storage_type='session', data={'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}),  # Persistir datos entre páginas
             dcc.Store(id='phase-negative-store', storage_type='session', data=False),  # Persistir configuración de fase entre páginas
             dcc.Store(id='sweep-completed-trigger', data=False),  # Store para activar alerta de sweep completado
-            dcc.Store(id='connection-error-trigger', data=False),  # Store para activar alerta de error de conexión
-            dcc.Store(id='connection-success-trigger', data=False),  # Store para activar notificación de conexión exitosa
+            dcc.Store(id='ports-cache-store', data=[]),  # Cache de puertos para evitar recargas innecesarias
+            # connection-error-trigger y connection-success-trigger están definidos globalmente en app.py
             dcc.Store(id='modal-close-trigger', data=False),  # Store para controlar cierre del modal con delay
             dcc.Store(id='theme-store', storage_type='local', data='dark'),  # Store para mantener el tema seleccionado
             dcc.Download(id='download-csv'),  # Componente para descargar archivos CSV
             dcc.Store(id='csv-upload-store', data=None),  # Store temporal para datos CSV cargados
-            dcc.Store(id='auto-connect-on-start', data=False),  # Trigger para auto-conexión al iniciar
+            # auto-connect-on-start está definido globalmente en app.py
             dcc.Store(id='connect-modal-dummy', data=None),  # Dummy store para callbacks clientside
             dcc.Store(id='chart-modal-dummy', data=None),  # Dummy store para ventana de gráfico
 
@@ -1206,57 +1208,94 @@ layout = html.Div([
 # ==================== CALLBACKS ====================
 
 def register_callbacks(app):
-    # Callback para actualizar puertos seriales
+    # Callback para actualizar puertos seriales (solo si hay cambios)
     @app.callback(
         Output('serial-ports', 'options'),
         Output('serial-ports', 'value', allow_duplicate=True),
+        Output('ports-cache-store', 'data'),
         [Input('ports-interval', 'n_intervals'),
          Input('refresh-ports-btn', 'n_clicks')],
         State('serial-ports', 'value'),
+        State('ports-cache-store', 'data'),
         prevent_initial_call=True
     )
-    def update_serial_ports(interval_n, refresh_clicks, current_value):
-        """Actualiza la lista de puertos seriales disponibles"""
+    def update_serial_ports(interval_n, refresh_clicks, current_value, cached_ports):
+        """
+        Actualiza la lista de puertos seriales disponibles.
+        Solo actualiza si detecta cambios reales (puertos conectados/desconectados).
+        """
         try:
-            # Primero intentar detectar puertos ADMX2001
+            # Detectar puertos actuales
             admx_ports = detect_admx2001_ports()
             all_ports = serial.tools.list_ports.comports()
 
+            # Crear lista actual de dispositivos
+            current_ports = []
             options = []
-            available_devices = []
 
             # Agregar puertos ADMX2001 primero
             for port in admx_ports:
+                port_info = {
+                    'device': port.device,
+                    'description': port.description[:30] if port.description else '',
+                    'is_admx': True
+                }
+                current_ports.append(port_info)
                 options.append({
-                    'label': f"✓ {port.device} - {port.description[:30]}",
+                    'label': f"✓ {port.device} - {port_info['description']}",
                     'value': port.device
                 })
-                available_devices.append(port.device)
 
             # Agregar otros puertos
             for port in all_ports:
                 if port not in admx_ports:
+                    port_info = {
+                        'device': port.device,
+                        'description': port.description if port.description else '',
+                        'is_admx': False
+                    }
+                    current_ports.append(port_info)
                     options.append({
-                        'label': f"{port.device} - {port.description}",
+                        'label': f"{port.device} - {port_info['description']}",
                         'value': port.device
                     })
-                    available_devices.append(port.device)
+
+            # Comparar con caché - solo actualizar si hay cambios
+            # Verificar si fue clic en refresh (siempre actualizar)
+            triggered = ctx.triggered_id
+            force_update = (triggered == 'refresh-ports-btn')
+            
+            if not force_update and cached_ports:
+                # Comparar las listas de dispositivos
+                cached_devices = [p['device'] for p in cached_ports]
+                current_devices = [p['device'] for p in current_ports]
+                
+                # Si los dispositivos son los mismos, no actualizar
+                if set(cached_devices) == set(current_devices):
+                    raise PreventUpdate
 
             # Si no hay puertos, mostrar mensaje
             if not options:
                 options = [{'label': '❌ No se encontraron puertos', 'value': '', 'disabled': True}]
-                return options, ''
+                return options, '', []
             
-            # Mantener el valor actual si sigue disponible, si no, dejar el primero
+            # Determinar valor a seleccionar
+            available_devices = [p['device'] for p in current_ports]
+            
+            # Mantener el valor actual si sigue disponible
             if current_value and current_value in available_devices:
-                return options, current_value
+                new_value = current_value
             else:
                 # Si el valor actual ya no está disponible, seleccionar el primero
-                return options, available_devices[0] if available_devices else ''
+                new_value = available_devices[0] if available_devices else ''
 
+            return options, new_value, current_ports
+
+        except PreventUpdate:
+            raise
         except Exception as e:
-            print(f"Error al detectar puertos seriales: {e}")
-            return [{'label': f'❌ Error: {str(e)[:40]}', 'value': '', 'disabled': True}], ''
+            logger.error(f"Error al detectar puertos seriales: {e}")
+            return [{'label': f'❌ Error: {str(e)[:40]}', 'value': '', 'disabled': True}], '', []
 
     # Callback para sincronizar checkbox de fase negativa con Store
     @app.callback(
@@ -1374,174 +1413,11 @@ def register_callbacks(app):
         raise PreventUpdate
 
     # =========================================================================
-    # CALLBACK ÚNICO DE CONEXIÓN - Solo sidebar (disponible en todas las páginas)
+    # CALLBACKS DE CONEXIÓN DEL SIDEBAR
     # =========================================================================
-    @app.callback(
-        [Output('sidebar-connection-text', 'children', allow_duplicate=True),
-         Output('sidebar-connection-dot', 'className', allow_duplicate=True),
-         Output('sidebar-device-port', 'children', allow_duplicate=True),
-         Output('sidebar-disconnect-btn', 'disabled', allow_duplicate=True),
-         Output('connection-error-trigger', 'data', allow_duplicate=True),
-         Output('connection-success-trigger', 'data', allow_duplicate=True)],
-        [Input('sidebar-quick-connect-btn', 'n_clicks'),
-         Input('sidebar-disconnect-btn', 'n_clicks'),
-         Input('auto-connect-on-start', 'data')],
-        prevent_initial_call=True
-    )
-    def sidebar_connection_handler(sidebar_quick_clicks, sidebar_disconnect_clicks, auto_start):
-        """
-        Callback de conexión desde el sidebar (disponible globalmente):
-        - Conexión rápida sidebar (sidebar-quick-connect-btn) 
-        - Auto-conexión al inicio (auto-connect-on-start)
-        - Desconexión (sidebar-disconnect-btn)
-        """
-        global device
-        
-        triggered = ctx.triggered_id
-        logger.info(f"Sidebar connection handler triggered by: {triggered}")
-        
-        # Si ya está conectado y no es desconexión, mostrar estado
-        if triggered != 'sidebar-disconnect-btn':
-            if device_state.is_connected and device_state.device is not None:
-                is_conn, status_msg, port_info = device_state.verify_connection()
-                if is_conn:
-                    return ("Conectado", "connection-pulse connected",
-                            port_info if port_info else "ADMX2001",
-                            False, False, False)
-        
-        # ===== DESCONEXIÓN =====
-        if triggered == 'sidebar-disconnect-btn':
-            try:
-                if device:
-                    device.close()
-                is_connected.clear()
-                device = None
-                device_state.set_device(None, False)
-                logger.info("Dispositivo desconectado")
-                return ("Desconectado", "connection-pulse disconnected",
-                        "ADMX2001", True, False, False)
-            except Exception as e:
-                logger.error(f"Error desconectando: {e}")
-                return ("Error", "connection-pulse error",
-                        "ADMX2001", True, True, False)
-        
-        # ===== CONEXIÓN RÁPIDA / AUTO =====
-        if triggered in ['sidebar-quick-connect-btn', 'auto-connect-on-start']:
-            try:
-                logger.info("Iniciando conexión automática...")
-                all_ports = list(serial.tools.list_ports.comports())
-                
-                if not all_ports:
-                    logger.warning("No hay puertos disponibles")
-                    return ("Sin puertos", "connection-pulse disconnected",
-                            "ADMX2001", True, True, False)
-                
-                logger.info(f"Puertos: {[p.device for p in all_ports]}")
-                
-                # Priorizar candidatos
-                candidates = []
-                for p in all_ports:
-                    desc = p.description.upper() if p.description else ""
-                    manuf = p.manufacturer.upper() if p.manufacturer else ""
-                    if any(x in desc or x in manuf for x in ['FTDI', 'CP210', 'SILICON', 'USB-SERIAL', 'FT232']):
-                        candidates.append(p)
-                
-                # Probar candidatos primero, luego todos
-                ports_to_try = candidates if candidates else all_ports
-                logger.info(f"Probando: {[p.device for p in ports_to_try[:3]]}")
-                
-                for p in ports_to_try[:3]:
-                    try:
-                        logger.info(f"Probando {p.device}...")
-                        dev = ADMX2001(p.device, baudrate=115200, timeout=3.0)
-                        time.sleep(0.3)
-                        
-                        resp = dev.send_command('*idn')
-                        logger.info(f"Respuesta: {resp}")
-                        
-                        if resp and any(x in str(resp).upper() for x in ['ADMX', '2001', 'ANALOG']):
-                            dev.set_mdelay(1)
-                            dev.set_tdelay(0)
-                            device = dev
-                            is_connected.set()
-                            device_state.set_device(device, True)
-                            logger.info(f"✅ Conectado a {p.device}")
-                            return ("Conectado", "connection-pulse connected",
-                                    p.device, False, False, True)
-                        else:
-                            dev.close()
-                    except Exception as e:
-                        logger.warning(f"Falló {p.device}: {e}")
-                        continue
-                
-                logger.warning("No se encontró dispositivo ADMX2001")
-                # No es un error crítico, solo no hay dispositivo conectado
-                return ("No detectado", "connection-pulse disconnected",
-                        "ADMX2001", True, False, False)
-                
-            except Exception as e:
-                logger.error(f"Error autoconnect: {e}")
-                return ("Error", "connection-pulse error",
-                        "ADMX2001", True, True, False)
-        
-        return ("Desconectado", "connection-pulse disconnected",
-                "ADMX2001", True, False, False)
-
-    # =========================================================================
-    # MONITOR ACTIVO DE CONEXIÓN - Verifica estado real periódicamente
-    # =========================================================================
-    @app.callback(
-        [Output('sidebar-connection-text', 'children', allow_duplicate=True),
-         Output('sidebar-connection-dot', 'className', allow_duplicate=True),
-         Output('sidebar-device-port', 'children', allow_duplicate=True),
-         Output('sidebar-disconnect-btn', 'disabled', allow_duplicate=True)],
-        Input('connection-monitor-interval', 'n_intervals'),
-        prevent_initial_call=True
-    )
-    def monitor_connection_health(n_intervals):
-        """
-        Monitorea activamente la salud de la conexión cada 3 segundos.
-        Verifica que el dispositivo siga respondiendo y actualiza el badge y sidebar.
-        """
-        if n_intervals is None or n_intervals == 0:
-            raise PreventUpdate
-        
-        try:
-            # Verificar estado real del dispositivo
-            is_conn, status_msg, port = device_state.verify_connection()
-            
-            if is_conn:
-                # Dispositivo conectado y respondiendo
-                return ("Conectado", "connection-pulse connected",
-                        port if port else "ADMX2001", False)
-            else:
-                # Dispositivo no responde, actualizar estado
-                if status_msg == "Puerto cerrado":
-                    return ("Error", "connection-pulse error",
-                            "Puerto cerrado", True)
-                elif status_msg == "Sin respuesta":
-                    return ("Sin respuesta", "connection-pulse error",
-                            "Sin respuesta", True)
-                else:
-                    return ("Desconectado", "connection-pulse disconnected",
-                            "ADMX2001", True)
-        
-        except Exception as e:
-            logger.error(f"Error en monitor de conexión: {e}")
-            raise PreventUpdate
-
-    # Callback para auto-conectar al iniciar
-    @app.callback(
-        Output('auto-connect-on-start', 'data'),
-        Input('ports-interval', 'n_intervals'),
-        prevent_initial_call=True
-    )
-    def trigger_auto_connect(n_intervals):
-        """Trigger para auto-conexión al iniciar"""
-        if n_intervals == 1 and not device_state.is_connected:
-            logger.info("Trigger auto-connect")
-            return True
-        raise PreventUpdate
+    # Los callbacks de conexión del sidebar (sidebar_connection_handler,
+    # monitor_connection_health, trigger_auto_connect) ahora están registrados
+    # globalmente en app.py para estar disponibles en todas las páginas.
 
     # Callback consolidado para ventana de conexión (abrir/cerrar) - CONVERTIDO A PYTHON
     @app.callback(
@@ -1601,6 +1477,11 @@ def register_callbacks(app):
         triggered = ctx.triggered_id
         logger.info(f"Modal connection handler triggered by: {triggered}")
         
+        # Verificar que el trigger sea válido
+        if not triggered or triggered not in ['connect-btn', 'disconnect-modal-btn']:
+            logger.warning(f"Modal connection handler: trigger inválido {triggered}")
+            raise PreventUpdate
+        
         # ===== DESCONEXIÓN =====
         if triggered == 'disconnect-modal-btn':
             try:
@@ -1614,14 +1495,17 @@ def register_callbacks(app):
                         "ADMX2001", True, False, False)
             except Exception as e:
                 logger.error(f"Error desconectando: {e}")
+                # NO activar error modal - desconexión fallida no es crítica
                 return ("Error", "connection-pulse error",
-                        "ADMX2001", True, True, False)
+                        "ADMX2001", True, False, False)
         
         # ===== CONEXIÓN MANUAL =====
         if triggered == 'connect-btn':
             if not port or port == '':
+                logger.warning("Intento de conexión sin puerto seleccionado")
+                # NO activar error modal - solo es una validación de formulario
                 return ("Seleccione puerto", "connection-pulse disconnected",
-                        "ADMX2001", True, True, False)
+                        "ADMX2001", True, False, False)
             
             try:
                 logger.info(f"Conectando manualmente a {port}...")
@@ -1634,7 +1518,8 @@ def register_callbacks(app):
                 return ("Conectado", "connection-pulse connected",
                         port, False, False, True)
             except Exception as e:
-                logger.error(f"Error conectando: {e}")
+                logger.error(f"Error conectando manualmente: {e}")
+                # SÍ activar error modal - falló una conexión manual explícita
                 return ("Error", "connection-pulse error",
                         "ADMX2001", True, True, False)
         
@@ -2158,14 +2043,29 @@ def register_callbacks(app):
     # Callback para alerta de error de conexión (SweetAlert)
     @SPA_ALERT.update(Input('connection-error-trigger', 'data'))
     def alert_connection_error(trigger, store):
-        """Muestra alerta de error cuando falla la conexión"""
-        if trigger:
+        """
+        Muestra alerta de error cuando falla la conexión.
+        Solo se activa si el trigger es True (conexión manual fallida).
+        """
+        logger.info(f"[DEBUG] alert_connection_error ejecutado con trigger={trigger}, type={type(trigger)}")
+        
+        # Protección temporal: no mostrar errores en los primeros 3 segundos
+        time_since_start = time.time() - APP_START_TIME
+        if time_since_start < 3:
+            logger.info(f"[DEBUG] Ignorando error - app inicio hace {time_since_start:.1f}s (< 3s)")
+            return NOUPDATE
+        
+        # Solo mostrar alerta si es explícitamente True (no False inicial, no None)
+        if trigger is True:
+            logger.warning("Mostrando modal de error de conexión")
             alert = Alert(
                 '❌ Error de Conexión',
                 'No se pudo conectar al dispositivo ADMX2001. Verifique que el cable esté conectado y el puerto sea correcto.',
                 icon='error'
             )
             return alert.report()
+        
+        logger.debug(f"No se muestra alert de error (trigger={trigger})")
         return NOUPDATE
     
     # Callback para alerta de barrido completado (SweetAlert con timer)

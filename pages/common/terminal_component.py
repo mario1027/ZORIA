@@ -16,6 +16,7 @@ def global_terminal_component():
         dcc.Store(id='command-history-store', data={'commands': [], 'index': -1}, storage_type='session'),
         dcc.Store(id='terminal-initialized', data=False),
         dcc.Store(id='terminal-focus-trigger', data=None),
+        dcc.Store(id='terminal-drag-init', data=0),  # Para inicialización de ventana arrastrable
         
         # Terminal ventana arrastrable
         html.Div([
@@ -112,12 +113,26 @@ def global_terminal_component():
                                 # Atajos de teclado
                                 html.Div([
                                     html.Span("⌨️  ", className="terminal-prompt-icon"),
-                                    html.Span("Atajos: ", className="text-info"),
-                                    html.Kbd("Ctrl+`", className="terminal-kbd me-2"),
-                                    html.Span("Abrir/Cerrar ", className="text-muted small"),
-                                    html.Kbd("↑↓", className="terminal-kbd me-2"),
-                                    html.Span("Historial", className="text-muted small")
-                                ], className="terminal-line text-muted"),
+                                    html.Span("Atajos: ", className="text-info me-2"),
+                                    html.Span("Alt+T", style={
+                                        'background': 'rgba(255,255,255,0.15)',
+                                        'border': '1px solid rgba(255,255,255,0.3)',
+                                        'borderRadius': '3px',
+                                        'padding': '1px 5px',
+                                        'fontSize': '0.75rem',
+                                        'color': '#fff'
+                                    }),
+                                    html.Span(" Abrir/Cerrar  ", className="small text-light me-2"),
+                                    html.Span("↑↓", style={
+                                        'background': 'rgba(255,255,255,0.15)',
+                                        'border': '1px solid rgba(255,255,255,0.3)',
+                                        'borderRadius': '3px',
+                                        'padding': '1px 5px',
+                                        'fontSize': '0.75rem',
+                                        'color': '#fff'
+                                    }),
+                                    html.Span(" Historial", className="small text-light")
+                                ], className="terminal-line"),
                             ], className="terminal-content-area")
                         ]
                     )

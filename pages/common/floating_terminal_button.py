@@ -15,7 +15,7 @@ def floating_terminal_button():
         ],
         id="floating-terminal-btn",
         className="floating-terminal-btn",
-        title="Abrir Terminal CLI (Ctrl+`)"
+        title="Abrir Terminal CLI (Alt+T)"
         ),
         
         # Tooltip

@@ -20,10 +20,13 @@ logger = logging.getLogger(__name__)
 
 def list_available_ports() -> List[Dict[str, str]]:
     """
-    Lista todos los puertos serie disponibles en el sistema.
+    Lista solo los puertos USB disponibles en el sistema.
+    
+    Filtra automáticamente puertos ttyS* (puertos seriales integrados)
+    que pueden causar errores de I/O.
     
     Returns:
-        Lista de diccionarios con información de puertos:
+        Lista de diccionarios con información de puertos USB:
         - device: ruta del dispositivo (/dev/ttyUSB0, COM3, etc.)
         - description: descripción del puerto
         - hwid: hardware ID
@@ -36,21 +39,27 @@ def list_available_ports() -> List[Dict[str, str]]:
     """
     ports = []
     for port in serial.tools.list_ports.comports():
-        ports.append({
-            'device': port.device,
-            'description': port.description,
-            'hwid': port.hwid,
-            'manufacturer': port.manufacturer or 'Unknown'
-        })
+        device = port.device
+        # Solo incluir puertos USB (excluir ttyS*)
+        if ('ttyUSB' in device or 'ttyACM' in device or 
+            'COM' in device.upper() or 
+            '/dev/cu.usbserial' in device or '/dev/cu.usbmodem' in device):
+            ports.append({
+                'device': port.device,
+                'description': port.description,
+                'hwid': port.hwid,
+                'manufacturer': port.manufacturer or 'Unknown'
+            })
     return ports
 
 
 def find_admx2001_devices() -> List[str]:
     """
-    Busca dispositivos ADMX2001 conectados.
+    Busca dispositivos ADMX2001 conectados en puertos USB.
     
     Intenta identificar puertos que probablemente sean ADMX2001
     basándose en descriptores conocidos (FTDI, USB Serial).
+    Solo busca en puertos USB para evitar errores I/O en ttyS*.
     
     Returns:
         Lista de rutas de dispositivos potenciales.
@@ -61,6 +70,13 @@ def find_admx2001_devices() -> List[str]:
     """
     potential_devices = []
     for port in serial.tools.list_ports.comports():
+        device = port.device
+        # Solo buscar en puertos USB
+        if not ('ttyUSB' in device or 'ttyACM' in device or 
+                'COM' in device.upper() or 
+                '/dev/cu.usbserial' in device or '/dev/cu.usbmodem' in device):
+            continue
+        
         # ADMX2001 usa cable FTDI USB-to-UART (TTL-232R-RPI)
         if 'FTDI' in port.description or 'USB Serial' in port.description:
             potential_devices.append(port.device)

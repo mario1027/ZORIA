@@ -2,12 +2,12 @@
 
 /* Sidebar responsivo */
 .sidebar {
-    width: 280px;
+    width: 390px;
     min-height: 100vh;
     position: fixed;
     top: 0;
     left: 0;
-    z-index: 1050;
+    z-index: 9999 !important;
     transition: transform 0.3s ease;
     background-color: #343a40 !important;
 }
@@ -34,7 +34,7 @@
         position: fixed;
         top: 15px;
         left: 15px;
-        z-index: 1100;
+        z-index: 2100;
         background-color: #007bff;
         border: none;
         color: white;
@@ -66,11 +66,28 @@
         width: 100%;
     }
     
+    /* Footer sin margen en móviles */
+    .footer {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+
+    .footer .footer-content {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        max-width: none !important;
+    }
+
+    .footer .footer-surface {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+    
     /* Sidebar completamente oculto en móviles */
     .sidebar {
         transform: translateX(-100%) !important;
         position: fixed;
-        z-index: 1050;
+        z-index: 9999 !important;
     }
     
     /* Cuando se muestra el sidebar en móvil */
@@ -92,6 +109,22 @@
     .main-content {
         margin-left: 280px;
         padding: 20px;
+    }
+    
+    /* Footer con margen para no quedar debajo del sidebar */
+    .footer {
+        margin-left: 280px !important;
+        width: calc(100% - 280px) !important;
+        position: relative;
+        z-index: 1;
+        display: block;
+        padding: 0 !important;
+    }
+
+    /* Footer-content full-width dentro del footer */
+    .footer .footer-content {
+        margin-left: 0 !important;
+        width: 100% !important;
     }
 }
 

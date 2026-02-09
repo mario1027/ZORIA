@@ -1,0 +1,474 @@
+/* ==========================================
+   ZORIA About Page - Estilos Premium Ejecutivos
+   Paleta: Carbón profundo (#0f172a) + Oro/Ambar (#d4af37)
+   ========================================== */
+
+/* === Variables CSS === */
+:root {
+    --color-bg-primary: #0f172a;
+    --color-bg-secondary: #1e293b;
+    --color-accent: #d4af37;
+    --color-accent-hover: #b8941f;
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #94a3b8;
+    --color-text-muted: #64748b;
+    --color-border: #334155;
+    --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* === Animaciones globales === */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.1); }
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes scrollIndicator {
+    0%, 100% { transform: scaleY(1); opacity: 1; }
+    50% { transform: scaleY(0.5); opacity: 0.5; }
+}
+
+/* === Clases de animación === */
+.animate-fade-in-up {
+    animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+}
+
+.animate-float {
+    animation: float 3s ease-in-out infinite;
+}
+
+/* === Estadísticas numeros === */
+.stat-number {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+}
+
+/* === Feature Cards Premium === */
+.feature-card-v2 {
+    position: relative;
+    z-index: 1;
+}
+
+.feature-card-v2::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.05) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    border-radius: 16px;
+    z-index: -1;
+}
+
+.feature-card-v2:hover::before {
+    opacity: 1;
+}
+
+.feature-icon-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.feature-icon-container::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(212, 175, 55, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.6s ease, height 0.6s ease;
+}
+
+.feature-card-v2:hover .feature-icon-container::after {
+    width: 100px;
+    height: 100px;
+}
+
+/* === Team Cards V2 === */
+.team-card-v2 {
+    position: relative;
+    overflow: hidden;
+}
+
+.team-card-v2::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
+    transform: scaleX(0);
+    transition: transform 0.4s ease;
+    z-index: 10;
+}
+
+.team-card-v2:hover::before {
+    transform: scaleX(1);
+}
+
+.team-member-img {
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.img-overlay {
+    transition: all 0.4s ease;
+}
+
+/* === Social Links === */
+.social-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.social-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: var(--color-accent);
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+}
+
+.social-link:hover::after {
+    width: 100%;
+}
+
+/* === Botones Premium === */
+.btn-premium {
+    position: relative;
+    overflow: hidden;
+    transition: var(--transition-smooth);
+}
+
+.btn-premium::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(212, 175, 55, 0.1);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.6s ease, height 0.6s ease;
+}
+
+.btn-premium:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* === Links con underline animado === */
+.link-animated {
+    position: relative;
+    text-decoration: none;
+}
+
+.link-animated::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background: var(--color-accent);
+    transition: width 0.3s ease;
+}
+
+.link-animated:hover::after {
+    width: 100%;
+}
+
+/* === Separadores decorativos === */
+.divider-gold {
+    width: 60px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
+    margin: 40px auto;
+}
+
+.divider-gold-vertical {
+    width: 1px;
+    height: 80px;
+    background: linear-gradient(180deg, transparent, var(--color-accent), transparent);
+    margin: 0 auto;
+}
+
+/* === Efectos de texto === */
+.text-gradient-gold {
+    background: linear-gradient(135deg, #d4af37 0%, #f4d03f 50%, #d4af37 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    background-size: 200% auto;
+    animation: shimmer 3s linear infinite;
+}
+
+/* === Cards base refinadas === */
+.card-premium {
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    transition: var(--transition-smooth);
+}
+
+.card-premium:hover {
+    border-color: var(--color-accent);
+    transform: translateY(-5px);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+}
+
+/* === Stats Items === */
+.stat-item {
+    transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+    background: rgba(212, 175, 55, 0.05);
+}
+
+/* === Formularios y inputs === */
+input:focus,
+textarea:focus,
+select:focus {
+    border-color: var(--color-accent) !important;
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1) !important;
+}
+
+/* === Scrollbar personalizada === */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--color-bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-accent);
+}
+
+/* === Responsive refinements === */
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 3rem !important;
+    }
+    
+    .hero-subtitle {
+        font-size: 0.8rem !important;
+        letter-spacing: 0.2em !important;
+    }
+    
+    .team-card-v2 {
+        margin-bottom: 30px;
+    }
+    
+    .stat-item {
+        border-right: none !important;
+        border-bottom: 1px solid var(--color-border);
+        padding: 30px 20px !important;
+    }
+    
+    .stat-item:last-child {
+        border-bottom: none;
+    }
+}
+
+/* === Utilidades de espaciado premium === */
+.py-premium {
+    padding-top: 120px;
+    padding-bottom: 120px;
+}
+
+.mb-premium {
+    margin-bottom: 80px;
+}
+
+/* === Hover effects sutiles === */
+.hover-lift-premium {
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+                box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift-premium:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+}
+
+/* === Loading states === */
+.skeleton {
+    background: linear-gradient(90deg, var(--color-bg-secondary) 25%, 
+                var(--color-border) 50%, var(--color-bg-secondary) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+/* === Focus states accesibles === */
+a:focus-visible,
+button:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 4px;
+}
+
+/* === Selection color === */
+::selection {
+    background: rgba(212, 175, 55, 0.3);
+    color: #ffffff;
+}
+
+/* === Tooltips refinados === */
+[data-tooltip] {
+    position: relative;
+}
+
+[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    padding: 8px 12px;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-primary);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    border-radius: 4px;
+}
+
+[data-tooltip]:hover::after {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-4px);
+}
+
+/* ===== Botones CTA Específicos ===== */
+.btn-cta-gold {
+    padding: 20px 50px;
+    background: #d4af37;
+    color: #0f172a;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    text-transform: uppercase;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 600;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-cta-gold:hover {
+    background: #b8941f;
+    transform: translateY(-3px);
+    box-shadow: 0 15px 35px rgba(212, 175, 55, 0.4);
+    color: #0f172a;
+}
+
+.btn-cta-outline {
+    padding: 20px 50px;
+    background: transparent;
+    color: #ffffff;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    text-transform: uppercase;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 500;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-cta-outline:hover {
+    border-color: #d4af37;
+    color: #d4af37;
+    transform: translateY(-3px);
+}
+
+/* ===== Mejoras de Accesibilidad ===== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ===== Scroll behavior suave ===== */
+html {
+    scroll-behavior: smooth;
+}
+
+/* ===== Mejoras para el contenido del About ===== */
+.about-content p {
+    margin-bottom: 1.5rem;
+    line-height: 1.8;
+}
+
+.about-content h2,
+.about-content h3 {
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.about-content ul,
+.about-content ol {
+    margin-bottom: 1.5rem;
+    padding-left: 1.5rem;
+}
+
+.about-content li {
+    margin-bottom: 0.5rem;
+}
