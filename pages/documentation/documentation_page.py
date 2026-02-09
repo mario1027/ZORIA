@@ -1,16 +1,14 @@
 """
-Página de Documentación Oficial del Software ZORIA
-Sistema completo de documentación para el analizador de impedancia EVAL-ADMX2001
-Versión mejorada con UI/UX profesional y contenido exhaustivo
+ZORIA Documentation Page - Diseño Premium con Contenido Completo
+Documentación completa con navegación tipo cards y todo el contenido original
 """
-from dash import html, dcc, Input, Output, callback, State
+from dash import html, dcc, register_page
 from dash_spa import register_page
 
-# Importar componentes comunes compartidos
+# Importar componentes comunes
 from pages.common.sidebar import sideBar
 from pages.common.mobile_nav import mobileNavBar
 from pages.common.footer import footer
-from pages.common.terminal_component import global_terminal_component
 from pages.common.floating_terminal_button import floating_terminal_button
 
 # Registrar la página
@@ -18,11 +16,11 @@ register_page(
     __name__,
     path='/documentacion',
     title='Documentación - ZORIA',
-    name='Documentación Oficial'
+    name='Documentación'
 )
 
 
-# ==================== URLs DE IMÁGENES LOCALES ====================
+# ==================== IMÁGENES ====================
 IMAGES = {
     'basic_connections': '/assets/images/documentation/basic_connections.png',
     'open_load': '/assets/images/documentation/open_load.png',
@@ -35,1891 +33,2211 @@ IMAGES = {
 }
 
 
-# ==================== COMPONENTES DE DOCUMENTACIÓN ====================
+# ==================== COMPONENTES AUXILIARES ====================
 
-def doc_section(title, icon, content, id=None, bg_color="white"):
-    """Sección de documentación con estilo mejorado"""
-    # Construir props dinámicamente solo si id no es None
-    props = {
-        "className": f"doc-section mb-4 p-4 rounded shadow-sm bg-{bg_color}",
-        "style": {"border": "1px solid #e9ecef"}
-    }
-    if id is not None:
-        props["id"] = id
-    
-    return html.Div([
-        html.Div([
-            html.Div([
-                html.I(className=f"fas fa-{icon} me-3 text-primary"),
-                html.H4(title, className="mb-0 d-inline-block fw-bold")
-            ], className="section-header mb-4 pb-3 border-bottom border-3 border-primary"),
-            html.Div(content, className="section-content")
-        ], **props)
-    ])
-
-
-def image_card(src, alt, caption=None, max_width="100%"):
-    """Tarjeta de imagen con caption opcional mejorada"""
-    children = [
-        html.Div([
-            html.Img(src=src, alt=alt, className="img-fluid rounded shadow", 
-                    style={"maxWidth": max_width, "width": "100%", "border": "2px solid #dee2e6"}),
-        ], className="image-container bg-light p-4 rounded text-center mb-2")
-    ]
-    if caption:
-        children.append(
-            html.Div([
-                html.I(className="fas fa-image me-2 text-muted"),
-                html.Span(caption, className="text-muted")
-            ], className="small mt-2 mb-0 text-center fst-italic")
-        )
-    return html.Div(children, className="image-card mb-4")
-
-
-def step_card(number, title, content, image_src=None, image_caption=None, color="primary"):
-    """Tarjeta de paso numerado con imagen opcional mejorada"""
-    card_children = [
-        # Número y título con diseño mejorado
-        html.Div([
-            html.Div([
-                html.Span(str(number), className="fs-4 fw-bold")
-            ], className=f"step-number bg-{color} text-white rounded-circle d-flex align-items-center justify-content-center me-3", 
-               style={"width": "50px", "height": "50px", "minWidth": "50px"}),
-            html.H5(title, className="mb-0 fw-bold text-dark")
-        ], className="step-header mb-3 d-flex align-items-center"),
-        # Contenido
-        html.Div(content, className="step-content ps-5 ms-1")
-    ]
-    # Imagen opcional
-    if image_src:
-        card_children.append(
-            html.Div([image_card(image_src, title, image_caption, max_width="800px")], 
-                    className="step-image mt-4 ps-5 ms-1")
-        )
-    return html.Div([
-        html.Div(card_children, 
-                className=f"step-card p-4 border-start border-5 border-{color} bg-white rounded shadow mb-4",
-                style={"transition": "all 0.3s ease", "borderLeft": f"5px solid var(--bs-{color})"})
-    ])
-
-
-def info_box(content, type="info", icon=None):
-    """Caja de información con icono mejorada"""
-    icons_map = {
-        "info": "info-circle",
-        "warning": "exclamation-triangle",
-        "danger": "exclamation-circle",
-        "success": "check-circle",
-        "tip": "lightbulb",
-        "note": "sticky-note"
-    }
+def info_box(content, type="info"):
+    """Caja de información estilizada"""
     colors = {
-        "info": "info",
-        "warning": "warning",
-        "danger": "danger", 
-        "success": "success",
-        "tip": "primary",
-        "note": "secondary"
+        "info": ("#dbeafe", "#1e40af", "#3b82f6"),
+        "warning": ("#fef3c7", "#92400e", "#f59e0b"),
+        "danger": ("#fee2e2", "#991b1b", "#ef4444"),
+        "success": ("#d1fae5", "#065f46", "#10b981"),
+        "tip": ("#fffbeb", "#92400e", "#d4af37")
     }
-    icon_class = icon or icons_map.get(type, 'info-circle')
+    bg, text, border = colors.get(type, colors["info"])
     
-    if not isinstance(content, list):
-        content = [content]
-    
+    return html.Div(
+        content,
+        style={
+            'background': bg,
+            'borderLeft': f'4px solid {border}',
+            'padding': '15px 20px',
+            'borderRadius': '8px',
+            'marginBottom': '20px',
+            'color': text
+        }
+    )
+
+
+def step_number(number, color="#d4af37"):
+    """Número de paso circular"""
+    return html.Span(
+        str(number),
+        style={
+            'display': 'inline-flex',
+            'width': '32px',
+            'height': '32px',
+            'background': color,
+            'color': '#ffffff',
+            'borderRadius': '50%',
+            'alignItems': 'center',
+            'justifyContent': 'center',
+            'fontWeight': '700',
+            'fontSize': '0.9rem',
+            'marginRight': '12px'
+        }
+    )
+
+
+def image_card(src, caption=None):
+    """Tarjeta de imagen con caption"""
     return html.Div([
-        html.Div(
-            [html.I(className=f"fas fa-{icon_class} me-3 fs-5")] + content,
-            className=f"alert alert-{colors.get(type, 'info')} border-0 d-flex align-items-start shadow-sm mb-0"
-        )
-    ], className="mb-4")
+        html.Img(
+            src=src,
+            style={
+                'width': '100%',
+                'maxWidth': '800px',
+                'borderRadius': '12px',
+                'border': '1px solid #e2e8f0',
+                'boxShadow': '0 4px 12px rgba(0,0,0,0.1)'
+            }
+        ),
+        html.P(
+            caption,
+            style={
+                'fontSize': '0.85rem',
+                'color': '#64748b',
+                'fontStyle': 'italic',
+                'marginTop': '10px',
+                'textAlign': 'center'
+            }
+        ) if caption else None
+    ], style={'marginBottom': '30px', 'textAlign': 'center'})
 
 
-def spec_badge(label, value, color="secondary", icon=None):
-    """Badge con especificación técnica mejorado"""
+# ==================== CONTENIDO: INICIO RÁPIDO ====================
+
+def content_inicio_rapido():
     return html.Div([
-        html.Div([
-            icon and html.I(className=f"fas fa-{icon} me-2") or None,
-            html.Span(label, className="text-muted small")
-        ], className="mb-2"),
-        html.Span(value, className=f"badge bg-{color} px-3 py-2 fs-6 shadow-sm")
-    ], className="mb-3")
-
-
-def command_card(command, description, output=None):
-    """Card para comando CLI mejorado"""
-    content = [
-        html.Div([
-            html.I(className="fas fa-terminal me-2 text-success"),
-            html.Code(command, className="text-success")
-        ], className="bg-dark p-3 rounded mb-2 font-monospace"),
-        html.P(description, className="text-muted small mb-2")
-    ]
-    if output:
-        content.append(
-            html.Div([
-                html.Strong("Salida:", className="text-muted small d-block mb-1"),
-                html.Pre(output, className="bg-light p-2 rounded small border")
-            ])
-        )
-    return html.Div(content, className="mb-3 border-start border-3 border-success ps-3")
-
-
-def info_table(headers, rows, striped=True, hover=True):
-    """Tabla de información con estilo Volt mejorada"""
-    return html.Div([
-        html.Table([
-            html.Thead([
-                html.Tr([html.Th(h, className="bg-primary text-white fw-bold py-3") for h in headers])
-            ]),
-            html.Tbody([
-                html.Tr([html.Td(cell, className="py-3") for cell in row])
-                for row in rows
-            ])
-        ], className=f"table {'table-striped' if striped else ''} {'table-hover' if hover else ''} mb-0 shadow-sm")
-    ], className="table-responsive rounded border")
-
-
-def collapsible_section(title, content, id_prefix, icon="chevron-down", color="primary", default_open=False):
-    """Sección colapsable para organizar contenido"""
-    collapse_id = f"collapse-{id_prefix}"
-    return html.Div([
-        html.Div([
-            html.Button([
-                html.I(className=f"fas fa-{icon} me-2"),
-                html.Span(title, className="fw-bold"),
-                html.I(className="fas fa-chevron-down ms-auto")
-            ], className=f"btn btn-{color} w-100 text-start d-flex align-items-center shadow-sm",
-               **{"data-bs-toggle": "collapse", "data-bs-target": f"#{collapse_id}", "aria-expanded": "true" if default_open else "false"})
-        ]),
-        html.Div([
-            html.Div(content, className="p-4")
-        ], id=collapse_id, className=f"collapse {'show' if default_open else ''} border border-top-0 rounded-bottom")
-    ], className="mb-3")
-
-
-def feature_card(icon, title, description, color="primary"):
-    """Card de característica destacada"""
-    return html.Div([
-        html.Div([
-            html.Div([
-                html.I(className=f"fas fa-{icon} fa-3x text-{color} mb-3"),
-                html.H5(title, className="fw-bold mb-2"),
-                html.P(description, className="text-muted small mb-0")
-            ], className="text-center p-4")
-        ], className="h-100 border rounded shadow-sm bg-white", 
-           style={"transition": "transform 0.3s ease", "cursor": "default"})
-    ], className="col-lg-3 col-md-4 col-sm-6 mb-4")
-
-
-# ==================== CONTENIDO DE PESTAÑAS ====================
-
-def tab_quickstart():
-    """Contenido de la pestaña Inicio Rápido"""
-    return html.Div([
-        # Hero Section
+        # Intro
         html.Div([
             html.H3([
-                html.I(className="fas fa-rocket me-3 text-primary"),
-                "Inicio Rápido"
-            ], className="mb-3 fw-bold"),
+                html.I(className="fas fa-rocket me-3", style={'color': '#d4af37'}),
+                "Inicio Rápido - Five Simple Steps"
+            ], className="mb-3 fw-bold", style={'color': '#0f172a'}),
             html.P([
                 "Esta guía te ayudará a configurar y comenzar a usar tu ",
-                html.Strong("EVAL-ADMX2001", className="text-primary"),
-                " en cinco simples pasos. Sigue cada paso cuidadosamente para garantizar mediciones precisas."
-            ], className="lead text-muted mb-4")
-        ], className="p-4 bg-light rounded shadow-sm mb-4"),
+                html.Strong("EVAL-ADMX2001", style={'color': '#d4af37'}),
+                " en cinco simples pasos para realizar tus primeras mediciones."
+            ], style={'color': '#475569', 'fontSize': '1.1rem', 'marginBottom': '30px'})
+        ]),
         
-        # Paso 1: Drivers
-        step_card(
-            1,
-            "Instalación de Drivers FTDI",
-            [
-                html.P([
-                    "El ", html.Strong("EVAL-ADMX2001EBZ"), " se comunica con tu PC mediante UART. ",
-                    "El cable USB-to-UART incluido requiere drivers ",
-                    html.Strong("Virtual COM Port (VCP)"), " de FTDI."
-                ]),
-                html.Div([
-                    html.A([
-                        html.I(className="fas fa-download me-2"),
-                        "Descargar Drivers FTDI"
-                    ], href="https://www.ftdichip.com/Drivers/VCP.htm", target="_blank",
-                       className="btn btn-primary btn-lg shadow")
-                ], className="mb-3"),
-                html.H6("Procedimiento:", className="fw-bold mt-3 mb-2"),
-                html.Ol([
-                    html.Li("Descarga el instalador para tu sistema operativo (Windows/Linux/macOS)"),
-                    html.Li("Ejecuta el instalador y sigue las instrucciones"),
-                    html.Li([html.Strong("Conecta"), " el cable USB-UART al PC"]),
-                    html.Li(["Abre el Administrador de Dispositivos (Windows) o ejecuta ", html.Code("ls /dev/ttyUSB* (Linux)")]),
-                    html.Li(["Verifica que aparezca un ", html.Strong("puerto COM/ttyUSB"), " nuevo"]),
-                ]),
-                info_box([
-                    html.Strong("💡 Verificación: "),
-                    "En Windows busca 'USB Serial Port (COMx)' bajo 'Ports (COM & LPT)'. ",
-                    "En Linux el dispositivo aparecerá como /dev/ttyUSB0 o similar."
-                ], "tip"),
-            ],
-            image_src=IMAGES.get('dev_mgr_vcp'),
-            image_caption="Administrador de dispositivos Windows mostrando el puerto COM instalado correctamente",
-            color="primary"
-        ),
-
-        # Paso 2: Hardware
-        step_card(
-            2,
-            "Configuración del Hardware",
-            [
-                html.P("Sigue estos pasos en orden para la configuración inicial:"),
-                html.Div([
-                    html.Div([
-                        html.Strong("2.1", className="badge bg-success me-2"),
-                        html.Span("Ensamblaje del módulo")
-                    ], className="mb-2 fw-bold"),
-                    html.Ul([
-                        html.Li([
-                            "Inserta el módulo ", html.Strong("ADMX2001B", className="text-primary"),
-                            " en la placa ", html.Strong("EVAL-ADMX2001EBZ"),
-                            " (los conectores tienen guía de posición)"
-                        ]),
-                        html.Li("Asegúrate de que el módulo esté completamente insertado"),
-                    ]),
-                ], className="mb-3 p-3 border-start border-3 border-success bg-light rounded"),
-                
-                html.Div([
-                    html.Strong("2.2", className="badge bg-success me-2"),
-                    html.Span("Configuración de switches para self-test")
-                ], className="mb-2 fw-bold"),
-                html.Ul([
-                    html.Li([html.Strong("S1"), " → Posición ", html.Span("OPEN", className="badge bg-warning text-dark")]),
-                    html.Li([html.Strong("S2"), " → Posición ", html.Span("GND", className="badge bg-dark")]),
-                ]),
-                
-                html.Div([
-                    html.Strong("2.3", className="badge bg-success me-2"),
-                    html.Span("Alimentación")
-                ], className="mb-2 fw-bold mt-3"),
-                html.Ul([
-                    html.Li("Conecta el adaptador de corriente (9VDC) al jack de alimentación"),
-                    html.Li("Conecta el adaptador a la toma de corriente"),
-                    html.Li([
-                        "Verifica que el LED de self-test esté ",
-                        html.Span("VERDE", className="text-success fw-bold"),
-                        " (visible desde la parte inferior del módulo)"
-                    ]),
-                ]),
-                
-                info_box([
-                    html.Strong("⚠️ LED de Self-Test: "),
-                    html.Ul([
-                        html.Li([html.Span("🟢 Verde", className="text-success"), " → Self-test exitoso, módulo operativo"]),
-                        html.Li([html.Span("🟠 Naranja/Rojo", className="text-warning"), " → Falla en self-test analógico, verificar switches"]),
-                        html.Li([html.Span("🔴 Rojo", className="text-danger"), " → Error crítico (alimentación, firmware)"]),
-                    ], className="mb-0 ps-0")
-                ], "warning"),
-            ],
-            image_src=IMAGES.get('basic_connections'),
-            image_caption="Diagrama de conexiones básicas y ubicación de componentes del EVAL-ADMX2001EBZ",
-            color="success"
-        ),
-
-        # Paso 3: UART
-        step_card(
-            3,
-            "Conexión UART",
-            [
-                html.P("Conecta el cable UART-to-USB siguiendo el código de colores:"),
-                html.Div([
-                    html.Table([
-                        html.Thead([
-                            html.Tr([
-                                html.Th("Cable", className="bg-dark text-white"),
-                                html.Th("Terminal", className="bg-dark text-white"),
-                                html.Th("Función", className="bg-dark text-white")
-                            ])
-                        ]),
-                        html.Tbody([
-                            html.Tr([
-                                html.Td([html.Span("Naranja", className="badge bg-warning text-dark")]),
-                                html.Td([html.Strong("TX")]),
-                                html.Td("Transmisión de datos")
-                            ]),
-                            html.Tr([
-                                html.Td([html.Span("Amarillo", className="badge bg-warning")]),
-                                html.Td([html.Strong("RX")]),
-                                html.Td("Recepción de datos")
-                            ]),
-                            html.Tr([
-                                html.Td([html.Span("Negro", className="badge bg-dark")]),
-                                html.Td([html.Strong("GND")]),
-                                html.Td("Tierra común")
-                            ]),
-                        ])
-                    ], className="table table-sm mb-0")
-                ], className="border rounded mb-3"),
-                
-                html.H6("Verificaciones:", className="fw-bold mt-3 mb-2"),
-                html.Ul([
-                    html.Li(["Jumper ", html.Strong("CLK_SEL"), " debe estar en posición ", 
-                            html.Span("INT", className="badge bg-primary"), " (reloj interno)"]),
-                    html.Li("Los tres cables deben estar firmemente conectados"),
-                    html.Li("El cable USB debe estar conectado a un puerto USB del PC"),
-                ]),
-                
-                info_box([
-                    html.Strong("🔧 Importante: "),
-                    "No conectes los cables rojo y verde del cable USB-UART. ",
-                    "Solo usa Naranja (TX), Amarillo (RX) y Negro (GND)."
-                ], "note"),
-            ],
-            image_src=IMAGES.get('uart_connection'),
-            image_caption="Conexión correcta del cable UART-to-USB a los terminales de la placa",
-            color="info"
-        ),
-
-        # Paso 4: Software ZORIA
-        step_card(
-            4,
-            "Inicio del Software ZORIA",
-            [
-                html.P([
-                    html.Strong("ZORIA"), " es una plataforma web moderna que transforma el ADMX2001 ",
-                    "en un sistema de medición profesional con visualización científica en tiempo real."
-                ]),
-                
-                html.Div([
-                    html.H6("Características principales:", className="fw-bold mb-3"),
-                    html.Div([
-                        feature_card("plug", "Auto-Detección", "Detección y conexión automática del puerto serial", "success"),
-                        feature_card("chart-line", "Visualización RT", "Diagramas de Bode y Nyquist en tiempo real", "primary"),
-                        feature_card("download", "Exportación", "Exporta datos a CSV para análisis externo", "warning"),
-                        feature_card("calculator", "Simulador RLC", "Calcula impedancias teóricas de circuitos", "info"),
-                    ], className="row"),
-                ], className="mb-4"),
-                
-                html.H6("Inicio rápido:", className="fw-bold mb-2"),
-                html.Ol([
-                    html.Li(["Abre una terminal en la carpeta de ZORIA"]),
-                    html.Li([
-                        "Ejecuta: ",
-                        html.Code("python app.py", className="bg-dark text-success p-1 rounded")
-                    ]),
-                    html.Li([
-                        "Abre tu navegador en: ",
-                        html.A("http://localhost:8050", href="http://localhost:8050", 
-                              target="_blank", className="btn btn-sm btn-primary ms-2")
-                    ]),
-                    html.Li("¡Comienza a realizar mediciones!"),
-                ]),
-                
-                info_box([
-                    html.Strong("📱 Multiplataforma: "),
-                    "ZORIA funciona en cualquier dispositivo con navegador web. ",
-                    "Puedes acceder desde tablets o smartphones conectados a la misma red."
-                ], "success"),
-            ],
-            color="primary"
-        ),
-
-        # Paso 5: Primera medición
-        step_card(
-            5,
-            "Primera Medición",
-            [
-                html.Div([
-                    html.P("Configura el hardware para medición:"),
-                    html.Ul([
-                        html.Li([html.Strong("S1"), " → ", html.Span("DUT", className="badge bg-info")]),
-                        html.Li([html.Strong("S2"), " → ", html.Span("GND", className="badge bg-dark")]),
-                    ]),
-                    html.P("Conecta las pinzas de prueba:", className="fw-bold mt-3"),
-                    html.Ul([
-                        html.Li([html.Span("🔴 Rojos", className="text-danger fw-bold"), " → Puertos HCUR y HPOT"]),
-                        html.Li([html.Span("⚫ Negros", className="text-dark fw-bold"), " → Puertos LCUR y LPOT"]),
-                    ]),
-                ], className="p-3 bg-light rounded border mb-3"),
-                
-                html.H6("En la interfaz ZORIA:", className="fw-bold mb-2"),
-                html.Ol([
-                    html.Li("Navega a la página Dashboard"),
-                    html.Li("Haz clic en el botón de conexión"),
-                    html.Li("Selecciona el puerto COM/USB detectado"),
-                    html.Li("Configura la frecuencia de medición (ej: 1 kHz)"),
-                    html.Li("Haz clic en 'Iniciar Medición'"),
-                    html.Li("Observa los resultados en tiempo real"),
-                ]),
-                
-                info_box([
-                    html.I(className="fas fa-exclamation-triangle me-2"),
-                    html.Strong("Calibración Necesaria: "),
-                    "Las primeras mediciones no serán precisas. Debes realizar la calibración ",
-                    html.Strong("OPEN-SHORT-LOAD"),
-                    " con estándares certificados. Consulta la pestaña 'Calibración' para más detalles."
-                ], "danger"),
-            ],
-            image_src=IMAGES.get('photo_setup'),
-            image_caption="Configuración completa lista para realizar mediciones con el DUT conectado",
-            color="warning"
-        ),
-
-        # Próximos pasos
+        info_box([
+            html.Strong("📦 Contenido del Kit:"),
+            html.Ul([
+                html.Li("Placa EVAL-ADMX2001EBZ"),
+                html.Li("Cable UART a USB (TTL-232R-RPI)"),
+                html.Li("Adaptador de corriente universal con salida de 9VDC"),
+                html.Li("Pinzas de prueba para medidor LCR")
+            ], style={'marginBottom': '0'}),
+            html.Div([
+                html.Strong("⚠️ IMPORTANTE: "), 
+                "El módulo ADMX2001B se vende por separado. Es crítico comprar AMBOS componentes."
+            ], style={'marginTop': '15px', 'padding': '10px', 'background': '#fef3c7', 'borderRadius': '6px'})
+        ], "info"),
+        
+        # Paso 1
         html.Div([
-            html.H4([
-                html.I(className="fas fa-forward me-2 text-success"),
-                "Próximos Pasos"
-            ], className="mb-3 fw-bold"),
+            html.H5([step_number(1), "Instalación de Drivers FTDI VCP"], className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.P([
+                "El ", html.Strong("EVAL-ADMX2001EBZ"), " se comunica con tu PC mediante UART. "
+                "El cable USB-to-UART incluido requiere drivers ",
+                html.Strong("Virtual COM Port (VCP)"), " de FTDI."
+            ], style={'color': '#475569', 'marginBottom': '15px'}),
+            html.Div([
+                html.H6("Procedimiento:", className="fw-bold mt-3 mb-2", style={'color': '#0f172a'}),
+                html.Ol([
+                    html.Li([
+                        "Descargar el setup executable del driver desde: ",
+                        html.A("https://www.ftdichip.com/Drivers/VCP.htm", href="https://www.ftdichip.com/Drivers/VCP.htm", target="_blank", style={'color': '#3b82f6'})
+                    ], style={'color': '#475569', 'marginBottom': '10px'}),
+                    html.Li("Descomprimir y ejecutar el instalador", style={'color': '#475569', 'marginBottom': '10px'}),
+                    html.Li([html.Strong("Conectar"), " el cable USB-UART al PC"], style={'color': '#475569', 'marginBottom': '10px'}),
+                    html.Li("Abrir el Administrador de Dispositivos (Windows) / System Profiler (Mac)", style={'color': '#475569', 'marginBottom': '10px'}),
+                    html.Li("Verificar que el Puerto Serial USB aparezca bajo 'Ports (COM & LPT)' con un identificador asignado (ej. COM3)", style={'color': '#475569'})
+                ])
+            ], style={'background': '#f8fafc', 'padding': '20px', 'borderRadius': '8px', 'marginBottom': '15px'}),
+            info_box([
+                html.Strong("💡 Verificación: "),
+                "En Windows busca 'USB Serial Port (COMx)' bajo 'Ports (COM & LPT)'. Anota el número de puerto COM para el paso 4."
+            ], "tip"),
+            image_card(IMAGES.get('dev_mgr_vcp'), "Administrador de dispositivos Windows mostrando puerto COM")
+        ], style={'marginBottom': '40px'}),
+        
+        # Paso 2
+        html.Div([
+            html.H5([step_number(2), "Instalación del Emulador de Terminal"], className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.P([
+                "Para comunicarse con el ADMX2001B mediante su interfaz CLI y UART, se recomienda ",
+                html.Strong("TeraTerm"), " (soporta códigos ANSI para colores y cursor)."
+            ], style={'color': '#475569', 'marginBottom': '15px'}),
+            html.A([
+                html.I(className="fas fa-download me-2"),
+                "Descargar TeraTerm"
+            ], href="https://github.com/TeraTermProject/teraterm/releases", target="_blank",
+               className="btn mb-3", style={'background': '#d4af37', 'color': '#ffffff', 'textDecoration': 'none', 'display': 'inline-block', 'padding': '10px 20px', 'borderRadius': '8px'}),
+            html.P([
+                html.Strong("Alternativas: "), "PuTTY, CoolTerm (pueden tener problemas con códigos ANSI)"
+            ], style={'color': '#64748b', 'fontSize': '0.9rem', 'marginTop': '15px'}),
+            html.Div([
+                html.H6("Configuración de TeraTerm:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.Ul([
+                    html.Li([html.Strong("Speed: "), "115200"], style={'color': '#475569'}),
+                    html.Li([html.Strong("Data: "), "8 bits"], style={'color': '#475569'}),
+                    html.Li([html.Strong("Parity: "), "none"], style={'color': '#475569'}),
+                    html.Li([html.Strong("Stop bits: "), "1 bits"], style={'color': '#475569'}),
+                    html.Li([html.Strong("Flow control: "), "none"], style={'color': '#475569'})
+                ])
+            ], style={'background': '#f8fafc', 'padding': '15px', 'borderRadius': '8px', 'marginTop': '15px'})
+        ], style={'marginBottom': '40px'}),
+        
+        # Paso 3
+        html.Div([
+            html.H5([step_number(3), "Configuración de Hardware"], className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.P("Sigue estos pasos para la configuración inicial:", style={'color': '#475569', 'marginBottom': '15px'}),
             html.Div([
                 html.Div([
-                    html.A([
-                        html.Div([
-                            html.I(className="fas fa-balance-scale fa-2x mb-2 text-primary"),
-                            html.H6("Calibración", className="fw-bold"),
-                            html.P("Aprende a calibrar tu dispositivo para mediciones precisas", className="small text-muted mb-0")
-                        ], className="text-center p-4")
-                    ], href="#", className="text-decoration-none"),
-                ], className="col-md-4 mb-3"),
-                
+                    html.Strong("3.1 Ensamblaje del módulo", style={'color': '#0f172a', 'display': 'block', 'marginBottom': '8px'}),
+                    html.Ul([
+                        html.Li("Insertar el módulo ADMX2001B en la placa EVAL-ADMX2001EBZ"),
+                        html.Li("Los conectores tienen guía - asegúrate de que esté completamente insertado")
+                    ], style={'color': '#475569'})
+                ], style={'background': '#f1f5f9', 'padding': '15px', 'borderRadius': '8px', 'marginBottom': '15px'}),
                 html.Div([
-                    html.A([
-                        html.Div([
-                            html.I(className="fas fa-book fa-2x mb-2 text-success"),
-                            html.H6("Guía de Usuario", className="fw-bold"),
-                            html.P("Explora todas las funciones y capacidades de ZORIA", className="small text-muted mb-0")
-                        ], className="text-center p-4")
-                    ], href="#", className="text-decoration-none"),
-                ], className="col-md-4 mb-3"),
-                
+                    html.Strong("3.2 Configuración de switches para self-test inicial", style={'color': '#0f172a', 'display': 'block', 'marginBottom': '8px'}),
+                    html.Ul([
+                        html.Li([html.Strong("S1"), " → Posición OPEN"]),
+                        html.Li([html.Strong("S2"), " → Posición GND"])
+                    ])
+                ], style={'background': '#f1f5f9', 'padding': '15px', 'borderRadius': '8px', 'marginBottom': '15px'}),
                 html.Div([
-                    html.A([
-                        html.Div([
-                            html.I(className="fas fa-terminal fa-2x mb-2 text-warning"),
-                            html.H6("Comandos CLI", className="fw-bold"),
-                            html.P("Domina la interfaz de línea de comandos avanzada", className="small text-muted mb-0")
-                        ], className="text-center p-4")
-                    ], href="#", className="text-decoration-none"),
-                ], className="col-md-4 mb-3"),
-            ], className="row"),
-        ], className="bg-light p-4 rounded shadow-sm mt-4"),
+                    html.Strong("3.3 Alimentación:", style={'color': '#0f172a', 'display': 'block', 'marginBottom': '8px'}),
+                    html.Ul([
+                        html.Li("Conectar el adaptador de corriente al conector de alimentación y al tomacorriente"),
+                        html.Li([html.Strong("Verificar: "), "El LED de self-test debe iluminarse en VERDE (parte inferior del módulo)"])
+                    ])
+                ], style={'background': '#f1f5f9', 'padding': '15px', 'borderRadius': '8px', 'marginBottom': '15px'}),
+                html.Div([
+                    html.Strong("3.4 Conexión UART:", style={'color': '#0f172a', 'display': 'block', 'marginBottom': '8px'}),
+                    html.Ul([
+                        html.Li("TX (naranja) → TX del evaluador"),
+                        html.Li("RX (amarillo) → RX del evaluador"),
+                        html.Li("GND (negro) → GND del evaluador")
+                    ])
+                ], style={'background': '#f1f5f9', 'padding': '15px', 'borderRadius': '8px', 'marginBottom': '15px'}),
+                html.Div([
+                    html.Strong("3.5 Verificaciones finales:", style={'color': '#0f172a', 'display': 'block', 'marginBottom': '8px'}),
+                    html.Ul([
+                        html.Li("Jumper CLK_SEL en posición INT (reloj interno)"),
+                        html.Li("Cambiar switches a DUT y GND para mediciones"),
+                        html.Li("Conectar pinzas de prueba: BNC rojos → HCUR/HPOT, BNC negros → LPOT/LCUR")
+                    ])
+                ], style={'background': '#f1f5f9', 'padding': '15px', 'borderRadius': '8px'})
+            ]),
+            info_box([
+                html.Strong("⚠️ IMPORTANTE sobre pinzas: "),
+                "Inspeccionar los conectores BNC de las pinzas. La carcasa puede aflojarse parcialmente. ",
+                "Al usar en configuración 'open', cada pinza debe sujetar su propio trozo de alambre para asegurar conexión eléctrica."
+            ], "warning"),
+            image_card(IMAGES.get('basic_connections'), "Diagrama de conexiones básicas"),
+            image_card(IMAGES.get('uart_connection'), "Detalle de conexión UART")
+        ], style={'marginBottom': '40px'}),
         
-    ], id="content-quickstart")
+        # Paso 4
+        html.Div([
+            html.H5([step_number(4), "Abrir Sesión con TeraTerm"], className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.Div([
+                html.Strong("Configuración inicial:", style={'display': 'block', 'marginBottom': '10px'}),
+                html.Ol([
+                    html.Li("Abrir TeraTerm y elegir conexión Serial", style={'marginBottom': '8px'}),
+                    html.Li("Seleccionar el puerto COM identificado en el Administrador de Dispositivos", style={'marginBottom': '8px'}),
+                    html.Li("Ir a Setup → Serial port y configurar: 115200, 8, none, 1, none", style={'marginBottom': '8px'}),
+                    html.Li("Click en 'New setting'", style={'marginBottom': '8px'}),
+                    html.Li("(Opcional) Guardar configuración: Setup → Save setup", style={'marginBottom': '8px'})
+                ], style={'color': '#475569'}),
+                html.Strong("Verificar la conexión:", style={'display': 'block', 'marginTop': '20px', 'marginBottom': '10px'}),
+                html.Ul([
+                    html.Li([
+                        "Presionar ", html.Code("ENTER", style={'background': '#1e293b', 'color': '#10b981', 'padding': '2px 8px', 'borderRadius': '4px'}),
+                        " para mostrar el prompt ", html.Code("ADMX2001>")
+                    ], style={'marginBottom': '8px'}),
+                    html.Li([
+                        "Escribir ", html.Code("*idn", style={'background': '#1e293b', 'color': '#10b981', 'padding': '2px 8px', 'borderRadius': '4px'}),
+                        " y presionar ENTER para ver versión de firmware"
+                    ], style={'marginBottom': '8px'}),
+                    html.Li([
+                        "Escribir ", html.Code("help", style={'background': '#1e293b', 'color': '#10b981', 'padding': '2px 8px', 'borderRadius': '4px'}),
+                        " y presionar ENTER para ver lista de comandos disponibles"
+                    ])
+                ], style={'color': '#475569'})
+            ], style={'background': '#f8fafc', 'padding': '20px', 'borderRadius': '8px', 'marginBottom': '15px'}),
+            info_box([
+                html.Strong("💡 Tip: "),
+                "Cerrar la ventana de TeraTerm no resetea la configuración del ADMX2001B de la última sesión."
+            ], "tip")
+        ], style={'marginBottom': '40px'}),
+        
+        # Paso 5
+        html.Div([
+            html.H5([step_number(5), "Primeras Mediciones"], className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.P([
+                "Al abrir una sesión, el ADMX2001B está listo para realizar mediciones de impedancia. ",
+                html.Strong("⚠️ Las mediciones no serán precisas hasta calibrar el módulo (ver sección Calibración).")
+            ], style={'color': '#475569', 'marginBottom': '15px'}),
+            html.Div([
+                html.Strong("Configuración por defecto:", style={'display': 'block', 'marginBottom': '10px'}),
+                html.Ul([
+                    html.Li("Mediciones de impedancia en coordenadas rectangulares (mode 6: R, X)"),
+                    html.Li("Señal de 1V pk (magnitude = 1) a 1kHz"),
+                    html.Li("Sin offset DC"),
+                    html.Li("Auto-ranging habilitado")
+                ], style={'color': '#475569'})
+            ], style={'background': '#f8fafc', 'padding': '15px', 'borderRadius': '8px', 'marginBottom': '20px'}),
+            html.H6("Ejemplo: Medición de Capacitancia", className="fw-bold mb-2", style={'color': '#0f172a'}),
+            html.P("Realizar una medición Cp-Rp a 100kHz con amplitud de 1V, retornar 5 lecturas promediando 10 muestras:", style={'color': '#475569', 'marginBottom': '10px'}),
+            html.Pre("""ADMX2001> frequency 100
+frequency = 100.0000kHz
+
+ADMX2001> display 9
+Measurement model: 9 - Capacitance and equivalent parallel resistance (Cp,Rp)
+
+ADMX2001> magnitude 1
+magnitude = 1.0000
+
+ADMX2001> average 10
+average = 10
+
+ADMX2001> count 5
+sampleCount = 5
+
+ADMX2001> z
+0,5.677640e-13,8.062763e+07
+1,5.668012e-13,8.305672e+07
+2,5.675237e-13,8.208995e+07
+3,5.673763e-13,8.276912e+07
+4,5.683635e-13,8.463327e+07
+""", style={
+                'background': '#1e293b',
+                'color': '#e2e8f0',
+                'padding': '20px',
+                'borderRadius': '12px',
+                'fontFamily': 'monospace',
+                'fontSize': '0.85rem',
+                'overflowX': 'auto',
+                'lineHeight': '1.6'
+            }),
+            info_box([
+                html.Strong("✅ ¡Listo! "),
+                "Tu EVAL-ADMX2001 está configurado. Para mediciones de precision, continúa con el procedimiento de calibración."
+            ], "success")
+        ])
+    ])
 
 
-def tab_hardware():
-    """Contenido de la pestaña Hardware"""
+# ==================== CONTENIDO: HARDWARE ====================
+
+def content_hardware():
     return html.Div([
-        # Hero
         html.Div([
             html.H3([
-                html.I(className="fas fa-microchip me-3 text-primary"),
+                html.I(className="fas fa-microchip me-3", style={'color': '#3b82f6'}),
                 "Especificaciones de Hardware"
-            ], className="mb-3 fw-bold"),
+            ], className="mb-3 fw-bold", style={'color': '#0f172a'}),
             html.P([
-                "Información técnica detallada sobre el ", html.Strong("EVAL-ADMX2001"),
-                " y el módulo ", html.Strong("ADMX2001B"), "."
-            ], className="lead text-muted mb-0")
-        ], className="p-4 bg-light rounded shadow-sm mb-4"),
+                "El ", html.Strong("EVAL-ADMX2001 LCR Meter Demo", style={'color': '#3b82f6'}),
+                " comprende el módulo ", html.Strong("ADMX2001B"), " y la placa de evaluación ",
+                html.Strong("EVAL-ADMX2001EBZ"), "."
+            ], style={'color': '#475569', 'fontSize': '1.1rem', 'marginBottom': '30px'})
+        ]),
         
-        # Módulo ADMX2001B
-        doc_section(
-            "ADMX2001B - Módulo Analizador de Impedancia",
-            "microchip",
-            [
-                html.Div([
-                    html.P([
-                        "System-on-Module (SOM) de alto rendimiento para análisis de impedancia y caracterización de componentes."
-                    ], className="lead mb-4"),
-                    
-                    html.H5("Especificaciones Principales", className="fw-bold mb-3"),
-                    html.Div([
-                        spec_badge("Factor de Forma", "1.5 × 2.5 pulgadas", "primary", "ruler-combined"),
-                        spec_badge("Rango de Frecuencias", "0.2 Hz - 10 MHz", "success", "wave-square"),
-                        spec_badge("Resolución ADC", "18 bits", "info", "microchip"),
-                        spec_badge("Alimentación", "3.3V única", "warning", "bolt"),
-                        spec_badge("Interfaces", "UART + SPI", "secondary", "network-wired"),
-                        spec_badge("Modos de Display", "18 formatos", "primary", "th-list"),
-                    ], className="row row-cols-2 row-cols-md-3 mb-4"),
-                    
-                    html.H5("Capacidades de Medición", className="fw-bold mb-3 mt-4"),
-                    info_table(
-                        ["Parámetro", "Rango", "Descripción"],
-                        [
-                            ["Impedancia (Z)", "< 1Ω a > 100MΩ", "Magnitud y fase"],
-                            ["Capacitancia (C)", "< 1pF a > 100mF", "Serie y paralelo"],
-                            ["Inductancia (L)", "< 1nH a > 100H", "Serie y paralelo"],
-                            ["Resistencia DC", "< 1Ω a > 100MΩ", "Medición de 4 terminales"],
-                            ["Factor Q", "0.001 a 10000", "Factor de calidad"],
-                            ["Factor D", "0.0001 a 10", "Factor de disipación"],
-                        ]
-                    ),
-                ]),
-            ],
-            bg_color="white"
-        ),
+        info_box([
+            html.Strong("⚠️ IMPORTANTE: "),
+            "Es crítico comprar AMBOS el módulo ADMX2001B y la placa EVAL-ADMX2001EBZ. Se venden por separado."
+        ], "warning"),
         
-        # EVAL-ADMX2001EBZ
-        doc_section(
-            "EVAL-ADMX2001EBZ - Placa de Evaluación",
-            "server",
-            [
-                html.P([
-                    "Placa de desarrollo y evaluación diseñada para facilitar el uso del módulo ADMX2001B ",
-                    "con conectores estándar y alimentación regulada."
-                ], className="lead mb-4"),
-                
-                html.H5("Características Principales", className="fw-bold mb-3"),
-                html.Ul([
-                    html.Li([html.Strong("Conectores BNC:"), " 4 conectores para sondas LCR estándar"]),
-                    html.Li([html.Strong("Interfaz UART:"), " Compatible con cables USB-to-UART comerciales"]),
-                    html.Li([html.Strong("Triggers y Clock:"), " Conectores SMA para sincronización externa"]),
-                    html.Li([html.Strong("Headers Arduino:"), " Compatible con plataformas de desarrollo (SDP-K1)"]),
-                    html.Li([html.Strong("Alimentación:"), " +5V a +12V DC, regulador interno a 3.3V"]),
-                    html.Li([html.Strong("LEDs indicadores:"), " Estado, self-test, y alimentación"]),
-                ]),
-                
-                html.H5("Descripción de Terminales", className="fw-bold mb-3 mt-4"),
-                info_table(
-                    ["Terminal", "Tipo", "Descripción"],
-                    [
-                        ["H_CUR", "BNC Rojo", "Fuente de señal de excitación (±5V @ 50mA máx)"],
-                        ["H_POT", "BNC Rojo", "Sensado de voltaje alto, conectar a H_CUR en DUT"],
-                        ["L_POT", "BNC Negro", "Sensado de voltaje bajo, conectar a L_CUR en DUT"],
-                        ["L_CUR", "BNC Negro", "Retorno de corriente de excitación"],
-                        ["UART TX/RX/GND", "Header", "Comunicación serial 115200-8-N-1, lógica 3.3V"],
-                        ["CLK_SEL", "Jumper", "Selección reloj interno (INT) o externo (EXT)"],
-                        ["TRIG_IN", "SMA", "Entrada de trigger externo (3.3V, >15μs)"],
-                        ["TRIG_OUT", "SMA", "Salida de trigger al completar medición"],
-                        ["CLK_IN/OUT", "SMA", "Reloj 50MHz entrada/salida LVCMOS"],
-                        ["PMOD", "Header", "Puerto SPI para control avanzado"],
-                        ["P6, P7", "Headers", "Salidas digitales y GPIO"],
-                    ],
-                    striped=True,
-                    hover=True
-                ),
-                
-                html.H5("Switches de Configuración", className="fw-bold mb-3 mt-4"),
-                html.Div([
-                    html.Div([
-                        html.H6([
-                            html.Span("S1", className="badge bg-primary me-2"),
-                            "Selector de Carga"
-                        ], className="fw-bold mb-2"),
-                        html.Ul([
-                            html.Li([html.Strong("OPEN:"), " Para calibración open y self-test"]),
-                            html.Li([html.Strong("DUT:"), " Para mediciones normales del dispositivo bajo prueba"]),
-                        ])
-                    ], className="col-md-6 mb-3"),
-                    html.Div([
-                        html.H6([
-                            html.Span("S2", className="badge bg-primary me-2"),
-                            "Selector de Referencia"
-                        ], className="fw-bold mb-2"),
-                        html.Ul([
-                            html.Li([html.Strong("GND:"), " Referencia a tierra (uso normal)"]),
-                            html.Li([html.Strong("FLT:"), " Referencia flotante (aplicaciones especiales)"]),
-                        ])
-                    ], className="col-md-6 mb-3"),
-                ], className="row"),
-            ],
-            bg_color="white"
-        ),
-        
-        # Contenido del Kit
-        doc_section(
-            "Contenido del Kit y Accesorios",
-            "box-open",
-            [
-                html.Div([
-                    html.H5("EVAL-ADMX2001EBZ Kit Incluye:", className="fw-bold mb-3"),
-                    html.Div([
-                        html.Div([
-                            html.I(className="fas fa-check-circle text-success me-2"),
-                            html.Span("Placa EVAL-ADMX2001EBZ")
-                        ], className="mb-2"),
-                        html.Div([
-                            html.I(className="fas fa-check-circle text-success me-2"),
-                            html.Span("Cable UART-to-USB (TTL-232R-RPI)")
-                        ], className="mb-2"),
-                        html.Div([
-                            html.I(className="fas fa-check-circle text-success me-2"),
-                            html.Span("Adaptador universal 9VDC")
-                        ], className="mb-2"),
-                        html.Div([
-                            html.I(className="fas fa-check-circle text-success me-2"),
-                            html.Span("Pinzas de prueba para LCR")
-                        ], className="mb-2"),
-                    ], className="p-3 bg-light rounded"),
-                    
-                    info_box([
-                        html.I(className="fas fa-exclamation-triangle me-2"),
-                        html.Strong("⚠️ CRÍTICO: "),
-                        "El ", html.Strong("módulo ADMX2001B"), " se vende por separado. ",
-                        "Es imprescindible adquirir AMBOS componentes para el funcionamiento completo."
-                    ], "danger"),
-                    
-                    html.H5("Accesorios Opcionales Recomendados:", className="fw-bold mb-3 mt-4"),
-                    info_table(
-                        ["Categoría", "Descripción", "Uso"],
-                        [
-                            ["Fixtures LCR", "B+K Precision TL89S1, Keysight 16034G", "Mediciones SMD de precisión"],
-                            ["Estándares Cal", "Resistores 1%, Capacitores NP0, Terminaciones", "Calibración trazable"],
-                            ["LCR Meter Ref", "Keysight E4980A, Hioki IM3536", "Verificación y transferencia de cal"],
-                            ["Cables BNC", "Cables de baja capacitancia <50pF", "Reducción de parásitas"],
-                            ["USB Blaster", "Intel/Altera USB Blaster", "Actualización de firmware"],
-                        ]
-                    ),
-                ]),
-            ],
-            bg_color="white"
-        ),
-        
-        # Imágenes de referencia
+        # ADMX2001B Module
         html.Div([
-            html.H4("Galería de Referencias", className="fw-bold mb-4"),
+            html.H5("ADMX2001B - Módulo Analizador de Impedancia", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.Div([
+                html.Ul([
+                    html.Li([html.Strong("Altamente compacto: "), "System-on-Module (SOM) de 1.5 × 2.5 pulgadas"]),
+                    html.Li([html.Strong("Rango de frecuencia: "), "0.2 Hz a 10 MHz"]),
+                    html.Li([html.Strong("Mediciones: "), "Resistencia DC o impedancia AC"]),
+                    html.Li([html.Strong("Canales ADC: "), "18 bits de resolución"]),
+                    html.Li([html.Strong("Alimentación: "), "Fuente única de 3.3V"]),
+                    html.Li([html.Strong("Interfaces: "), "UART y SPI flexibles"]),
+                    html.Li([html.Strong("Formatos: "), "18 modos de display en unidades SI"])
+                ], style={'color': '#475569'})
+            ], style={
+                'background': '#ffffff',
+                'borderRadius': '12px',
+                'border': '1px solid #e2e8f0',
+                'padding': '20px',
+                'marginBottom': '30px'
+            })
+        ]),
+        
+        # EVAL-ADMX2001EBZ Board
+        html.Div([
+            html.H5("EVAL-ADMX2001EBZ - Placa de Evaluación", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.Div([
+                html.Ul([
+                    html.Li([html.Strong("Conectores BNC: "), "Para sondas y accesorios LCR estándar"]),
+                    html.Li([html.Strong("Interfaz UART: "), "Cable USB-to-UART para conexión a PC"]),
+                    html.Li([html.Strong("Triggers SMA: "), "Sincronización y triggers por hardware"]),
+                    html.Li([html.Strong("Headers Arduino: "), "Para desarrollo embebido (ej. SDP-K1)"]),
+                    html.Li([html.Strong("Alimentación: "), "Conector para adaptadores AC/DC de +5V a +12V"]),
+                    html.Li([html.Strong("Headers PMOD: "), "Acceso a interfaz SPI"]),
+                    html.Li([html.Strong("I/Os digitales: "), "8 salidas digitales configurables"])
+                ], style={'color': '#475569'})
+            ], style={
+                'background': '#ffffff',
+                'borderRadius': '12px',
+                'border': '1px solid #e2e8f0',
+                'padding': '20px',
+                'marginBottom': '30px'
+            })
+        ]),
+        
+        # Descripción de Terminales
+        html.Div([
+            html.H5("Descripción de Terminales", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.Div([
+                html.Table([
+                    html.Thead([
+                        html.Tr([
+                            html.Th("Terminal", style={'color': '#0f172a', 'fontWeight': '600', 'padding': '12px', 'borderBottom': '2px solid #3b82f6'}),
+                            html.Th("Descripción", style={'color': '#0f172a', 'fontWeight': '600', 'padding': '12px', 'borderBottom': '2px solid #3b82f6'})
+                        ])
+                    ]),
+                    html.Tbody([
+                        html.Tr([
+                            html.Td(html.Strong("H_CUR"), style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td("Terminal de fuente de señal. Genera la excitación requerida. Puede proveer hasta ±5V @ 50mA", style={'padding': '12px', 'color': '#475569', 'borderBottom': '1px solid #e2e8f0'})
+                        ]),
+                        html.Tr([
+                            html.Td(html.Strong("H_POT"), style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td("Terminal de sensado de voltaje. Conectar a H_CUR en el DUT", style={'padding': '12px', 'color': '#475569', 'borderBottom': '1px solid #e2e8f0'})
+                        ]),
+                        html.Tr([
+                            html.Td(html.Strong("L_POT"), style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td("Terminal de sensado de voltaje. Conectar a L_CUR en el DUT", style={'padding': '12px', 'color': '#475569', 'borderBottom': '1px solid #e2e8f0'})
+                        ]),
+                        html.Tr([
+                            html.Td(html.Strong("L_CUR"), style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td("Terminal de sensado de corriente. Ruta de retorno para señal de excitación", style={'padding': '12px', 'color': '#475569', 'borderBottom': '1px solid #e2e8f0'})
+                        ]),
+                        html.Tr([
+                            html.Td(html.Strong("UART TX/RX"), style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td("Pines de comunicación UART. Lógica 3.3V", style={'padding': '12px', 'color': '#475569', 'borderBottom': '1px solid #e2e8f0'})
+                        ]),
+                        html.Tr([
+                            html.Td(html.Strong("TRIG_IN"), style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td("Entrada de trigger para adquisición sincronizada por hardware (3.3V, mín 15μs)", style={'padding': '12px', 'color': '#475569', 'borderBottom': '1px solid #e2e8f0'})
+                        ]),
+                        html.Tr([
+                            html.Td(html.Strong("TRIG_OUT"), style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td("Salida de trigger al completar medición", style={'padding': '12px', 'color': '#475569', 'borderBottom': '1px solid #e2e8f0'})
+                        ]),
+                        html.Tr([
+                            html.Td(html.Strong("CLK_IN/OUT"), style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td("Entrada/salida de reloj. Señal LVCMOS 50MHz", style={'padding': '12px', 'color': '#475569', 'borderBottom': '1px solid #e2e8f0'})
+                        ])
+                    ])
+                ], style={'width': '100%', 'borderCollapse': 'collapse'})
+            ], style={
+                'background': '#ffffff',
+                'borderRadius': '12px',
+                'border': '1px solid #e2e8f0',
+                'padding': '20px',
+                'marginBottom': '30px',
+                'overflowX': 'auto'
+            })
+        ]),
+        
+        # Self-Test
+        html.Div([
+            html.H5("Funcionalidad de Self-Test", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.P("Al encender, el ADMX2001B ejecuta automáticamente un self-test. El LED bicolor indica el estado:", style={'color': '#475569', 'marginBottom': '15px'}),
             html.Div([
                 html.Div([
-                    image_card(IMAGES.get('basic_connections'), "Conexiones Básicas", 
-                              "Diagrama completo de conexiones y componentes principales")
-                ], className="col-lg-6 mb-4"),
+                    html.Span("●", style={'color': '#10b981', 'fontSize': '24px', 'marginRight': '12px'}),
+                    html.Strong("Verde: ", style={'color': '#0f172a'}),
+                    html.Span("Pasa el self-test", style={'color': '#475569'})
+                ], style={'padding': '12px', 'marginBottom': '8px'}),
                 html.Div([
-                    image_card(IMAGES.get('photo_setup'), "Configuración Real", 
-                              "Ejemplo de configuración completa lista para mediciones")
-                ], className="col-lg-6 mb-4"),
-            ], className="row"),
-        ], className="mt-4"),
+                    html.Span("●", style={'color': '#f59e0b', 'fontSize': '24px', 'marginRight': '12px'}),
+                    html.Strong("Verde/Rojo: ", style={'color': '#0f172a'}),
+                    html.Span("Falla el self-test", style={'color': '#475569'})
+                ], style={'padding': '12px', 'marginBottom': '8px'}),
+                html.Div([
+                    html.Span("●", style={'color': '#ef4444', 'fontSize': '24px', 'marginRight': '12px'}),
+                    html.Strong("Rojo: ", style={'color': '#0f172a'}),
+                    html.Span("Problema mayor (alimentación, firmware faltante)", style={'color': '#475569'})
+                ], style={'padding': '12px'})
+            ], style={'background': '#f8fafc', 'padding': '15px', 'borderRadius': '8px', 'marginBottom': '15px'}),
+            html.P([
+                html.Strong("Comandos del self-test:")
+            ], style={'color': '#0f172a', 'marginTop': '20px', 'marginBottom': '10px'}),
+            html.Ul([
+                html.Li([html.Code("selftest", style={'background': '#1e293b', 'color': '#10b981', 'padding': '2px 8px', 'borderRadius': '4px'}), " - Ver estado del último self-test"]),
+                html.Li([html.Code("selftest run", style={'background': '#1e293b', 'color': '#10b981', 'padding': '2px 8px', 'borderRadius': '4px'}), " - Reejecutar el self-test"])
+            ], style={'color': '#475569'}),
+            info_box([
+                html.Strong("⚠️ Importante: "),
+                "Para pasar el componente analógico del self-test, los switches S1 y S2 deben estar en OPEN y GND."
+            ], "warning")
+        ], style={'marginBottom': '40px'}),
         
-    ], id="content-hardware", style={"display": "none"})
+        # Switches
+        html.Div([
+            html.H5("Configuración de Switches", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.P("Los switches S1 y S2 configuran el modo de operación:", style={'color': '#475569', 'marginBottom': '15px'}),
+            html.Div([
+                html.Div([
+                    html.Strong("Self-Test Mode:"),
+                    html.Ul([
+                        html.Li("S1 → OPEN"),
+                        html.Li("S2 → GND")
+                    ])
+                ], style={'background': '#f1f5f9', 'padding': '15px', 'borderRadius': '8px', 'marginBottom': '10px'}),
+                html.Div([
+                    html.Strong("Medición Normal (DUT):"),
+                    html.Ul([
+                        html.Li("S1 → LOAD"),
+                        html.Li("S2 → GND")
+                    ])
+                ], style={'background': '#f1f5f9', 'padding': '15px', 'borderRadius': '8px'})
+            ])
+        ], style={'marginBottom': '40px'}),
+        
+        image_card(IMAGES.get('basic_connections'), "Diagrama de conexiones del evaluador")
+    ])
 
 
-# Función auxiliar para crear contenido de otras pestañas (continuará...)
-def tab_software():
-    """Contenido de la pestaña Software - ZORIA"""
+# ==================== CONTENIDO: SOFTWARE ====================
+
+def content_software():
     return html.Div([
         html.Div([
             html.H3([
-                html.I(className="fas fa-laptop-code me-3 text-primary"),
-                "Software ZORIA"
-            ], className="mb-3 fw-bold"),
+                html.I(className="fas fa-laptop-code me-3", style={'color': '#10b981'}),
+                "Guía de Software ZORIA"
+            ], className="mb-3 fw-bold", style={'color': '#0f172a'}),
             html.P([
-                "ZORIA es una plataforma web de código abierto que transforma el EVAL-ADMX2001 ",
-                "en un sistema profesional de análisis de impedancia con visualización científica en tiempo real."
-            ], className="lead text-muted mb-0")
-        ], className="p-4 bg-light rounded shadow-sm mb-4"),
-        
-        # Características
-        doc_section(
-            "Características Principales",
-            "star",
-            [
-                html.Div([
-                    feature_card("wifi", "Auto-Detección", "Detección y conexión automática del puerto serial", "success"),
-                    feature_card("chart-area", "Visualización RT", "Diagramas de Bode y Nyquist actualizados en vivo", "primary"),
-                    feature_card("redo", "Barridos Auto", "Barridos de frecuencia lineales y logarítmicos", "info"),
-                    feature_card("save", "Persistencia", "Guarda sesiones y restaura gráficos automáticamente", "warning"),
-                    feature_card("file-csv", "Exportación CSV", "Exporta datos para análisis en Excel, Python, MATLAB", "secondary"),
-                    feature_card("calculator", "Simulador RLC", "Calcula impedancias teóricas de circuitos complejos", "success"),
-                    feature_card("mobile-alt", "Responsive", "Interfaz adaptativa para desktop, tablet y móvil", "primary"),
-                    feature_card("book-open", "Documentación", "Manual integrado completo y tutoriales interactivos", "info"),
-                ], className="row")
-            ]
-        ),
+                "ZORIA es una plataforma web de código abierto que transforma el analizador de impedancia ",
+                html.Strong("EVAL-ADMX2001"), " (Analog Devices) en un sistema de medición moderno con ",
+                "visualización científica en tiempo real."
+            ], style={'color': '#475569', 'fontSize': '1.1rem', 'marginBottom': '30px'})
+        ]),
         
         # Arquitectura
-        doc_section(
-            "Arquitectura del Sistema",
-            "project-diagram",
-            [
-                html.P("ZORIA implementa una arquitectura modular de tres capas:", className="lead mb-4"),
+        html.Div([
+            html.H5("Arquitectura de ZORIA", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.P("ZORIA implementa una arquitectura modular de tres capas:", style={'color': '#475569', 'marginBottom': '15px'}),
+            html.Div([
+                html.Div([
+                    html.H6("1. Capa de Hardware", className="fw-bold mb-2", style={'color': '#10b981'}),
+                    html.Ul([
+                        html.Li("Comunicación serial con EVAL-ADMX2001 via protocolo UART"),
+                        html.Li("Parsing y validación de comandos"),
+                        html.Li("Adquisición de datos y control de barridos"),
+                        html.Li("Detección automática de dispositivo y manejo de conexión")
+                    ], style={'color': '#475569'})
+                ], style={'background': '#f0fdf4', 'padding': '20px', 'borderRadius': '12px', 'marginBottom': '15px', 'border': '2px solid #10b981'}),
+                
+                html.Div([
+                    html.H6("2. Backend (Python)", className="fw-bold mb-2", style={'color': '#10b981'}),
+                    html.Pre("""lib/
+├── admx2001.py       # Clase principal de control del dispositivo (43 métodos)
+├── calibration.py    # Gestión de calibración (open/short/load)
+├── utils.py          # Utilidades de validación y procesamiento
+├── enums.py          # Constantes, modos y configuraciones
+└── exceptions.py     # Jerarquía de excepciones custom""", style={
+                        'background': '#1e293b',
+                        'color': '#10b981',
+                        'padding': '15px',
+                        'borderRadius': '8px',
+                        'fontFamily': 'monospace',
+                        'fontSize': '0.85rem',
+                        'lineHeight': '1.5'
+                    })
+                ], style={'background': '#f0fdf4', 'padding': '20px', 'borderRadius': '12px', 'marginBottom': '15px', 'border': '2px solid #10b981'}),
+                
+                html.Div([
+                    html.H6("3. Frontend (Dash-SPA)", className="fw-bold mb-2", style={'color': '#10b981'}),
+                    html.Pre("""pages/
+├── dashboard/        # Interfaz de medición en tiempo real
+├── simulator/        # Calculadora de impedancia RLC
+├── documentation/    # Documentación integrada de usuario
+└── common/          # Componentes UI reutilizables""", style={
+                        'background': '#1e293b',
+                        'color': '#10b981',
+                        'padding': '15px',
+                        'borderRadius': '8px',
+                        'fontFamily': 'monospace',
+                        'fontSize': '0.85rem',
+                        'lineHeight': '1.5'
+                    })
+                ], style={'background': '#f0fdf4', 'padding': '20px', 'borderRadius': '12px', 'border': '2px solid #10b981'})
+            ])
+        ], style={'marginBottom': '40px'}),
+        
+        # Biblioteca Python
+        html.Div([
+            html.H5("Biblioteca Python - lib/admx2001.py", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.P("La clase ADMX2001 proporciona 43 métodos para control completo del dispositivo:", style={'color': '#475569', 'marginBottom': '15px'}),
+            html.Div([
+                html.Div([
+                    html.H6("Conexión y Comunicación:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                    html.Ul([
+                        html.Li([html.Code("connect()"), " - Establecer conexión serial"]),
+                        html.Li([html.Code("disconnect()"), " - Cerrar conexión"]),
+                        html.Li([html.Code("send_command(cmd)"), " - Enviar comando CLI"]),
+                        html.Li([html.Code("check_connection()"), " - Verificar estado de conexión"]),
+                        html.Li([html.Code("reconnect()"), " - Reconectar automáticamente"]),
+                        html.Li([html.Code("get_idn()"), " - Obtener identificación del dispositivo"]),
+                        html.Li([html.Code("get_version()"), " - Obtener versión de firmware"])
+                    ], style={'color': '#475569', 'fontSize': '0.9rem'})
+                ], style={'marginBottom': '20px'}),
+                
+                html.Div([
+                    html.H6("Configuración de Medición:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                    html.Ul([
+                        html.Li([html.Code("set_frequency(freq)"), " - Configurar frecuencia (0.2 Hz - 10 MHz)"]),
+                        html.Li([html.Code("set_magnitude(mag)"), " - Configurar amplitud de señal (0 - 2.5 V pk)"]),
+                        html.Li([html.Code("set_offset(offset)"), " - Configurar offset DC (±2.5 V)"]),
+                        html.Li([html.Code("set_average(avg)"), " - Configurar promediado (1-256 muestras)"]),
+                        html.Li([html.Code("set_count(count)"), " - Número de lecturas por medición"]),
+                        html.Li([html.Code("set_display_mode(mode)"), " - Modo de display (0-17)"])
+                    ], style={'color': '#475569', 'fontSize': '0.9rem'})
+                ], style={'marginBottom': '20px'}),
+                
+                html.Div([
+                    html.H6("Control de Ganancia:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                    html.Ul([
+                        html.Li([html.Code("set_gain_auto()"), " - Activar auto-ranging"]),
+                        html.Li([html.Code("set_gain_manual(ch0, ch1)"), " - Configurar ganancias manualmente"]),
+                        html.Li([html.Code("set_gain(channel, gain)"), " - Configurar ganancia específica"]),
+                        html.Li([html.Code("recommend_impedance_range(z)"), " - Recomendar ganancia para impedancia"])
+                    ], style={'color': '#475569', 'fontSize': '0.9rem'})
+                ], style={'marginBottom': '20px'}),
+                
+                html.Div([
+                    html.H6("Mediciones:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                    html.Ul([
+                        html.Li([html.Code("measure_impedance()"), " - Medición de impedancia AC"]),
+                        html.Li([html.Code("measure()"), " - Retorna tupla (valor1, valor2)"]),
+                        html.Li([html.Code("measure_temperature()"), " - Medir temperatura interna"]),
+                        html.Li([html.Code("measure_dcr()"), " - Medición de resistencia DC"]),
+                        html.Li([html.Code("parse_impedance_response()"), " - Parsear respuesta del dispositivo"])
+                    ], style={'color': '#475569', 'fontSize': '0.9rem'})
+                ], style={'marginBottom': '20px'}),
+                
+                html.Div([
+                    html.H6("Barridos:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                    html.Ul([
+                        html.Li([html.Code("configure_sweep(type, start, end, points, scale)"), " - Configurar barrido"]),
+                        html.Li([html.Code("perform_sweep(timeout)"), " - Ejecutar barrido y retornar datos"]),
+                        html.Li([html.Code("disable_sweep()"), " - Deshabilitar modo barrido"])
+                    ], style={'color': '#475569', 'fontSize': '0.9rem'})
+                ], style={'marginBottom': '20px'}),
+                
+                html.Div([
+                    html.H6("Utilidades:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                    html.Ul([
+                        html.Li([html.Code("set_mdelay(ms)"), " - Retardo entre mediciones"]),
+                        html.Li([html.Code("set_tdelay(ms)"), " - Retardo después de trigger"]),
+                        html.Li([html.Code("selftest(run)"), " - Ejecutar/ver self-test"]),
+                        html.Li([html.Code("reset()"), " - Reset del dispositivo"]),
+                        html.Li([html.Code("get_help(cmd)"), " - Obtener ayuda de comando"]),
+                        html.Li([html.Code("get_status()"), " - Obtener estado completo del dispositivo"])
+                    ], style={'color': '#475569', 'fontSize': '0.9rem'})
+                ])
+            ], style={
+                'background': '#ffffff',
+                'borderRadius': '12px',
+                'border': '1px solid #e2e8f0',
+                'padding': '20px',
+                'marginBottom': '20px'
+            })
+        ], style={'marginBottom': '40px'}),
+        
+        # Ejemplos de código
+        html.Div([
+            html.H5("Ejemplos de Código Python", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            
+            html.H6("1. Conexión y Medición Simple:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+            html.Pre("""from lib import ADMX2001
+
+# Inicializar y conectar
+device = ADMX2001(port='/dev/ttyUSB0', baudrate=115200)
+device.connect()
+
+# Verificar conexión
+identity = device.get_identity()
+print(f"Conectado a: {identity}")
+
+# Configurar medición
+device.set_frequency(1000)      # 1 kHz
+device.set_magnitude(1.0)       # 1 V peak
+device.set_average(10)          # Promediar 10 muestras
+
+# Medir impedancia
+measurement = device.measure_impedance()
+print(f"Z = {measurement['magnitude']:.2f} Ω")
+print(f"θ = {measurement['phase']:.2f}°")
+print(f"R = {measurement['real']:.2f} Ω")
+print(f"X = {measurement['imaginary']:.2f} Ω")
+
+device.disconnect()
+""", style={
+                'background': '#1e293b',
+                'color': '#e2e8f0',
+                'padding': '20px',
+                'borderRadius': '12px',
+                'fontFamily': 'monospace',
+                'fontSize': '0.85rem',
+                'overflowX': 'auto',
+                'lineHeight': '1.5',
+                'marginBottom': '20px'
+            }),
+            
+            html.H6("2. Barrido de Frecuencia Logarítmico:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+            html.Pre("""from lib import ADMX2001, SweepType, SweepScale
+
+device = ADMX2001(port='/dev/ttyUSB0')
+device.connect()
+
+# Configurar barrido logarítmico
+device.configure_sweep(
+    sweep_type=SweepType.FREQUENCY,
+    scale=SweepScale.LOGARITHMIC,
+    start=100,          # 100 Hz
+    stop=100000,        # 100 kHz
+    points=100
+)
+
+# Ejecutar barrido
+results = device.perform_sweep()
+
+# Procesar resultados
+for point in results:
+    freq = point['frequency']
+    mag = point['magnitude']
+    phase = point['phase']
+    print(f"{freq:.2f} Hz: |Z| = {mag:.2f} Ω, θ = {phase:.2f}°")
+
+# Exportar a CSV
+device.export_csv('medicion.csv', results)
+
+device.disconnect()
+""", style={
+                'background': '#1e293b',
+                'color': '#e2e8f0',
+                'padding': '20px',
+                'borderRadius': '12px',
+                'fontFamily': 'monospace',
+                'fontSize': '0.85rem',
+                'overflowX': 'auto',
+                'lineHeight': '1.5',
+                'marginBottom': '20px'
+            }),
+            
+            html.H6("3. Uso del Simulador RLC:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+            html.Pre("""from pages.simulator.impedance_calculator import ImpedanceCalculator
+
+# Crear calculadora con rango de frecuencia
+calc = ImpedanceCalculator(
+    freq_start=10,
+    freq_end=100000,
+    points=1000
+)
+
+# Calcular impedancia para circuito RC serie
+Z = calc.rc_series(R=1000, C=1e-6)  # 1kΩ, 1µF
+
+# Obtener datos para gráficos Bode
+bode_data = calc.get_bode_data(Z)
+magnitude = bode_data['magnitude']
+phase = bode_data['phase']
+
+# Obtener datos para gráfico Nyquist
+nyquist_data = calc.get_nyquist_data(Z)
+real = nyquist_data['real']
+imag = nyquist_data['imaginary']
+
+# Calcular resonancia (para circuitos RLC)
+Z_rlc = calc.rlc_series(R=100, L=1e-3, C=1e-6)
+f_resonance = calc.find_resonance(Z_rlc)
+print(f"Frecuencia de resonancia: {f_resonance:.2f} Hz")
+""", style={
+                'background': '#1e293b',
+                'color': '#e2e8f0',
+                'padding': '20px',
+                'borderRadius': '12px',
+                'fontFamily': 'monospace',
+                'fontSize': '0.85rem',
+                'overflowX': 'auto',
+                'lineHeight': '1.5'
+            })
+        ], style={'marginBottom': '40px'}),
+        
+        # =============== USO DEL DASHBOARD DE ZORIA ===============
+        html.Div([
+            html.H5("📊 Uso del Dashboard de Medición", className="fw-bold mb-3", style={'color': '#10b981'}),
+            html.P("El Dashboard es la página principal de ZORIA donde se realizan mediciones en tiempo real y barridos de frecuencia.", style={'color': '#475569', 'marginBottom': '20px'}),
+            
+            # Conexión al dispositivo
+            html.Div([
+                html.H6("1. Conexión al Dispositivo", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.Ul([
+                    html.Li([html.Strong("Botón \"Conectar ADMX2001\":"), " Hacer clic en el botón principal de conexión"]),
+                    html.Li([html.Strong("Detección automática:"), " El sistema detecta puertos USB-Serial disponibles (FTDI, Silicon Labs, CH340)"]),
+                    html.Li([html.Strong("Selección manual:"), " Elegir puerto específico si hay múltiples dispositivos"]),
+                    html.Li([html.Strong("Verificación:"), " Al conectar exitosamente, aparece información del dispositivo (IDN, versión firmware)"]),
+                    html.Li([html.Strong("LED de estado:"), " Indicador verde cuando la conexión está activa"])
+                ], style={'color': '#475569'})
+            ], style={'background': '#f0fdf4', 'padding': '20px', 'borderRadius': '12px', 'border': '1px solid #10b981', 'marginBottom': '20px'}),
+            
+            # Medición simple
+            html.Div([
+                html.H6("2. Medición Simple (Punto Único)", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.Ul([
+                    html.Li([html.Strong("Modo de Display:"), " Seleccionar uno de los 18 modos (Z-θ, R-X, Cp-D, Cs-D, Ls-Q, etc.)"]),
+                    html.Li([html.Strong("Frecuencia:"), " Configurar frecuencia de medición (0.2 Hz - 10 MHz)"]),
+                    html.Li([html.Strong("Magnitud:"), " Ajustar amplitud de señal (0 - 2.5 V pk) o usar auto"]),
+                    html.Li([html.Strong("Promediado:"), " Configurar número de promedios (1-256) para reducir ruido"]),
+                    html.Li([html.Strong("Botón \"Medir\":"), " Ejecutar medición única - resultados en display numérico grande"]),
+                    html.Li([html.Strong("Visualización:"), " Valor principal y secundario según modo (ej: |Z| y θ)"])
+                ], style={'color': '#475569'})
+            ], style={'background': '#ffffff', 'padding': '20px', 'borderRadius': '12px', 'border': '1px solid #e2e8f0', 'marginBottom': '20px'}),
+            
+            # Barrido de frecuencia
+            html.Div([
+                html.H6("3. Barrido de Frecuencia", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.Ul([
+                    html.Li([html.Strong("Panel de configuración:"), " Tarjeta \"Configuración de Barrido\" en la parte inferior"]),
+                    html.Li([html.Strong("Frecuencia inicial (Hz):"), " Punto de inicio del barrido"]),
+                    html.Li([html.Strong("Frecuencia final (Hz):"), " Punto final del barrido"]),
+                    html.Li([html.Strong("Número de puntos:"), " Resolución del barrido (10-1000 puntos)"]),
+                    html.Li([html.Strong("Escala:"), " Lineal o Logarítmica (logarítmico recomendado para rangos amplios)"]),
+                    html.Li([html.Strong("Botón \"Iniciar Barrido\":"), " Ejecutar barrido automático"]),
+                    html.Li([html.Strong("Progreso en tiempo real:"), " Barra de progreso muestra avance (% completado)"]),
+                    html.Li([html.Strong("Gráficos dinámicos:"), " Bode y Nyquist se actualizan durante el barrido"])
+                ], style={'color': '#475569'})
+            ], style={'background': '#fff7ed', 'padding': '20px', 'borderRadius': '12px', 'border': '1px solid #fb923c', 'marginBottom': '20px'}),
+            
+            # Gráficos científicos
+            html.Div([
+                html.H6("4. Gráficos Científicos en Tiempo Real", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                
+                html.Div([
+                    html.Strong("📈 Diagrama de Bode:", style={'color': '#10b981'}),
+                    html.Ul([
+                        html.Li("Eje X: Frecuencia (escala logarítmica)"),
+                        html.Li("Eje Y izquierdo: Magnitud |Z| en dB (línea cyan)"),
+                        html.Li("Eje Y derecho: Fase θ en grados (línea rosa)"),
+                        html.Li("Interactividad: Zoom, pan, hover para valores exactos"),
+                        html.Li("Exportar imagen PNG desde menú del gráfico")
+                    ], style={'color': '#475569', 'fontSize': '0.9rem'})
+                ], className="mb-3"),
+                
+                html.Div([
+                    html.Strong("🌀 Diagrama de Nyquist:", style={'color': '#10b981'}),
+                    html.Ul([
+                        html.Li("Eje X: Z' (parte real de impedancia en Ω)"),
+                        html.Li("Eje Y: -Z'' (parte imaginaria negativa en Ω)"),
+                        html.Li("Colormap: Gradiente de color según frecuencia (Viridis)"),
+                        html.Li("Útil para: Identificar circuitos RC, RL, resonancia, EIS de baterías"),
+                        html.Li("Exportar imagen PNG desde menú")
+                    ], style={'color': '#475569', 'fontSize': '0.9rem'})
+                ])
+            ], style={'background': '#eff6ff', 'padding': '20px', 'borderRadius': '12px', 'border': '1px solid #3b82f6', 'marginBottom': '20px'}),
+            
+            # Exportación de datos
+            html.Div([
+                html.H6("5. Exportación de Datos", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.Ul([
+                    html.Li([html.Strong("Botón \"Exportar CSV\":"), " Descargar datos del último barrido"]),
+                    html.Li([html.Strong("Formato:"), " CSV con columnas: Frecuencia(Hz), Z_real(Ω), Z_imag(Ω), |Z|(Ω), Phase(°)"]),
+                    html.Li([html.Strong("Timestamp:"), " Nombre de archivo incluye fecha y hora (ej: sweep_20260209_143025.csv)"]),
+                    html.Li([html.Strong("Compatible:"), " Importar en Excel, Python pandas, MATLAB, Origin"])
+                ], style={'color': '#475569'})
+            ], style={'background': '#f0fdf4', 'padding': '20px', 'borderRadius': '12px', 'border': '1px solid #10b981', 'marginBottom': '20px'}),
+            
+            # Terminal flotante
+            html.Div([
+                html.H6("6. Terminal CLI Integrada", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.Ul([
+                    html.Li([html.Strong("Acceso:"), " Presionar ", html.Kbd("Alt + T"), " o botón flotante inferior derecho"]),
+                    html.Li([html.Strong("Comandos CLI:"), " Enviar comandos directos al ADMX2001"]),
+                    html.Li([html.Strong("Historial:"), " Navegación con flechas arriba/abajo"]),
+                    html.Li([html.Strong("Autocompletado:"), " Presionar Tab para sugerencias"]),
+                    html.Li([html.Strong("Ejemplos:"), html.Code(" IDN? "), ", ", html.Code(" FREQ 1000 "), ", ", html.Code(" SWEEP? ")])
+                ], style={'color': '#475569'})
+            ], style={'background': '#fef3c7', 'padding': '20px', 'borderRadius': '12px', 'border': '1px solid #f59e0b', 'marginBottom': '20px'}),
+            
+            # Características avanzadas
+            html.Div([
+                html.H6("✨ Características Avanzadas", className="fw-bold mb-2", style={'color': '#10b981'}),
                 html.Div([
                     html.Div([
-                        html.Div([
-                            html.H5([
-                                html.I(className="fas fa-layer-group me-2 text-primary"),
-                                "1. Capa de Hardware"
-                            ], className="fw-bold mb-3"),
-                            html.Ul([
-                                html.Li("Comunicación serial UART a 115200 bps"),
-                                html.Li("Parsing y validación de comandos CLI"),
-                                html.Li("Control de adquisición y sweeps"),
-                                html.Li("Gestión de estados del dispositivo"),
-                            ])
-                        ], className="p-4 bg-white rounded shadow-sm h-100")
-                    ], className="col-lg-4 mb-4"),
-                    
+                        html.I(className="fas fa-database me-2", style={'color': '#10b981'}),
+                        html.Strong("Persistencia de sesión: "),
+                        html.Span("Configuración guardada automáticamente (puerto, frecuencia, modo)")
+                    ], style={'padding': '10px 0', 'borderBottom': '1px solid #e2e8f0'}),
                     html.Div([
-                        html.Div([
-                            html.H5([
-                                html.I(className="fas fa-code me-2 text-success"),
-                                "2. Capa de Lógica"
-                            ], className="fw-bold mb-3"),
-                            html.Ul([
-                                html.Li("Procesamiento de datos de impedancia"),
-                                html.Li("Conversión entre formatos (Z, Y, RLC)"),
-                                html.Li("Gestión de calibraciones"),
-                                html.Li("Simulador de circuitos RLC"),
-                            ])
-                        ], className="p-4 bg-white rounded shadow-sm h-100")
-                    ], className="col-lg-4 mb-4"),
-                    
+                        html.I(className="fas fa-sync-alt me-2", style={'color': '#10b981'}),
+                        html.Strong("Reconexión automática: "),
+                        html.Span("Al desconectar, reconecta con último puerto usado")
+                    ], style={'padding': '10px 0', 'borderBottom': '1px solid #e2e8f0'}),
                     html.Div([
-                        html.Div([
-                            html.H5([
-                                html.I(className="fas fa-desktop me-2 text-warning"),
-                                "3. Capa de Presentación"
-                            ], className="fw-bold mb-3"),
-                            html.Ul([
-                                html.Li("Dashboard interactivo con Plotly"),
-                                html.Li("Componentes reutilizables Dash"),
-                                html.Li("Callbacks reactivos en tiempo real"),
-                                html.Li("Sistema de navegación SPA"),
-                            ])
-                        ], className="p-4 bg-white rounded shadow-sm h-100")
-                    ], className="col-lg-4 mb-4"),
-                ], className="row"),
-            ]
-        ),
+                        html.I(className="fas fa-moon me-2", style={'color': '#10b981'}),
+                        html.Strong("Tema claro/oscuro: "),
+                        html.Span("Botón para cambiar tema de gráficos (optimizado para publicaciones)")
+                    ], style={'padding': '10px 0', 'borderBottom': '1px solid #e2e8f0'}),
+                    html.Div([
+                        html.I(className="fas fa-mobile-alt me-2", style={'color': '#10b981'}),
+                        html.Strong("Responsive: "),
+                        html.Span("Interfaz adaptable a tablets y móviles")
+                    ], style={'padding': '10px 0'})
+                ], style={'padding': '10px'})
+            ], style={'background': '#ffffff', 'borderRadius': '12px', 'border': '1px solid #e2e8f0'})
+        ], style={'marginBottom': '40px'}),
         
-        # Módulos principales
-        doc_section(
-            "Módulos del Sistema",
-            "cubes",
-            [
-                collapsible_section(
-                    "lib/admx2001.py - Driver del Dispositivo",
-                    [
-                        html.P("Clase principal que encapsula toda la comunicación con el ADMX2001.", className="text-muted"),
-                        html.H6("Métodos principales:", className="fw-bold mt-3 mb-2"),
-                        html.Ul([
-                            html.Li([html.Code("connect()"), " - Establece conexión serial"]),
-                            html.Li([html.Code("measure()"), " - Realiza medición única"]),
-                            html.Li([html.Code("sweep()"), " - Ejecuta barrido de parámetros"]),
-                            html.Li([html.Code("calibrate()"), " - Gestiona proceso de calibración"]),
-                            html.Li([html.Code("set_frequency()"), " - Configura frecuencia de medición"]),
-                        ])
-                    ],
-                    "module-admx",
-                    "file-code",
-                    "primary"
-                ),
-                
-                collapsible_section(
-                    "lib/calibration.py - Sistema de Calibración",
-                    [
-                        html.P("Gestiona coeficientes de calibración y corrección de mediciones.", className="text-muted"),
-                        html.H6("Funcionalidades:", className="fw-bold mt-3 mb-2"),
-                        html.Ul([
-                            html.Li("Almacenamiento de calibraciones Open-Short-Load"),
-                            html.Li("Interpolación de coeficientes por frecuencia"),
-                            html.Li("Backup y restauración de calibraciones"),
-                            html.Li("Validación de rangos y configuraciones"),
-                        ])
-                    ],
-                    "module-cal",
-                    "balance-scale",
-                    "success"
-                ),
-                
-                collapsible_section(
-                    "pages/simulator/ - Simulador RLC",
-                    [
-                        html.P("Calculadora de impedancias para circuitos RLC serie/paralelo.", className="text-muted"),
-                        html.H6("Capacidades:", className="fw-bold mt-3 mb-2"),
-                        html.Ul([
-                            html.Li("Cálculo de impedancia compleja Z = R + jX"),
-                            html.Li("Conversión a admitancia Y = G + jB"),
-                            html.Li("Diagramas de Bode (módulo y fase)"),
-                            html.Li("Exportación de datos teóricos"),
-                        ])
-                    ],
-                    "module-sim",
-                    "calculator",
-                    "info"
-                ),
-            ]
-        ),
+        # =============== SIMULADOR RLC ===============
+        html.Div([
+            html.H5("🔬 Simulador de Circuitos RLC", className="fw-bold mb-3", style={'color': '#10b981'}),
+            html.P("El Simulador permite calcular y visualizar la respuesta en frecuencia de circuitos RLC antes de realizar mediciones físicas.", style={'color': '#475569', 'marginBottom': '20px'}),
+            
+            html.Div([
+                html.H6("Uso del Simulador", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.Ol([
+                    html.Li([html.Strong("Acceso:"), " Menú lateral → Simulador RLC"]),
+                    html.Li([html.Strong("Seleccionar circuito:"), " Dropdown con 10 topologías (RC serie/paralelo, RL serie/paralelo, RLC serie/paralelo, etc.)"]),
+                    html.Li([html.Strong("Configurar componentes:"), " Ingresar valores de R(Ω), L(H), C(F)"]),
+                    html.Li([html.Strong("Rango de frecuencia:"), " Frecuencia inicial, final y número de puntos (10-10,000,000 Hz)"]),
+                    html.Li([html.Strong("Calcular:"), " Presionar botón \"Calcular Impedancia\""]),
+                    html.Li([html.Strong("Visualización:"), " Diagramas de Bode y Nyquist actualizados instantáneamente"]),
+                    html.Li([html.Strong("Información:"), " Panel inferior muestra impedancia en frecuencias clave (mín, máx, resonancia)"])
+                ], style={'color': '#475569'})
+            ], style={'background': '#fef3c7', 'padding': '20px', 'borderRadius': '12px', 'border': '1px solid #f59e0b', 'marginBottom': '20px'}),
+            
+            html.Div([
+                html.H6("Circuitos Disponibles", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.Ul([
+                    html.Li("RC Serie / RC Paralelo"),
+                    html.Li("RL Serie / RL Paralelo"),
+                    html.Li("RLC Serie / RLC Paralelo"),
+                    html.Li("Solo R / Solo L / Solo C"),
+                    html.Li("Circuitos personalizados con combinaciones")
+                ], style={'color': '#475569'})
+            ], style={'background': '#eff6ff', 'padding': '20px', 'borderRadius': '12px', 'border': '1px solid #3b82f6', 'marginBottom': '20px'}),
+            
+            html.Div([
+                html.H6("Aplicaciones del Simulador", className="fw-bold mb-2", style={'color': '#10b981'}),
+                html.Ul([
+                    html.Li("Predecir respuesta de circuitos antes de construirlos"),
+                    html.Li("Comparar mediciones reales vs. teóricas para validación"),
+                    html.Li("Diseñar filtros RC/RL con frecuencias de corte específicas"),
+                    html.Li("Calcular frecuencia de resonancia de circuitos RLC"),
+                    html.Li("Educación: Visualizar comportamiento de componentes pasivos")
+                ], style={'color': '#475569'})
+            ], style={'background': '#f0fdf4', 'padding': '20px', 'borderRadius': '12px', 'border': '1px solid #10b981'})
+        ], style={'marginBottom': '40px'}),
         
-        # Requisitos
-        doc_section(
-            "Requisitos del Sistema",
-            "cogs",
-            [
+        # Casos de uso
+        html.Div([
+            html.H5("Casos de Uso", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.Div([
                 html.Div([
-                    html.Div([
-                        html.H5("Software", className="fw-bold mb-3"),
-                        spec_badge("Python", "3.8+ requerido", "primary", "python"),
-                        spec_badge("Sistema Operativo", "Linux / Windows / macOS", "secondary", "laptop"),
-                        html.H6("Dependencias principales:", className="fw-bold mt-3 mb-2"),
-                        html.Ul([
-                            html.Li([html.Code("dash"), " - Framework web"]),
-                            html.Li([html.Code("dash-spa"), " - Navegación SPA"]),
-                            html.Li([html.Code("plotly"), " - Visualización"]),
-                            html.Li([html.Code("pyserial"), " - Comunicación serial"]),
-                            html.Li([html.Code("pandas"), " - Manipulación de datos"]),
-                            html.Li([html.Code("numpy"), " - Cálculos científicos"]),
-                        ])
-                    ], className="col-md-6 mb-4"),
-                    
-                    html.Div([
-                        html.H5("Hardware", className="fw-bold mb-3"),
-                        spec_badge("RAM", "Mínimo 2GB", "warning", "memory"),
-                        spec_badge("Almacenamiento", "500MB libres", "info", "hdd"),
-                        spec_badge("Puerto Serial", "USB libre", "success", "usb"),
-                        html.H6("Navegadores compatibles:", className="fw-bold mt-3 mb-2"),
-                        html.Ul([
-                            html.Li("Google Chrome 90+"),
-                            html.Li("Mozilla Firefox 88+"),
-                            html.Li("Microsoft Edge 90+"),
-                            html.Li("Safari 14+"),
-                        ])
-                    ], className="col-md-6 mb-4"),
-                ], className="row")
-            ]
-        ),
+                    html.H6("1. Caracterización de Resonadores RLC", className="fw-bold mb-2", style={'color': '#10b981'}),
+                    html.P("Medir frecuencia de resonancia, factor de calidad (Q) y ancho de banda en circuitos resonantes para aplicaciones RF y diseño de filtros.", style={'color': '#475569', 'fontSize': '0.9rem'})
+                ], style={'marginBottom': '20px'}),
+                html.Div([
+                    html.H6("2. Análisis de Baterías (EIS)", className="fw-bold mb-2", style={'color': '#10b981'}),
+                    html.P("Espectroscopia de Impedancia Electroquímica para determinar State of Health (SOH) y State of Charge (SOC) en sistemas de gestión de baterías.", style={'color': '#475569', 'fontSize': '0.9rem'})
+                ], style={'marginBottom': '20px'}),
+                html.Div([
+                    html.H6("3. Caracterización de Materiales", className="fw-bold mb-2", style={'color': '#10b981'}),
+                    html.P("Medir propiedades dieléctricas, conductividad y tangente de pérdida de materiales en función de la frecuencia.", style={'color': '#475569', 'fontSize': '0.9rem'})
+                ], style={'marginBottom': '20px'}),
+                html.Div([
+                    html.H6("4. Diseño de Filtros y Redes de Acoplamiento", className="fw-bold mb-2", style={'color': '#10b981'}),
+                    html.P("Verificar impedancia característica, pérdida de inserción y parámetros S de filtros y redes de acoplamiento de impedancia.", style={'color': '#475569', 'fontSize': '0.9rem'})
+                ], style={'marginBottom': '20px'}),
+                html.Div([
+                    html.H6("5. Desarrollo de Sensores", className="fw-bold mb-2", style={'color': '#10b981'}),
+                    html.P("Caracterización de sensores impedimétricos para biosensores, sensores químicos y monitoreo ambiental.", style={'color': '#475569', 'fontSize': '0.9rem'})
+                ])
+            ], style={
+                'background': '#f0fdf4',
+                'borderRadius': '12px',
+                'border': '1px solid #10b981',
+                'padding': '20px'
+            })
+        ], style={'marginBottom': '40px'}),
         
-    ], id="content-software", style={"display": "none"})
+        # Atajos de teclado
+        html.Div([
+            html.H5("Atajos de Teclado", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.Div([
+                html.Div([
+                    html.Kbd("Alt + T", style={
+                        'background': '#f1f5f9',
+                        'border': '1px solid #cbd5e1',
+                        'borderRadius': '4px',
+                        'padding': '4px 10px',
+                        'fontSize': '0.85rem'
+                    }),
+                    html.Span(" Terminal flotante", style={'color': '#64748b', 'marginLeft': '12px'})
+                ], style={'padding': '10px 0', 'borderBottom': '1px solid #e2e8f0'}),
+                html.Div([
+                    html.Kbd("Ctrl + L", style={
+                        'background': '#f1f5f9',
+                        'border': '1px solid #cbd5e1',
+                        'borderRadius': '4px',
+                        'padding': '4px 10px',
+                        'fontSize': '0.85rem'
+                    }),
+                    html.Span(" Limpiar gráficos", style={'color': '#64748b', 'marginLeft': '12px'})
+                ], style={'padding': '10px 0', 'borderBottom': '1px solid #e2e8f0'}),
+                html.Div([
+                    html.Kbd("Esc", style={
+                        'background': '#f1f5f9',
+                        'border': '1px solid #cbd5e1',
+                        'borderRadius': '4px',
+                        'padding': '4px 10px',
+                        'fontSize': '0.85rem'
+                    }),
+                    html.Span(" Cerrar modal/ventana", style={'color': '#64748b', 'marginLeft': '12px'})
+                ], style={'padding': '10px 0'})
+            ], style={
+                'background': '#ffffff',
+                'borderRadius': '12px',
+                'border': '1px solid #e2e8f0',
+                'padding': '10px 25px'
+            })
+        ])
+    ])
 
 
-def tab_calibration():
-    """Contenido de la pestaña Calibración"""
+# ==================== CONTENIDO: CALIBRACIÓN ====================
+
+def content_calibracion():
     return html.Div([
         html.Div([
             html.H3([
-                html.I(className="fas fa-balance-scale me-3 text-primary"),
-                "Procedimiento de Calibración"
-            ], className="mb-3 fw-bold"),
+                html.I(className="fas fa-balance-scale me-3", style={'color': '#f59e0b'}),
+                "Procedimiento de Calibración OSL"
+            ], className="mb-3 fw-bold", style={'color': '#0f172a'}),
             html.P([
-                "La calibración es ", html.Strong("crítica"), " para obtener mediciones precisas. ",
-                "El sistema ", html.Strong("Open-Short-Load"), " corrige parásitas y asegura trazabilidad."
-            ], className="lead text-muted mb-0")
-        ], className="p-4 bg-light rounded shadow-sm mb-4"),
+                "La calibración Open/Short/Load (OSL) es esencial para mediciones precisas. ",
+                "Elimina los efectos de cables y conectores, proporcionando mediciones precisas del DUT."
+            ], style={'color': '#475569', 'fontSize': '1.1rem', 'marginBottom': '30px'})
+        ]),
         
+        # ========== WIZARD DE CALIBRACIÓN EN ZORIA ==========
+        html.Div([
+            html.H4("🚀 Wizard de Calibración Automatizado en ZORIA", className="fw-bold mb-3", style={'color': '#10b981', 'fontSize': '1.5rem'}),
+            html.P([
+                "ZORIA incluye un ",
+                html.Strong("Wizard de Calibración Automatizado"),
+                " que simplifica el proceso completo de calibración OSL con ",
+                "cálculo automático de ganancias óptimas, guía visual paso a paso y validación en tiempo real."
+            ], style={'color': '#475569', 'marginBottom': '20px', 'fontSize': '1.05rem'}),
+            
+            # Acceso al Wizard
+            html.Div([
+                html.H6("📍 Acceso al Wizard", className="fw-bold mb-3", style={'color': '#0f172a'}),
+                html.Ol([
+                    html.Li("Navega a la página \"Calibración\" en el menú lateral izquierdo", style={'marginBottom': '8px'}),
+                    html.Li("Haz clic en el botón \"⚖️ Iniciar Wizard de Calibración\"", style={'marginBottom': '8px'}),
+                    html.Li("Se abre una ventana arrastrable con 5 pasos guiados")
+                ], style={'color': '#475569', 'fontSize': '0.95rem'})
+            ], style={'background': '#ecfdf5', 'padding': '20px', 'borderRadius': '12px', 'marginBottom': '25px', 'border': '2px solid #10b981'}),
+            
+            # Pasos del Wizard
+            html.Div([
+                html.H6("🔧 Pasos del Wizard de Calibración", className="fw-bold mb-3", style={'color': '#0f172a'}),
+                
+                # Paso 1: Configuración
+                html.Div([
+                    html.Div([
+                        html.Span("1", className="badge bg-primary me-2", style={'fontSize': '1.1rem', 'padding': '8px 12px'}),
+                        html.Strong("Configuración Automática", style={'fontSize': '1.05rem'})
+                    ], className="mb-2"),
+                    html.Ul([
+                        html.Li([html.Strong("Resistencia de calibración (Ω): "), "Ingresar valor de resistencia patrón (ej: 1000Ω)"]),
+                        html.Li([html.Strong("Frecuencia (Hz): "), "Frecuencia a la que se realizará la calibración (ej: 1000 Hz)"]),
+                        html.Li([html.Strong("🎯 Cálculo automático de ganancia: "), "El wizard calcula automáticamente las ganancias óptimas CH0 y CH1 basándose en la impedancia ingresada"]),
+                        html.Li([html.Strong("Indicador visual: "), "Muestra las ganancias calculadas (ej: CH0: 0, CH1: 1)"]),
+                        html.Li("Presionar \"▶️ Iniciar Calibración\" para continuar al siguiente paso")
+                    ], style={'color': '#475569', 'marginBottom': '0', 'fontSize': '0.9rem'})
+                ], style={'background': '#eff6ff', 'padding': '18px', 'borderRadius': '10px', 'marginBottom': '15px', 'border': '1px solid #3b82f6'}),
+                
+                # Paso 2: Open
+                html.Div([
+                    html.Div([
+                        html.Span("2", className="badge bg-info me-2", style={'fontSize': '1.1rem', 'padding': '8px 12px'}),
+                        html.Strong("Open Calibration", style={'fontSize': '1.05rem'})
+                    ], className="mb-2"),
+                    html.Ul([
+                        html.Li([html.Strong("Conexión: "), "H_CUR con H_POT (cable corto), L_CUR con L_POT (cable corto)"]),
+                        html.Li([html.Strong("Separación: "), "Dejar pares H y L separados (circuito abierto)"]),
+                        html.Li([html.I(className="fas fa-eye me-1"), "El wizard muestra ", html.Strong("diagrama visual animado"), " con las conexiones exactas"]),
+                        html.Li("Presionar \"✅ Ejecutar Open\" → barra de progreso en tiempo real"),
+                        html.Li([html.I(className="fas fa-check-circle me-1", style={'color': '#10b981'}), "Validación automática de resultados al completar"])
+                    ], style={'color': '#475569', 'marginBottom': '0', 'fontSize': '0.9rem'})
+                ], style={'background': '#f0fdfa', 'padding': '18px', 'borderRadius': '10px', 'marginBottom': '15px', 'border': '1px solid #14b8a6'}),
+                
+                # Paso 3: Short
+                html.Div([
+                    html.Div([
+                        html.Span("3", className="badge bg-warning text-dark me-2", style={'fontSize': '1.1rem', 'padding': '8px 12px'}),
+                        html.Strong("Short Calibration", style={'fontSize': '1.05rem'})
+                    ], className="mb-2"),
+                    html.Ul([
+                        html.Li([html.Strong("Conexión: "), "Conectar ", html.Strong("TODOS los terminales juntos"), " con un cable (H_CUR, H_POT, L_POT, L_CUR)"]),
+                        html.Li([html.Strong("⚡ Reducción automática: "), "El wizard reduce la magnitud a 0.2V ", html.Strong("automáticamente"), " para proteger el circuito"]),
+                        html.Li([html.I(className="fas fa-eye me-1"), "Diagrama visual muestra cortocircuito entre todos los terminales"]),
+                        html.Li("Presionar \"✅ Ejecutar Short\" → progreso con animación"),
+                        html.Li([html.I(className="fas fa-info-circle me-1", style={'color': '#f59e0b'}), "Solo necesario para ganancias CH1 = 0 o 1"])
+                    ], style={'color': '#475569', 'marginBottom': '0', 'fontSize': '0.9rem'})
+                ], style={'background': '#fffbeb', 'padding': '18px', 'borderRadius': '10px', 'marginBottom': '15px', 'border': '1px solid #f59e0b'}),
+                
+                # Paso 4: Load
+                html.Div([
+                    html.Div([
+                        html.Span("4", className="badge bg-success me-2", style={'fontSize': '1.1rem', 'padding': '8px 12px'}),
+                        html.Strong("Load Calibration", style={'fontSize': '1.05rem'})
+                    ], className="mb-2"),
+                    html.Ul([
+                        html.Li([html.Strong("Resistencia patrón: "), "Conectar resistencia de calibración entre terminales H y L"]),
+                        html.Li([html.Strong("Valor mostrado: "), "El wizard muestra el valor configurado en pantalla grande (ej: ", html.Code("1000 Ω"), ")"]),
+                        html.Li([html.I(className="fas fa-diagram-project me-1"), "Diagrama interactivo con símbolo de resistencia"]),
+                        html.Li([html.Strong("📊 Medición automática: "), "El sistema mide automáticamente R y X de la carga"]),
+                        html.Li("Presionar \"✅ Ejecutar Load\" → resultados en tiempo real"),
+                        html.Li([html.I(className="fas fa-check-circle me-1", style={'color': '#10b981'}), "Muestra valores medidos: R real, X reactiva"])
+                    ], style={'color': '#475569', 'marginBottom': '0', 'fontSize': '0.9rem'})
+                ], style={'background': '#f0fdf4', 'padding': '18px', 'borderRadius': '10px', 'marginBottom': '15px', 'border': '1px solid #10b981'}),
+                
+                # Paso 5: Guardar
+                html.Div([
+                    html.Div([
+                        html.Span("5", className="badge bg-dark me-2", style={'fontSize': '1.1rem', 'padding': '8px 12px'}),
+                        html.Strong("Guardar Calibración", style={'fontSize': '1.05rem'})
+                    ], className="mb-2"),
+                    html.Ul([
+                        html.Li([html.Strong("Nombre descriptivo: "), "Asignar nombre (ej: \"Cal_1kHz_1kOhm_20260209\")"]),
+                        html.Li([html.Strong("💾 Commit a Flash: "), "Guardar permanentemente en memoria no volátil del dispositivo"]),
+                        html.Li([html.Strong("🔐 Password: "), "Por defecto ", html.Code("Analog123"), " (configurable en settings)"]),
+                        html.Li([html.I(className="fas fa-history me-1"), "Historial de calibraciones guardadas en sesión"]),
+                        html.Li([html.I(className="fas fa-file-export me-1"), "Botón para exportar calibración a archivo .txt para respaldo"]),
+                        html.Li([html.Strong("Validación final: "), "El wizard verifica que todos los pasos se completaron exitosamente"])
+                    ], style={'color': '#475569', 'marginBottom': '0', 'fontSize': '0.9rem'})
+                ], style={'background': '#f8fafc', 'padding': '18px', 'borderRadius': '10px', 'marginBottom': '15px', 'border': '1px solid #64748b'})
+            ], style={'background': '#ffffff', 'padding': '25px', 'borderRadius': '12px', 'border': '1px solid #e2e8f0', 'marginBottom': '25px'}),
+            
+            # Ventajas del Wizard
+            html.Div([
+                html.H6("✨ Ventajas del Wizard Automatizado", className="fw-bold mb-3", style={'color': '#10b981'}),
+                html.Div([
+                    html.Div([
+                        html.I(className="fas fa-magic me-2", style={'color': '#10b981', 'fontSize': '1.2rem'}),
+                        html.Strong("Cálculo automático de ganancias óptimas"),
+                        html.Span(" según la impedancia del DUT", style={'color': '#64748b', 'fontSize': '0.9rem', 'marginLeft': '8px'})
+                    ], style={'padding': '12px 0', 'borderBottom': '1px solid #e2e8f0'}),
+                    html.Div([
+                        html.I(className="fas fa-eye me-2", style={'color': '#10b981', 'fontSize': '1.2rem'}),
+                        html.Strong("Diagramas visuales animados"),
+                        html.Span(" para cada paso con conexiones claramente marcadas", style={'color': '#64748b', 'fontSize': '0.9rem', 'marginLeft': '8px'})
+                    ], style={'padding': '12px 0', 'borderBottom': '1px solid #e2e8f0'}),
+                    html.Div([
+                        html.I(className="fas fa-check-double me-2", style={'color': '#10b981', 'fontSize': '1.2rem'}),
+                        html.Strong("Validación automática de resultados"),
+                        html.Span(" en cada paso con mensajes de error descriptivos", style={'color': '#64748b', 'fontSize': '0.9rem', 'marginLeft': '8px'})
+                    ], style={'padding': '12px 0', 'borderBottom': '1px solid #e2e8f0'}),
+                    html.Div([
+                        html.I(className="fas fa-chart-line me-2", style={'color': '#10b981', 'fontSize': '1.2rem'}),
+                        html.Strong("Progreso en tiempo real"),
+                        html.Span(" con barra de progreso durante mediciones", style={'color': '#64748b', 'fontSize': '0.9rem', 'marginLeft': '8px'})
+                    ], style={'padding': '12px 0', 'borderBottom': '1px solid #e2e8f0'}),
+                    html.Div([
+                        html.I(className="fas fa-save me-2", style={'color': '#10b981', 'fontSize': '1.2rem'}),
+                        html.Strong("Guardado directo en flash"),
+                        html.Span(" del dispositivo con un solo clic", style={'color': '#64748b', 'fontSize': '0.9rem', 'marginLeft': '8px'})
+                    ], style={'padding': '12px 0', 'borderBottom': '1px solid #e2e8f0'}),
+                    html.Div([
+                        html.I(className="fas fa-history me-2", style={'color': '#10b981', 'fontSize': '1.2rem'}),
+                        html.Strong("Historial persistente"),
+                        html.Span(" de calibraciones en sesión del navegador", style={'color': '#64748b', 'fontSize': '0.9rem', 'marginLeft': '8px'})
+                    ], style={'padding': '12px 0', 'borderBottom': '1px solid #e2e8f0'}),
+                    html.Div([
+                        html.I(className="fas fa-file-export me-2", style={'color': '#10b981', 'fontSize': '1.2rem'}),
+                        html.Strong("Exportación a archivos"),
+                        html.Span(" de respaldo (.txt) con todos los parámetros", style={'color': '#64748b', 'fontSize': '0.9rem', 'marginLeft': '8px'})
+                    ], style={'padding': '12px 0'})
+                ], style={'padding': '15px'})
+            ], style={'background': '#ecfdf5', 'borderRadius': '12px', 'border': '2px solid #10b981', 'marginBottom': '40px'}),
+            
+            html.Hr(style={'margin': '40px 0', 'border': 'none', 'borderTop': '2px solid #e2e8f0'})
+        ], style={'marginBottom': '50px'}),
+        
+        html.Div([
+            html.H4("⌨️ Calibración Manual por CLI", className="fw-bold mb-3", style={'color': '#0f172a', 'fontSize': '1.5rem'}),
+            html.P([
+                "Para usuarios avanzados que prefieren control total, la calibración puede realizarse manualmente ",
+                "usando comandos CLI directamente en el terminal del dispositivo."
+            ], style={'color': '#475569', 'marginBottom': '30px', 'fontSize': '1.05rem'})
+        ]),
+        
+        # Importancia
         info_box([
-            html.I(className="fas fa-exclamation-triangle me-2"),
             html.Strong("⚠️ IMPORTANTE: "),
-            "Las mediciones sin calibración pueden tener errores superiores al 20%. ",
-            "La calibración debe realizarse para cada combinación de frecuencia y ganancia que uses."
-        ], "danger"),
+            "Realiza la calibración cada vez que cambies de rango de frecuencia o después de 30 minutos de inactividad. ",
+            "Los pasos deben realizarse en orden: ", html.Strong("open → short → load")
+        ], "warning"),
         
-        doc_section(
-            "Fundamentos de Calibración",
-            "graduation-cap",
-            [
-                html.P("El ADMX2001B utiliza calibración de tres puntos:", className="lead mb-4"),
-                
-                html.Div([
-                    html.Div([
-                        html.Div([
-                            html.Div([
-                                html.I(className="fas fa-times-circle fa-3x text-primary mb-3"),
-                                html.H5("OPEN", className="fw-bold"),
-                                html.P("Corrige capacitancias parásitas de cables y conectores", className="small text-muted")
-                            ], className="text-center p-4 border rounded shadow-sm bg-white h-100")
-                        ], className="col-md-4 mb-3"),
-                        html.Div([
-                            html.Div([
-                                html.I(className="fas fa-minus fa-3x text-success mb-3"),
-                                html.H5("SHORT", className="fw-bold"),
-                                html.P("Corrige inductancias parásitas y resistencias de contacto", className="small text-muted")
-                            ], className="text-center p-4 border rounded shadow-sm bg-white h-100")
-                        ], className="col-md-4 mb-3"),
-                        html.Div([
-                            html.Div([
-                                html.I(className="fas fa-equals fa-3x text-warning mb-3"),
-                                html.H5("LOAD", className="fw-bold"),
-                                html.P("Proporciona trazabilidad a estándar certificado conocido", className="small text-muted")
-                            ], className="text-center p-4 border rounded shadow-sm bg-white h-100")
-                        ], className="col-md-4 mb-3"),
-                    ], className="row"),
-                ]),
-                
-                html.H5("Orden de Calibración", className="fw-bold mb-3 mt-4"),
-                html.Div([
-                    html.Span("1", className="badge bg-primary rounded-circle me-2", style={"width": "30px", "height": "30px", "lineHeight": "20px"}),
-                    html.Span("OPEN", className="fw-bold me-3"),
-                    html.I(className="fas fa-arrow-right me-3 text-muted"),
-                    html.Span("2", className="badge bg-success rounded-circle me-2", style={"width": "30px", "height": "30px", "lineHeight": "20px"}),
-                    html.Span("SHORT", className="fw-bold me-3"),
-                    html.I(className="fas fa-arrow-right me-3 text-muted"),
-                    html.Span("3", className="badge bg-warning rounded-circle me-2", style={"width": "30px", "height": "30px", "lineHeight": "20px"}),
-                    html.Span("LOAD", className="fw-bold"),
-                ], className="p-3 bg-light rounded border d-flex align-items-center justify-content-center flex-wrap"),
-                
-                info_box([
-                    html.Strong("📝 Nota: "),
-                    "El SHORT solo es necesario para configuraciones de ganancia de corriente 0 o 1. ",
-                    "Para ganancias 2 y 3 (alta impedancia), se puede omitir."
-                ], "note"),
-            ]
-        ),
+        # Configuraciones de calibración
+        html.Div([
+            html.H5("Configuraciones de Calibración", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.P([
+                "Cada configuración de front-end (combinación de ganancia ch0 y ch1) necesita calibrarse por separado. ",
+                "Hay ", html.Strong("16 combinaciones posibles"), " (4 ganancias ch0 × 4 ganancias ch1)."
+            ], style={'color': '#475569', 'marginBottom': '15px'}),
+            info_box([
+                html.Strong("💡 Info: "),
+                "Si usas autorange o solo las 7 combinaciones de ganancia estándar, las otras configuraciones no necesitan calibrarse."
+            ], "tip"),
+            info_box([
+                html.Strong("⚠️ Frecuencia: "),
+                "Cada punto de calibración es para una frecuencia específica. Siempre calibra lo más cerca posible de la frecuencia de prueba deseada."
+            ], "warning")
+        ], style={'marginBottom': '40px'}),
         
-        doc_section(
-            "Procedimiento Paso a Paso",
-            "list-ol",
-            [
-                step_card(
-                    1,
-                    "Preparación del Sistema",
-                    [
-                        html.P("Configuración inicial antes de calibrar:", className="fw-bold mb-3"),
-                        html.Ol([
-                            html.Li([
-                                "Deshabilitar autorange: ",
-                                command_card("setgain ch0 0", "Fijar ganancia de voltaje (ejemplo: 0)"),
-                                command_card("setgain ch1 1", "Fijar ganancia de corriente (ejemplo: 1)"),
-                            ]),
-                            html.Li([
-                                "Configurar parámetros de medición: ",
-                                command_card("frequency 100", "Frecuencia en kHz (ejemplo: 100kHz)"),
-                                command_card("magnitude 1", "Amplitud de señal en V (ejemplo: 1V)"),
-                                command_card("offset 0", "Offset DC en V (usualmente 0)"),
-                            ]),
-                            html.Li([
-                                "Aumentar promediado para calibración: ",
-                                command_card("average 200", "200-256 muestras para máxima precisión"),
-                                command_card("tdelay 200", "Retardo de 200ms para estabilización"),
-                            ]),
-                            html.Li([
-                                "Configurar switches en placa: ",
-                                html.Ul([
-                                    html.Li([html.Strong("S1"), " → ", html.Span("DUT", className="badge bg-info")]),
-                                    html.Li([html.Strong("S2"), " → ", html.Span("GND", className="badge bg-dark")]),
-                                ])
-                            ]),
-                        ], className="ps-3"),
-                    ],
-                    color="primary"
-                ),
-                
-                step_card(
-                    2,
-                    "Calibración OPEN",
-                    [
-                        html.P("Conecta los terminales de medición según se muestra:", className="fw-bold mb-3"),
-                        html.Ul([
-                            html.Li("H_POT y H_CUR juntos (cable rojo #1)"),
-                            html.Li("L_POT y L_CUR juntos (cable negro #1)"),
-                            html.Li([html.Strong("NO"), " conectar rojos con negros entre sí"]),
-                        ]),
-                        command_card(
-                            "calibrate open",
-                            "Ejecutar calibración open",
-                            "0,-1.117998e-09,1.162904e-06\nFrequency = 100.0000kHz\nCal Temp: 41.4 deg C\nopen:Done\nshort:Not Done\nload:Not Done"
-                        ),
-                        info_box([
-                            html.Strong("✓ Verificación: "),
-                            "Debe mostrar 'open:Done'. El valor medido representa las parásitas del setup."
-                        ], "success"),
-                    ],
-                    image_src=IMAGES.get('open_config_clips'),
-                    image_caption="Configuración OPEN: Terminales H juntos, L juntos, sin conexión entre H y L",
-                    color="primary"
-                ),
-                
-                step_card(
-                    3,
-                    "Calibración SHORT",
-                    [
-                        html.P("Configuración para impedancia muy baja:", className="fw-bold mb-3"),
-                        html.Ul([
-                            html.Li(["Reducir magnitud: ", html.Code("magnitude 0.2")]),
-                            html.Li("Conectar TODAS las terminales juntas (H_POT, H_CUR, L_POT, L_CUR)"),
-                            html.Li("Usar alambre grueso de cobre de longitud mínima (<5cm)"),
-                        ]),
-                        command_card(
-                            "magnitude 0.2",
-                            "Reducir amplitud para evitar saturación"
-                        ),
-                        command_card(
-                            "calibrate short",
-                            "Ejecutar calibración short",
-                            "0,2.075835e-02,1.224807e-02\nFrequency = 100.0000kHz\nCal Temp: 41.4 deg C\nopen:Done\nshort:Done\nload:Not Done"
-                        ),
-                        info_box([
-                            html.Strong("⚠️ Cuándo omitir: "),
-                            "Para ganancias de corriente 2 y 3 (impedancias > 10kΩ), el SHORT no es necesario."
-                        ], "warning"),
-                    ],
-                    color="success"
-                ),
-                
-                step_card(
-                    4,
-                    "Calibración LOAD",
-                    [
-                        html.P("Conecta un estándar certificado conocido:", className="fw-bold mb-3"),
-                        html.Ul([
-                            html.Li(["Restaurar magnitud: ", html.Code("magnitude 1")]),
-                            html.Li("Seleccionar resistor de precisión 1% o mejor"),
-                            html.Li("Valor cercano a impedancia del DUT que medirás"),
-                            html.Li("Resistor de 1kΩ es un buen estándar general"),
-                        ]),
-                        
-                        html.H6("Estándares recomendados por rango:", className="fw-bold mb-2 mt-3"),
-                        info_table(
-                            ["Rango de Impedancia", "Estándar Recomendado", "Tipo"],
-                            [
-                                ["< 10Ω", "10Ω ±1%", "Resistor metal film"],
-                                ["10Ω - 100Ω", "100Ω ±1%", "Resistor metal film"],
-                                ["100Ω - 1kΩ", "1kΩ ±1%", "Resistor metal film"],
-                                ["1kΩ - 10kΩ", "10kΩ ±1%", "Resistor metal film"],
-                                ["> 10kΩ", "100kΩ ±1%", "Resistor metal film"],
-                            ]
-                        ),
-                        
-                        command_card(
-                            "magnitude 1",
-                            "Restaurar amplitud normal"
-                        ),
-                        command_card(
-                            "calibrate rt 1000 xt 0.822",
-                            "Calibrar con resistor de 1kΩ (rt=1000Ω, xt=reactancia si existe)",
-                            "0,1.010381e+03,-1.254483e+01\nFrequency = 100.0000kHz\nCal Temp: 41.5 deg C\nopen:Done\nshort:Done\nload:Done"
-                        ),
-                        
-                        info_box([
-                            html.Strong("📐 Cálculo de reactancia: "),
-                            "Para capacitores: xt = -1/(2πfC). Para inductores: xt = 2πfL. Para resistores puros: xt = 0"
-                        ], "tip"),
-                    ],
-                    image_src=IMAGES.get('cal_connections'),
-                    image_caption="Conexión del estándar de calibración (resistor) entre los terminales de medición",
-                    color="warning"
-                ),
-                
-                step_card(
-                    5,
-                    "Guardar Calibración",
-                    [
-                        html.P("Almacenar coeficientes en memoria no volátil:", className="fw-bold mb-3"),
-                        command_card(
-                            "calibrate commit",
-                            "Guardar con timestamp automático (recomendado)",
-                            "PASSWORD> Analog123\ncommit : success"
-                        ),
-                        html.P("O con timestamp personalizado:", className="mt-2"),
-                        command_card(
-                            "calibrate commit 1689959855",
-                            "Guardar con timestamp UNIX específico"
-                        ),
-                        
-                        info_box([
-                            html.Strong("🔐 Contraseña: "),
-                            "La contraseña por defecto es 'Analog123'. Puedes cambiarla con: ",
-                            html.Code("calibrate password")
-                        ], "note"),
-                        
-                        info_box([
-                            html.Strong("✅ Verificación: "),
-                            "Usa ", html.Code("calibrate list"), " para ver todas las calibraciones guardadas."
-                        ], "success"),
-                    ],
-                    color="info"
-                ),
-            ]
-        ),
+        # Pasos previos
+        html.Div([
+            html.H5("Preparación para Calibración", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.Ol([
+                html.Li("Seleccionar la configuración de medición deseada (ganancia, frecuencia, magnitud, offset)", style={'color': '#475569', 'marginBottom': '10px'}),
+                html.Li([html.Strong("⚠️ Deshabilitar autorange: "), "setgain ch0 <0-3> y setgain ch1 <0-3>"], style={'color': '#475569', 'marginBottom': '10px'}),
+                html.Li("Configurar promediado a al menos 200 muestras: average 200", style={'color': '#475569', 'marginBottom': '10px'}),
+                html.Li("Asegurar que los switches estén en posiciones DUT y GND", style={'color': '#475569'})
+            ], style={'marginBottom': '20px'})
+        ], style={'marginBottom': '40px'}),
         
-        doc_section(
-            "Calibración Multi-Frecuencia",
-            "chart-line",
-            [
-                html.P([
-                    "Desde firmware 1.2.2+, puedes almacenar calibraciones para múltiples frecuencias. ",
-                    "El sistema interpolará automáticamente para frecuencias intermedias."
-                ], className="lead mb-4"),
-                
-                html.H5("Comandos de Gestión", className="fw-bold mb-3"),
-                command_card("calibrate list", "Lista todas las frecuencias calibradas", "Calibration frequencies:\n1000Hz\n5000Hz\n10000Hz\n100000Hz"),
-                command_card("calibrate list 100000", "Lista configuraciones calibradas a 100kHz", "Frequency: 100kHz\nCh0=0, Ch1=0: Done\nCh0=0, Ch1=1: Done\nCh0=0, Ch1=2: Not Done"),
-                command_card("calibrate reload", "Recarga calibración de frecuencia más cercana"),
-                command_card("resetcal", "Borra calibración actual de RAM (no afecta flash)"),
-                command_card("calibrate erase", "⚠️ BORRA TODAS las calibraciones de flash (requiere password)"),
-                
-                html.H5("Capacidad de Almacenamiento", className="fw-bold mb-3 mt-4"),
-                html.Div([
-                    spec_badge("Módulos con EEPROM", "25 conjuntos de calibración", "warning"),
-                    spec_badge("Módulos con Flash", "450 conjuntos de calibración", "success"),
-                ], className="row row-cols-2"),
-            ]
-        ),
+        # Pasos de calibración
+        html.Div([
+            html.H5("Procedimiento Paso a Paso", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            
+            # Paso 1: OPEN
+            html.Div([
+                html.H6([
+                    html.Span("1", style={
+                        'display': 'inline-block',
+                        'width': '32px',
+                        'height': '32px',
+                        'background': '#f59e0b',
+                        'color': '#ffffff',
+                        'borderRadius': '50%',
+                        'textAlign': 'center',
+                        'lineHeight': '32px',
+                        'fontSize': '1rem',
+                        'marginRight': '12px',
+                        'fontWeight': '700'
+                    }),
+                    "Calibración OPEN"
+                ], className="fw-bold mb-3", style={'color': '#0f172a'}),
+                html.Ol([
+                    html.Li("Conectar terminales H_POT/H_CUR juntos y L_POT/L_CUR juntos (sin conectarlos entre sí)", style={'color': '#475569', 'marginBottom': '10px'}),
+                    html.Li([
+                        "Ejecutar: ",
+                        html.Code("calibrate open", style={'background': '#1e293b', 'color': '#f59e0b', 'padding': '4px 10px', 'borderRadius': '4px', 'marginLeft': '8px'})
+                    ], style={'color': '#475569', 'marginBottom': '10px'}),
+                    html.Li("Esperar a que complete la medición", style={'color': '#475569', 'marginBottom': '10px'}),
+                    html.Li("Verificar que muestre 'open:Done'", style={'color': '#475569'})
+                ], style={'marginLeft': '44px'})
+            ], style={'background': '#fff7ed', 'padding': '25px', 'borderRadius': '12px', 'border': '2px solid #f59e0b', 'marginBottom': '20px'}),
+            
+            image_card(IMAGES.get('open_load'), "Configuración OPEN: H_POT/H_CUR juntos, L_POT/L_CUR juntos"),
+            
+            # Paso 2: SHORT
+            html.Div([
+                html.H6([
+                    html.Span("2", style={
+                        'display': 'inline-block',
+                        'width': '32px',
+                        'height': '32px',
+                        'background': '#f59e0b',
+                        'color': '#ffffff',
+                        'borderRadius': '50%',
+                        'textAlign': 'center',
+                        'lineHeight': '32px',
+                        'fontSize': '1rem',
+                        'marginRight': '12px',
+                        'fontWeight': '700'
+                    }),
+                    "Calibración SHORT"
+                ], className="fw-bold mb-3", style={'color': '#0f172a'}),
+                html.Ol([
+                    html.Li("Conectar TODAS las terminales juntas (H_CUR, H_POT, L_POT, L_CUR)", style={'color': '#475569', 'marginBottom': '10px'}),
+                    html.Li([
+                        html.Strong("⚠️ Solo cuando ganancia ch1 es 0 o 1"), " (omitir para ganancias 2 y 3)"
+                    ], style={'color': '#ef4444', 'marginBottom': '10px'}),
+                    html.Li([
+                        "Reducir magnitude a 0.2: ",
+                        html.Code("magnitude 0.2", style={'background': '#1e293b', 'color': '#f59e0b', 'padding': '4px 10px', 'borderRadius': '4px', 'marginLeft': '8px'})
+                    ], style={'color': '#475569', 'marginBottom': '10px'}),
+                    html.Li([
+                        "Ejecutar: ",
+                        html.Code("calibrate short", style={'background': '#1e293b', 'color': '#f59e0b', 'padding': '4px 10px', 'borderRadius': '4px', 'marginLeft': '8px'})
+                    ], style={'color': '#475569', 'marginBottom': '10px'}),
+                    html.Li("Verificar que muestre 'short:Done'", style={'color': '#475569'})
+                ], style={'marginLeft': '44px'})
+            ], style={'background': '#fff7ed', 'padding': '25px', 'borderRadius': '12px', 'border': '2px solid #f59e0b', 'marginBottom': '20px'}),
+            
+            # Paso 3: LOAD
+            html.Div([
+                html.H6([
+                    html.Span("3", style={
+                        'display': 'inline-block',
+                        'width': '32px',
+                        'height': '32px',
+                        'background': '#f59e0b',
+                        'color': '#ffffff',
+                        'borderRadius': '50%',
+                        'textAlign': 'center',
+                        'lineHeight': '32px',
+                        'fontSize': '1rem',
+                        'marginRight': '12px',
+                        'fontWeight': '700'
+                    }),
+                    "Calibración LOAD"
+                ], className="fw-bold mb-3", style={'color': '#0f172a'}),
+                html.Ol([
+                    html.Li([
+                        "Restaurar magnitude a 1: ",
+                        html.Code("magnitude 1", style={'background': '#1e293b', 'color': '#f59e0b', 'padding': '4px 10px', 'borderRadius': '4px', 'marginLeft': '8px'})
+                    ], style={'color': '#475569', 'marginBottom': '10px'}),
+                    html.Li([
+                        "Conectar impedancia conocida entre cables de medición. ",
+                        html.Strong("Tip: "), "Usar resistor con impedancia cercana al DUT esperado"
+                    ], style={'color': '#475569', 'marginBottom': '10px'}),
+                    html.Li([
+                        "Ejecutar: ",
+                        html.Code("calibrate rt <R_ohms> xt <X_ohms>", style={'background': '#1e293b', 'color': '#f59e0b', 'padding': '4px 10px', 'borderRadius': '4px', 'marginLeft': '8px'}),
+                        html.Br(),
+                        html.Span("donde R es la componente resistiva y X la componente reactiva en Ohms", style={'fontSize': '0.9rem', 'color': '#64748b', 'marginLeft': '8px'})
+                    ], style={'color': '#475569', 'marginBottom': '10px'}),
+                    html.Li("Verificar que muestre 'load:Done'", style={'color': '#475569'})
+                ], style={'marginLeft': '44px'})
+            ], style={'background': '#fff7ed', 'padding': '25px', 'borderRadius': '12px', 'border': '2px solid #f59e0b', 'marginBottom': '20px'}),
+            
+            image_card(IMAGES.get('bnc_load'), "Resistor de calibración conectado entre terminales")
+        ]),
         
-    ], id="content-calibration", style={"display": "none"})
+        # Guardar calibración
+        html.Div([
+            html.H5("Guardar en Memoria No Volátil", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.P("Después de completar los pasos, los coeficientes se generan y almacenan en RAM. Para guardarlos en memoria flash:", style={'color': '#475569', 'marginBottom': '15px'}),
+            html.Pre("""ADMX2001> calibrate commit
+PASSWORD> Analog123
+commit : success
+""", style={
+                'background': '#1e293b',
+                'color': '#10b981',
+                'padding': '20px',
+                'borderRadius': '12px',
+                'fontFamily': 'monospace',
+                'fontSize': '0.9rem',
+                'marginBottom': '20px'
+            }),
+            info_box([
+                html.Strong("🔐 Password: "),
+                "La contraseña por defecto es ", html.Code("Analog123", style={'background': '#1e293b', 'color': '#10b981', 'padding': '2px 8px', 'borderRadius': '4px'}),
+                ". Puede cambiarse con ", html.Code("calibrate password")
+            ], "info")
+        ], style={'marginBottom': '40px'}),
+        
+        # Ejemplo completo
+        html.Div([
+            html.H5("Ejemplo Completo de Calibración", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.P("Calibrar configuración de ganancia (ch0=0, ch1=1) a 100kHz con resistor de 1kΩ:", style={'color': '#475569', 'marginBottom': '15px'}),
+            html.Pre("""ADMX2001> setgain ch0 0
+voltGain = 0
+
+ADMX2001> setgain ch1 1
+currGain = 1
+
+ADMX2001> frequency 100
+frequency = 100.0000kHz
+
+ADMX2001> magnitude 1
+magnitude = 1.0000
+
+ADMX2001> offset 0
+Offset = 0.0000
+
+ADMX2001> average 200
+average = 200
+
+ADMX2001> tdelay 200
+triggerDelay = 200.0000msec
+
+# --- Conectar carga OPEN ahora ---
+ADMX2001> calibrate open
+0,-1.117998e-09,1.162904e-06
+Frequency = 100.0000kHz
+Cal Temp: 41.4 deg C
+open:Done
+short:Not Done
+load:Not Done
+
+ADMX2001> magnitude 0.2
+magnitude = 0.2000
+
+# --- Conectar carga SHORT ahora ---
+ADMX2001> calibrate short
+0,2.075835e-02,1.224807e-02
+Frequency = 100.0000kHz
+Cal Temp: 41.4 deg C
+open:Done
+short:Done
+load:Not Done
+
+ADMX2001> magnitude 1
+magnitude = 1.0000
+
+# --- Conectar resistor 1kΩ ahora ---
+ADMX2001> calibrate rt 1e+3 xt 0
+0,1.010381e+03,-1.254483e+01
+Frequency = 100.0000kHz
+Cal Temp: 41.5 deg C
+open:Done
+short:Done
+load:Done
+
+ADMX2001> calibrate commit 1689959855
+PASSWORD> Analog123
+commit : success
+
+# --- Verificación ---
+ADMX2001> display 6
+Measurement model: 6 - Impedance in rectangular coordinates (Rs,Xs)
+
+ADMX2001> z
+0,1.000021e+03,8.220137e-01
+""", style={
+                'background': '#1e293b',
+                'color': '#e2e8f0',
+                'padding': '20px',
+                'borderRadius': '12px',
+                'fontFamily': 'monospace',
+                'fontSize': '0.85rem',
+                'overflowX': 'auto',
+                'lineHeight': '1.5'
+            })
+        ], style={'marginBottom': '40px'}),
+        
+        # Calibración sobre frecuencia
+        html.Div([
+            html.H5("Calibración sobre Frecuencia", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.P([
+                "Desde firmware versión 1.2.2, se soporta calibración en múltiples puntos de frecuencia. ",
+                "Esto permite calibrar todas las 16 configuraciones de ganancia en varias frecuencias."
+            ], style={'color': '#475569', 'marginBottom': '15px'}),
+            html.Div([
+                html.H6("Comandos Adicionales:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.Ul([
+                    html.Li([
+                        html.Code("calibrate list", style={'background': '#1e293b', 'color': '#f59e0b', 'padding': '2px 8px', 'borderRadius': '4px'}),
+                        " - Reporta todas las frecuencias con datos guardados"
+                    ]),
+                    html.Li([
+                        html.Code("calibrate reload", style={'background': '#1e293b', 'color': '#f59e0b', 'padding': '2px 8px', 'borderRadius': '4px'}),
+                        " - Carga coeficientes de frecuencia más cercana desde flash"
+                    ]),
+                    html.Li([
+                        html.Code("resetcal", style={'background': '#1e293b', 'color': '#f59e0b', 'padding': '2px 8px', 'borderRadius': '4px'}),
+                        " - Borra solo el conjunto cargado en RAM"
+                    ]),
+                    html.Li([
+                        html.Code("calibrate erase", style={'background': '#1e293b', 'color': '#f59e0b', 'padding': '2px 8px', 'borderRadius': '4px'}),
+                        " - ⚠️ Elimina TODOS los conjuntos permanentemente (requiere password)"
+                    ])
+                ], style={'color': '#475569'})
+            ], style={'background': '#f8fafc', 'padding': '20px', 'borderRadius': '8px', 'marginBottom': '15px'}),
+            html.P([
+                html.Strong("Capacidad de almacenamiento:"),
+                html.Br(),
+                "• Módulos con EEPROM: 25 conjuntos de calibración",
+                html.Br(),
+                "• Módulos con Flash: 450 conjuntos de calibración"
+            ], style={'color': '#475569', 'marginTop': '15px'})
+        ], style={'marginBottom': '40px'}),
+        
+        # Coeficientes precargados
+        html.Div([
+            html.H5("Conjuntos de Calibración Precargados", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.P("Algunos módulos envían con coeficientes de calibración precargados:", style={'color': '#475569', 'marginBottom': '15px'}),
+            html.Pre("""ADMX2001> calibrate switch evalkit    # Usar coeficientes precargados
+ADMX2001> calibrate switch default    # Usar coeficientes de usuario
+""", style={
+                'background': '#1e293b',
+                'color': '#10b981',
+                'padding': '15px',
+                'borderRadius': '8px',
+                'fontFamily': 'monospace',
+                'fontSize': '0.9rem'
+            }),
+            info_box([
+                html.Strong("⚠️ Advertencia: "),
+                "Los coeficientes precargados pueden no aplicar a tu configuración de prueba específica y su precisión no está garantizada."
+            ], "warning")
+        ])
+    ])
 
 
-def tab_cli():
-    """Contenido de la pestaña CLI"""
+# ==================== CONTENIDO: CLI ====================
+
+def content_cli():
     return html.Div([
         html.Div([
             html.H3([
-                html.I(className="fas fa-terminal me-3 text-primary"),
-                "Interfaz de Línea de Comandos (CLI)"
-            ], className="mb-3 fw-bold"),
+                html.I(className="fas fa-terminal me-3", style={'color': '#8b5cf6'}),
+                "Terminal CLI - Interfaz de Línea de Comandos"
+            ], className="mb-3 fw-bold", style={'color': '#0f172a'}),
             html.P([
-                "El ADMX2001B incluye una poderosa interfaz CLI accesible por UART. ",
-                "Todos los comandos están disponibles desde terminales como TeraTerm o desde el terminal integrado de ZORIA."
-            ], className="lead text-muted mb-0")
-        ], className="p-4 bg-light rounded shadow-sm mb-4"),
+                "La interfaz de línea de comandos CLI permite control completo del sistema ADMX2001B. ",
+                "Usa ", html.Code("help <comando>"), " para obtener ayuda sobre cualquier comando."
+            ], style={'color': '#475569', 'fontSize': '1.1rem', 'marginBottom': '30px'})
+        ]),
         
-        doc_section(
-            "Comandos Básicos",
-            "keyboard",
-            [
-                collapsible_section(
-                    "Identificación y Estado",
-                    [
-                        command_card("*idn", "Información del dispositivo", "Analog Devices,ADMX2001,v1.3.2,Build RT-2,Apr 18 2024,0x2820d10431c29880"),
-                        command_card("help", "Lista todos los comandos disponibles"),
-                        command_card("help <comando>", "Ayuda detallada de un comando específico", "Ejemplo: help display"),
-                        command_card("selftest", "Ver resultado del último self-test", "PASS: Analog self-test passed"),
-                        command_card("selftest run", "Ejecutar self-test nuevamente"),
-                    ],
-                    "cli-basic-1",
-                    default_open=True
-                ),
-                
-                collapsible_section(
-                    "Configuración de Medición",
-                    [
-                        command_card("frequency <valor>", "Configurar frecuencia de medición", "frequency 100 → 100.0000kHz\nRango: 0.2 Hz a 10 MHz"),
-                        command_card("magnitude <valor>", "Amplitud de señal de excitación (V)", "magnitude 1 → 1.0000V\nRango: 0 a 2.5V"),
-                        command_card("offset <valor>", "Offset DC en voltios", "offset 0.5 → 0.5000V\nRango: -2.5V a +2.5V"),
-                        command_card("average <n>", "Número de muestras a promediar", "average 100 → promedia 100 muestras\nRango: 1 a 256"),
-                        command_card("count <n>", "Número de mediciones a realizar", "count 10 → realiza 10 lecturas"),
-                    ],
-                    "cli-basic-2"
-                ),
-                
-                collapsible_section(
-                    "Mediciones",
-                    [
-                        command_card("z", "Realizar medición con configuración actual", "0,5.677640e-13,8.062763e+07\nFormato: index,valor1,valor2"),
-                        command_card("initiate", "Entrar en modo trigger (bloquea configuración)", "Se usa antes de trigger para optimizar velocidad"),
-                        command_card("trigger", "Ejecutar medición en modo trigger", "Más rápido que 'z' (10-12ms)"),
-                        command_card("tcount <n>", "Configurar contador de triggers", "tcount 65536 → modo trigger infinito"),
-                        command_card("mdelay <ms>", "Retardo antes de cada medición (ms)", "mdelay 100 → espera 100ms"),
-                        command_card("tdelay <ms>", "Retardo después de trigger (ms)", "tdelay 50 → espera 50ms post-trigger"),
-                    ],
-                    "cli-basic-3"
-                ),
-            ]
-        ),
+        # Modos de Display
+        html.Div([
+            html.H5("Modos de Display de Medición", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.P("El ADMX2001B retorna resultados en uno de 18 modos de display diferentes. El resultado siempre se reporta en la unidad SI base.", style={'color': '#475569', 'marginBottom': '15px'}),
+            html.Div([
+                html.Table([
+                    html.Thead([
+                        html.Tr([
+                            html.Th("Modo", style={'color': '#0f172a', 'fontWeight': '600', 'padding': '10px', 'borderBottom': '2px solid #8b5cf6'}),
+                            html.Th("Nombre", style={'color': '#0f172a', 'fontWeight': '600', 'padding': '10px', 'borderBottom': '2px solid #8b5cf6'}),
+                            html.Th("Forma", style={'color': '#0f172a', 'fontWeight': '600', 'padding': '10px', 'borderBottom': '2px solid #8b5cf6'}),
+                            html.Th("Unidad SI", style={'color': '#0f172a', 'fontWeight': '600', 'padding': '10px', 'borderBottom': '2px solid #8b5cf6'})
+                        ])
+                    ]),
+                    html.Tbody([
+                        html.Tr([html.Td("0", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("Capacitancia serie y resistencia equivalente", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("Cs, Rs", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569', 'fontFamily': 'monospace'}), html.Td("Farads, Ohms", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("1", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("Capacitancia serie y factor de disipación", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("Cs, D", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569', 'fontFamily': 'monospace'}), html.Td("Farads, adimensional", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("2", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("Capacitancia serie y factor de calidad", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("Cs, Q", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569', 'fontFamily': 'monospace'}), html.Td("Farads, adimensional", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("3", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("Inductancia serie y resistencia equivalente", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("Ls, Rs", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569', 'fontFamily': 'monospace'}), html.Td("Henries, Ohms", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("4", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("Inductancia serie y factor de disipación", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("Ls, D", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569', 'fontFamily': 'monospace'}), html.Td("Henries, adimensional", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("5", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("Inductancia serie y factor de calidad", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("Ls, Q", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569', 'fontFamily': 'monospace'}), html.Td("Henries, adimensional", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("6", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'background': '#fef3c7'}), html.Td("Impedancia en coordenadas rectangulares (default)", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569', 'background': '#fef3c7'}), html.Td("R, X", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569', 'fontFamily': 'monospace', 'background': '#fef3c7'}), html.Td("Ohms, Ohms", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569', 'background': '#fef3c7'})]),
+                        html.Tr([html.Td("7", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("Impedancia en magnitud y fase (grados)", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("Z, deg", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569', 'fontFamily': 'monospace'}), html.Td("Ohms, Grados", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("8", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("Impedancia en magnitud y fase (radianes)", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("Z, rad", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569', 'fontFamily': 'monospace'}), html.Td("Ohms, Radianes", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("9", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("Capacitancia paralela y resistencia equivalente", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("Cp, Rp", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569', 'fontFamily': 'monospace'}), html.Td("Farads, Ohms", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("10", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("Capacitancia paralela y factor de disipación", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("Cp, D", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569', 'fontFamily': 'monospace'}), html.Td("Farads, adimensional", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("11", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("Capacitancia paralela y factor de calidad", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("Cp, Q", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569', 'fontFamily': 'monospace'}), html.Td("Farads, adimensional", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("12", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("Inductancia paralela y resistencia equivalente", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("Lp, Rp", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569', 'fontFamily': 'monospace'}), html.Td("Henries, Ohms", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("13", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("Inductancia paralela y factor de disipación", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("Lp, D", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569', 'fontFamily': 'monospace'}), html.Td("Henries, adimensional", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("14", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("Inductancia paralela y factor de calidad", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("Lp, Q", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569', 'fontFamily': 'monospace'}), html.Td("Henries, adimensional", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("15", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("Admitancia en coordenadas rectangulares", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("G, B", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569', 'fontFamily': 'monospace'}), html.Td("Siemens, Siemens", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("16", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("Admitancia en magnitud y fase (grados)", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("Y, deg", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569', 'fontFamily': 'monospace'}), html.Td("Siemens, Grados", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("17", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("Admitancia en magnitud y fase (radianes)", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("Y, rad", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569', 'fontFamily': 'monospace'}), html.Td("Siemens, Radianes", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("18", style={'padding': '8px'}), html.Td("Apagado", style={'padding': '8px', 'color': '#475569'}), html.Td("None", style={'padding': '8px', 'color': '#475569', 'fontFamily': 'monospace'}), html.Td("None", style={'padding': '8px', 'color': '#475569'})])
+                    ])
+                ], style={'width': '100%', 'borderCollapse': 'collapse', 'fontSize': '0.9rem'})
+            ], style={
+                'background': '#ffffff',
+                'borderRadius': '12px',
+                'border': '1px solid #e2e8f0',
+                'padding': '20px',
+                'marginBottom': '30px',
+                'overflowX': 'auto'
+            })
+        ]),
         
-        doc_section(
-            "Modos de Display",
-            "th-list",
-            [
-                html.P("El ADMX2001B puede reportar mediciones en 18 formatos diferentes:", className="mb-3"),
-                command_card("display <modo>", "Seleccionar modo de display (0-18)"),
+        # Selección de Ganancia
+        html.Div([
+            html.H5("Selección de Ganancia y Rango", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.P("Por defecto, el ADMX2001B está en modo auto-ranging. Para seleccionar manualmente:", style={'color': '#475569', 'marginBottom': '15px'}),
+            html.Div([
+                html.H6("Ganancias de Corriente (Ch1)", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.Table([
+                    html.Thead([
+                        html.Tr([
+                            html.Th("Ganancia", style={'padding': '8px', 'borderBottom': '2px solid #8b5cf6'}),
+                            html.Th("Corriente Máxima", style={'padding': '8px', 'borderBottom': '2px solid #8b5cf6'}),
+                            html.Th("Transimpedancia", style={'padding': '8px', 'borderBottom': '2px solid #8b5cf6'})
+                        ])
+                    ]),
+                    html.Tbody([
+                        html.Tr([html.Td("0", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("25mA", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("49.9Ω", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("1", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("2.5mA", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("499Ω", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("2", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("250μA", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("4.99kΩ", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("3", style={'padding': '8px'}), html.Td("25μA", style={'padding': '8px', 'color': '#475569'}), html.Td("49.9kΩ", style={'padding': '8px', 'color': '#475569'})])
+                    ])
+                ], style={'width': '100%', 'borderCollapse': 'collapse', 'marginBottom': '20px'}),
                 
-                info_table(
-                    ["Modo", "Descripción", "Formato", "Unidades"],
-                    [
-                        ["0", "Capacitancia serie + Rs", "Cs, Rs", "F, Ω"],
-                        ["1", "Capacitancia serie + D", "Cs, D", "F, adim"],
-                        ["2", "Capacitancia serie + Q", "Cs, Q", "F, adim"],
-                        ["3", "Inductancia serie + Rs", "Ls, Rs", "H, Ω"],
-                        ["4", "Inductancia serie + D", "Ls, D", "H, adim"],
-                        ["5", "Inductancia serie + Q", "Ls, Q", "H, adim"],
-                        ["6 ★", "Impedancia rectangular", "R, X", "Ω, Ω"],
-                        ["7", "Impedancia polar (grados)", "Z, θ°", "Ω, deg"],
-                        ["8", "Impedancia polar (rad)", "Z, θ", "Ω, rad"],
-                        ["9", "Capacitancia paralelo + Rp", "Cp, Rp", "F, Ω"],
-                        ["10", "Capacitancia paralelo + D", "Cp, D", "F, adim"],
-                        ["11", "Capacitancia paralelo + Q", "Cp, Q", "F, adim"],
-                        ["12", "Inductancia paralelo + Rp", "Lp, Rp", "H, Ω"],
-                        ["13", "Inductancia paralelo + D", "Lp, D", "H, adim"],
-                        ["14", "Inductancia paralelo + Q", "Lp, Q", "H, adim"],
-                        ["15", "Admitancia rectangular", "G, B", "S, S"],
-                        ["16", "Admitancia polar (grados)", "Y, θ°", "S, deg"],
-                        ["17", "Admitancia polar (rad)", "Y, θ", "S, rad"],
-                        ["18", "Apagado", "None", "-"],
-                    ]
-                ),
+                html.H6("Ganancias de Voltaje (Ch0)", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.Table([
+                    html.Thead([
+                        html.Tr([
+                            html.Th("Ganancia", style={'padding': '8px', 'borderBottom': '2px solid #8b5cf6'}),
+                            html.Th("Rango Máximo", style={'padding': '8px', 'borderBottom': '2px solid #8b5cf6'}),
+                            html.Th("Factor de Ganancia", style={'padding': '8px', 'borderBottom': '2px solid #8b5cf6'})
+                        ])
+                    ]),
+                    html.Tbody([
+                        html.Tr([html.Td("0", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("±2.5V", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("1", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("1", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("±1.25V", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("2", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("2", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("±625mV", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'}), html.Td("4", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("3", style={'padding': '8px'}), html.Td("±312.5mV", style={'padding': '8px', 'color': '#475569'}), html.Td("8", style={'padding': '8px', 'color': '#475569'})])
+                    ])
+                ], style={'width': '100%', 'borderCollapse': 'collapse', 'marginBottom': '20px'}),
                 
-                info_box([
-                    html.Strong("★ Modo 6 (default): "),
-                    "Impedancia rectangular R+jX es el formato por defecto y el más versátil para análisis."
-                ], "tip"),
-            ]
-        ),
+                html.H6("Rangos de Impedancia Recomendados", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.Table([
+                    html.Thead([
+                        html.Tr([
+                            html.Th("Ganancia Ch0", style={'padding': '8px', 'borderBottom': '2px solid #8b5cf6'}),
+                            html.Th("Ganancia Ch1", style={'padding': '8px', 'borderBottom': '2px solid #8b5cf6'}),
+                            html.Th("Rango de Impedancia", style={'padding': '8px', 'borderBottom': '2px solid #8b5cf6'})
+                        ])
+                    ]),
+                    html.Tbody([
+                        html.Tr([html.Td("3", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("0", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("< 10Ω", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("2", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("0", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("< 25Ω", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("1", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("0", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("< 50Ω", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("0", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("0", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("100Ω a 1kΩ", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("0", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("1", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("1kΩ a 10kΩ", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("0", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("2", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0'}), html.Td("10kΩ a 100kΩ", style={'padding': '8px', 'borderBottom': '1px solid #e2e8f0', 'color': '#475569'})]),
+                        html.Tr([html.Td("0", style={'padding': '8px'}), html.Td("3", style={'padding': '8px'}), html.Td("> 100kΩ", style={'padding': '8px', 'color': '#475569'})])
+                    ])
+                ], style={'width': '100%', 'borderCollapse': 'collapse'})
+            ], style={
+                'background': '#ffffff',
+                'borderRadius': '12px',
+                'border': '1px solid #e2e8f0',
+                'padding': '20px',
+                'marginBottom': '30px',
+                'overflowX': 'auto'
+            })
+        ]),
         
-        doc_section(
-            "Control de Ganancia",
-            "sliders-h",
-            [
-                html.P("El rango de medición se controla mediante las ganancias de voltaje (Ch0) y corriente (Ch1):", className="mb-3"),
-                command_card("setgain ch0 <0-3>", "Ganancia de voltaje (0=±2.5V, 3=±312.5mV)"),
-                command_card("setgain ch1 <0-3>", "Ganancia de corriente (0=25mA, 3=25μA)"),
-                command_card("setgain auto", "Activar auto-ranging"),
-                command_card("setgain", "Ver configuración actual"),
-                
-                html.H5("Tabla de Ganancias", className="fw-bold mb-3 mt-4"),
+        # Comandos básicos
+        html.Div([
+            html.H5("Comandos Básicos", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.Div([
                 html.Div([
-                    html.Div([
-                        html.H6("Canal 0 - Voltaje", className="fw-bold mb-2 text-primary"),
-                        info_table(
-                            ["Ganancia", "Rango Máx", "Factor"],
-                            [
-                                ["0", "±2.5V", "×1"],
-                                ["1", "±1.25V", "×2"],
-                                ["2", "±625mV", "×4"],
-                                ["3", "±312.5mV", "×8"],
-                            ],
-                            striped=False
-                        )
-                    ], className="col-md-6 mb-3"),
-                    html.Div([
-                        html.H6("Canal 1 - Corriente", className="fw-bold mb-2 text-success"),
-                        info_table(
-                            ["Ganancia", "I Máx", "Transimpedancia"],
-                            [
-                                ["0", "25mA", "49.9Ω"],
-                                ["1", "2.5mA", "499Ω"],
-                                ["2", "250μA", "4.99kΩ"],
-                                ["3", "25μA", "49.9kΩ"],
-                            ],
-                            striped=False
-                        )
-                    ], className="col-md-6 mb-3"),
-                ], className="row"),
-                
-                html.H5("Rangos Recomendados", className="fw-bold mb-3 mt-4"),
-                info_table(
-                    ["Ch0", "Ch1", "Rango de Z", "Aplicación Típica"],
-                    [
-                        ["3", "0", "< 10Ω", "Resistencias muy bajas, ESR"],
-                        ["2", "0", "< 25Ω", "Resistencias bajas"],
-                        ["1", "0", "< 50Ω", "Impedancias bajas"],
-                        ["0", "0", "100Ω - 1kΩ", "Rango medio-bajo"],
-                        ["0", "1", "1kΩ - 10kΩ", "Rango medio (uso general)"],
-                        ["0", "2", "10kΩ - 100kΩ", "Rango medio-alto"],
-                        ["0", "3", "> 100kΩ", "Altas impedancias"],
-                    ]
-                ),
-            ]
-        ),
+                    html.Code("z", style={'background': '#1e293b', 'color': '#10b981', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P("Inicia una medición de impedancia", style={'color': '#64748b', 'marginTop': '8px'})
+                ], style={'marginBottom': '20px'}),
+                html.Div([
+                    html.Code("frequency <Hz>", style={'background': '#1e293b', 'color': '#10b981', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P("Configura frecuencia de medición (0.2 Hz a 10 MHz, 0=DC)", style={'color': '#64748b', 'marginTop': '8px'})
+                ], style={'marginBottom': '20px'}),
+                html.Div([
+                    html.Code("display <0-18>", style={'background': '#1e293b', 'color': '#10b981', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P("Selecciona modo de display de medición", style={'color': '#64748b', 'marginTop': '8px'})
+                ], style={'marginBottom': '20px'}),
+                html.Div([
+                    html.Code("magnitude <V>", style={'background': '#1e293b', 'color': '#10b981', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P("Configura amplitud de señal de excitación (0 a 2.5V pk)", style={'color': '#64748b', 'marginTop': '8px'})
+                ], style={'marginBottom': '20px'}),
+                html.Div([
+                    html.Code("offset <V>", style={'background': '#1e293b', 'color': '#10b981', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P("Configura offset DC (±2.5V)", style={'color': '#64748b', 'marginTop': '8px'})
+                ], style={'marginBottom': '20px'}),
+                html.Div([
+                    html.Code("average <1-256>", style={'background': '#1e293b', 'color': '#10b981', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P("Número de muestras para promediar (reduce ruido)", style={'color': '#64748b', 'marginTop': '8px'})
+                ], style={'marginBottom': '20px'}),
+                html.Div([
+                    html.Code("setgain ch0 <0-3>", style={'background': '#1e293b', 'color': '#10b981', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P("Configura ganancia de voltaje (canal 0)", style={'color': '#64748b', 'marginTop': '8px'})
+                ], style={'marginBottom': '20px'}),
+                html.Div([
+                    html.Code("setgain ch1 <0-3>", style={'background': '#1e293b', 'color': '#10b981', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P("Configura ganancia de corriente (canal 1)", style={'color': '#64748b', 'marginTop': '8px'})
+                ], style={'marginBottom': '20px'}),
+                html.Div([
+                    html.Code("setgain auto", style={'background': '#1e293b', 'color': '#10b981', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P("Activa auto-ranging de ganancia", style={'color': '#64748b', 'marginTop': '8px'})
+                ])
+            ], style={
+                'background': '#ffffff',
+                'borderRadius': '12px',
+                'border': '1px solid #e2e8f0',
+                'padding': '25px',
+                'marginBottom': '30px'
+            })
+        ]),
         
-        doc_section(
-            "Barridos Paramétricos",
-            "chart-line",
-            [
-                html.P("Realizar barridos automáticos de frecuencia, DC bias o magnitud:", className="mb-3"),
-                
-                command_card("sweep_type frequency <inicio> <fin>", "Barrido de frecuencia (kHz)", "sweep_type frequency 1 1000\nBarrer de 1kHz a 1MHz"),
-                command_card("sweep_type magnitude <inicio> <fin>", "Barrido de amplitud (V)"),
-                command_card("sweep_type offset <inicio> <fin>", "Barrido de DC bias (V)"),
-                command_card("sweep_scale <log|linear>", "Escala logarítmica o lineal", "sweep_scale log → espaciado logarítmico"),
-                command_card("count <n>", "Número de puntos del barrido", "count 50 → 50 puntos en el barrido"),
-                
-                html.H6("Ejemplo completo:", className="fw-bold mt-4 mb-2"),
-                html.Pre([
-                    "ADMX2001> frequency 1\n",
-                    "ADMX2001> count 21\n",
-                    "ADMX2001> sweep_type frequency 1 1000\n",
-                    "ADMX2001> sweep_scale log\n",
-                    "ADMX2001> z\n",
-                    "1.000000e+03,5.683433e-13,8.149236e+07\n",
-                    "1.258925e+03,5.704062e-13,4.727518e+07\n",
-                    "...\n"
-                ], className="bg-dark text-success p-3 rounded small font-monospace"),
-                
-                info_box([
-                    html.Strong("📊 Formato de salida: "),
-                    "En modo sweep, la primera columna es el parámetro barrido, ",
-                    "seguido de los valores de medición en el formato de display seleccionado."
-                ], "info"),
-            ]
-        ),
+        # Barridos
+        html.Div([
+            html.H5("Barridos Paramétricos (Sweeps)", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.P("El ADMX2001B puede realizar barridos automáticos:", style={'color': '#475569', 'marginBottom': '15px'}),
+            html.Div([
+                html.Div([
+                    html.Code("sweep_type frequency <inicio> <fin>", style={'background': '#1e293b', 'color': '#10b981', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P("Barrido de frecuencia (común en EIS)", style={'color': '#64748b', 'marginTop': '8px'})
+                ], style={'marginBottom': '15px'}),
+                html.Div([
+                    html.Code("sweep_type bias <inicio> <fin>", style={'background': '#1e293b', 'color': '#10b981', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P("Barrido de offset DC (mediciones C-V)", style={'color': '#64748b', 'marginTop': '8px'})
+                ], style={'marginBottom': '15px'}),
+                html.Div([
+                    html.Code("sweep_scale <log|linear>", style={'background': '#1e293b', 'color': '#10b981', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P("Escala logarítmica o lineal", style={'color': '#64748b', 'marginTop': '8px'})
+                ], style={'marginBottom': '15px'}),
+                html.Div([
+                    html.Code("count <puntos>", style={'background': '#1e293b', 'color': '#10b981', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
+                    html.P("Número de puntos en el barrido", style={'color': '#64748b', 'marginTop': '8px'})
+                ])
+            ], style={
+                'background': '#ffffff',
+                'borderRadius': '12px',
+                'border': '1px solid #e2e8f0',
+                'padding': '20px',
+                'marginBottom': '30px'
+            })
+        ]),
         
-    ], id="content-cli", style={"display": "none"})
+        # Ejemplo
+        html.Div([
+            html.H5("Ejemplo de Uso Completo", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.Pre("""ADMX2001> frequency 100
+frequency = 100.0000kHz
+
+ADMX2001> display 9
+Measurement model: 9 - Capacitance and equivalent parallel resistance (Cp,Rp)
+
+ADMX2001> magnitude 1
+magnitude = 1.0000
+
+ADMX2001> average 10
+average = 10
+
+ADMX2001> count 5
+sampleCount = 5
+
+ADMX2001> z
+0,5.677640e-13,8.062763e+07
+1,5.668012e-13,8.305672e+07
+2,5.675237e-13,8.208995e+07
+3,5.673763e-13,8.276912e+07
+4,5.683635e-13,8.463327e+07
+""", style={
+                'background': '#1e293b',
+                'color': '#e2e8f0',
+                'padding': '20px',
+                'borderRadius': '12px',
+                'fontFamily': 'monospace',
+                'fontSize': '0.85rem',
+                'overflowX': 'auto',
+                'marginBottom': '20px'
+            }),
+            
+            html.H6("Barrido Logarítmico:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+            html.Pre("""ADMX2001> count 11
+ADMX2001> sweep_type frequency 100 1000
+ADMX2001> sweep_scale log
+ADMX2001> z
+1.000000e+05,5.683433e-13,8.149236e+07
+1.258925e+05,5.704062e-13,4.727518e+07
+...
+""", style={
+                'background': '#1e293b',
+                'color': '#e2e8f0',
+                'padding': '20px',
+                'borderRadius': '12px',
+                'fontFamily': 'monospace',
+                'fontSize': '0.85rem',
+                'overflowX': 'auto'
+            })
+        ])
+    ])
 
 
-def tab_firmware():
-    """Contenido de la pestaña Firmware"""
+# ==================== CONTENIDO: FIRMWARE ====================
+
+def content_firmware():
     return html.Div([
         html.Div([
             html.H3([
-                html.I(className="fas fa-microchip me-3 text-primary"),
-                "Actualización de Firmware"
-            ], className="mb-3 fw-bold"),
+                html.I(className="fas fa-code me-3", style={'color': '#ef4444'}),
+               "Actualización de Firmware ADMX2001B"
+            ], className="mb-3 fw-bold", style={'color': '#0f172a'}),
             html.P([
-                "El firmware del ADMX2001B es actualizable por el usuario. ",
-                "Las actualizaciones aportan mejoras de rendimiento, nuevas funciones y correcciones."
-            ], className="lead text-muted mb-0")
-        ], className="p-4 bg-light rounded shadow-sm mb-4"),
+                "El firmware del módulo ADMX2001B es actualizable por el usuario. ",
+                "Mantén tu dispositivo actualizado con la última versión para mejoras de rendimiento y correcciones."
+            ], style={'color': '#475569', 'fontSize': '1.1rem', 'marginBottom': '30px'})
+        ]),
         
         info_box([
-            html.I(className="fas fa-exclamation-triangle me-2"),
             html.Strong("⚠️ ADVERTENCIA CRÍTICA: "),
-            "La actualización puede ", html.Strong("borrar todas las calibraciones"), " guardadas. ",
-            "Haz ", html.Strong("respaldo completo"), " antes de proceder."
+            "Actualizar entre ciertas versiones de firmware puede causar pérdida de coeficientes de calibración guardados. ",
+            "Respalda tu calibración antes de actualizar contactando admx-support@analog.com para asistencia."
         ], "danger"),
         
-        doc_section(
-            "Versiones de Firmware",
-            "code-branch",
-            [
-                html.H5("Historial de Versiones", className="fw-bold mb-3"),
-                info_table(
-                    ["Versión", "Estado", "Características Principales"],
-                    [
-                        ["1.3.2", "Estable ★", "Optimizaciones de tiempo, correcciones menores, GUI Python"],
-                        ["1.3.1", "Estable", "Mejoras sustanciales de ruido, múltiples correcciones"],
-                        ["1.2.4", "Estable", "Script de instalación, mismo firmware que 1.2.2"],
-                        ["1.2.2", "Estable", "Calibración multi-frecuencia, salidas digitales, trigger externo"],
-                        ["1.2.0", "Estable", "Correcciones, mejoras de ruido y repetibilidad"],
-                        ["1.1.1", "Legacy", "Correcciones, no compatible con placas con flash"],
-                        ["1.1.0", "Legacy", "Interfaz SPI, self-test integrado"],
-                        ["1.0.x", "Legacy", "Versiones iniciales"],
-                    ]
-                ),
-                
-                html.H5("Beneficios de Actualizar", className="fw-bold mb-3 mt-4"),
+        # Versiones disponibles
+        html.Div([
+            html.H5("Versiones de Firmware Disponibles", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.Div([
+                html.Table([
+                    html.Thead([
+                        html.Tr([
+                            html.Th("Versión", style={'color': '#0f172a', 'fontWeight': '600', 'padding': '12px', 'borderBottom': '2px solid #ef4444'}),
+                            html.Th("Estado", style={'color': '#0f172a', 'fontWeight': '600', 'padding': '12px', 'borderBottom': '2px solid #ef4444'}),
+                            html.Th("Características Principales", style={'color': '#0f172a', 'fontWeight': '600', 'padding': '12px', 'borderBottom': '2px solid #ef4444'})
+                        ])
+                    ]),
+                    html.Tbody([
+                        html.Tr([
+                            html.Td(html.Span("1.3.2", style={'background': '#10b981', 'color': '#ffffff', 'padding': '4px 12px', 'borderRadius': '16px', 'fontSize': '0.9rem', 'fontWeight': '600'}), style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td(html.Span("Estable", style={'color': '#10b981', 'fontWeight': '600'}), style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td("Optimizaciones de tiempo de medición, GUI Python incluida, correcciones menores", style={'padding': '12px', 'color': '#475569', 'borderBottom': '1px solid #e2e8f0'})
+                        ]),
+                        html.Tr([
+                            html.Td("1.3.1", style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td(html.Span("Estable", style={'color': '#10b981', 'fontWeight': '600'}), style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td("Mejoras sustanciales de ruido, correcciones y más", style={'padding': '12px', 'color': '#475569', 'borderBottom': '1px solid #e2e8f0'})
+                        ]),
+                        html.Tr([
+                            html.Td("1.2.4", style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td(html.Span("Estable", style={'color': '#10b981', 'fontWeight': '600'}), style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td("Igual que 1.2.2, script de instalación Python añadido", style={'padding': '12px', 'color': '#475569', 'borderBottom': '1px solid #e2e8f0'})
+                        ]),
+                        html.Tr([
+                            html.Td("1.2.2", style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td(html.Span("Estable", style={'color': '#10b981', 'fontWeight': '600'}), style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td("Calibración sobre frecuencia, salidas digitales configurables, soporte trigger externo", style={'padding': '12px', 'color': '#475569', 'borderBottom': '1px solid #e2e8f0'})
+                        ]),
+                        html.Tr([
+                            html.Td("1.2.0", style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td(html.Span("Estable", style={'color': '#10b981', 'fontWeight': '600'}), style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td("Correcciones, mejoras de ruido y repetibilidad", style={'padding': '12px', 'color': '#475569', 'borderBottom': '1px solid #e2e8f0'})
+                        ]),
+                        html.Tr([
+                            html.Td("1.1.1", style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td(html.Span("Legacy", style={'color': '#64748b', 'fontWeight': '600'}), style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td("Mismas correcciones que 1.2.0, no compatible con placas con flash", style={'padding': '12px', 'color': '#475569', 'borderBottom': '1px solid #e2e8f0'})
+                        ]),
+                        html.Tr([
+                            html.Td("1.1.0", style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td(html.Span("Legacy", style={'color': '#64748b', 'fontWeight': '600'}), style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td("Interfaz SPI añadida, self test integrado", style={'padding': '12px', 'color': '#475569', 'borderBottom': '1px solid #e2e8f0'})
+                        ]),
+                        html.Tr([
+                            html.Td("1.0.1", style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td(html.Span("Legacy", style={'color': '#64748b', 'fontWeight': '600'}), style={'padding': '12px', 'borderBottom': '1px solid #e2e8f0'}),
+                            html.Td("Versión inicial", style={'padding': '12px', 'color': '#475569', 'borderBottom': '1px solid #e2e8f0'})
+                        ]),
+                        html.Tr([
+                            html.Td("1.0.0", style={'padding': '12px'}),
+                            html.Td(html.Span("Legacy", style={'color': '#64748b', 'fontWeight': '600'}), style={'padding': '12px'}),
+                            html.Td("Primera versión de lanzamiento", style={'padding': '12px', 'color': '#475569'})
+                        ])
+                    ])
+                ], style={'width': '100%', 'borderCollapse': 'collapse'})
+            ], style={
+                'background': '#ffffff',
+                'borderRadius': '12px',
+                'border': '1px solid #e2e8f0',
+                'padding': '20px',
+                'marginBottom': '30px',
+                'overflowX': 'auto'
+            })
+        ]),
+        
+        # Equipo requerido
+        html.Div([
+            html.H5("Equipo y Software Requerido", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.Div([
                 html.Div([
-                    html.Div([
-                        html.Div([
-                            html.I(className="fas fa-tachometer-alt fa-2x text-success mb-2"),
-                            html.H6("Velocidad", className="fw-bold"),
-                            html.P("Mediciones 30% más rápidas en modo trigger", className="small text-muted mb-0")
-                        ], className="text-center p-3 border rounded bg-white shadow-sm")
-                    ], className="col-md-3 mb-3"),
-                    html.Div([
-                        html.Div([
-                            html.I(className="fas fa-chart-line fa-2x text-primary mb-2"),
-                            html.H6("Precisión", className="fw-bold"),
-                            html.P("Reducción significativa de ruido", className="small text-muted mb-0")
-                        ], className="text-center p-3 border rounded bg-white shadow-sm")
-                    ], className="col-md-3 mb-3"),
-                    html.Div([
-                        html.Div([
-                            html.I(className="fas fa-tools fa-2x text-warning mb-2"),
-                            html.H6("Funciones", className="fw-bold"),
-                            html.P("Nuevas capacidades y comandos", className="small text-muted mb-0")
-                        ], className="text-center p-3 border rounded bg-white shadow-sm")
-                    ], className="col-md-3 mb-3"),
-                    html.Div([
-                        html.Div([
-                            html.I(className="fas fa-shield-alt fa-2x text-info mb-2"),
-                            html.H6("Estabilidad", className="fw-bold"),
-                            html.P("Corrección de bugs conocidos", className="small text-muted mb-0")
-                        ], className="text-center p-3 border rounded bg-white shadow-sm")
-                    ], className="col-md-3 mb-3"),
-                ], className="row"),
-            ]
-        ),
+                    html.H6("Hardware:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                    html.Ul([
+                        html.Li("Placa EVAL-ADMX2001EBZ"),
+                        html.Li("Módulo ADMX2001B"),
+                        html.Li([html.Strong("Intel Altera USB Blaster"), " (programador JTAG)"]),
+                        html.Li("Adaptador de corriente 9VDC"),
+                        html.Li("Cable USB para USB Blaster")
+                    ], style={'color': '#475569'})
+                ], style={'marginBottom': '20px'}),
+                html.Div([
+                    html.H6("Software:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                    html.Ul([
+                        html.Li("Python 3.7 o superior"),
+                        html.Li([html.Strong("Intel Quartus Prime Programmer And Tools"), " (última versión)"]),
+                        html.Li("Drivers para Altera USB Blaster"),
+                        html.Li("Carpeta de firmware conteniendo archivo *.pof")
+                    ], style={'color': '#475569'})
+                ], style={'marginBottom': '20px'})
+            ], style={
+                'background': '#f8fafc',
+                'padding': '20px',
+                'borderRadius': '12px',
+                'border': '1px solid #e2e8f0',
+                'marginBottom': '30px'
+            })
+        ]),
         
-        doc_section(
-            "Requisitos",
-            "list-check",
-            [
-                html.H5("Hardware Necesario", className="fw-bold mb-3"),
-                html.Ul([
-                    html.Li([html.I(className="fas fa-check text-success me-2"), "Placa EVAL-ADMX2001EBZ"]),
-                    html.Li([html.I(className="fas fa-check text-success me-2"), "Módulo ADMX2001B instalado"]),
-                    html.Li([html.I(className="fas fa-exclamation-circle text-warning me-2"), html.Strong("Intel Altera USB Blaster"), " (programador JTAG)"]),
-                    html.Li([html.I(className="fas fa-check text-success me-2"), "Adaptador de corriente 9VDC"]),
-                    html.Li([html.I(className="fas fa-check text-success me-2"), "PC con puerto USB disponible"]),
-                ]),
-                
-                html.H5("Software Requerido", className="fw-bold mb-3 mt-4"),
-                html.Ul([
-                    html.Li([html.Strong("Python 3.7+"), " (para ejecutar script de actualización)"]),
-                    html.Li([html.Strong("Intel Quartus Prime Programmer"), " (versión 23.1+ recomendada)"]),
-                    html.Li(["Drivers para ", html.Strong("Altera USB Blaster")]),
-                    html.Li([html.Strong("pyserial"), " (", html.Code("pip install pyserial"), ")"]),
-                ]),
-                
-                info_box([
-                    html.Strong("📦 Descarga de Quartus Prime: "),
-                    html.A("Intel Website", 
-                          href="https://www.intel.com/content/www/us/en/software-kit/785086/", 
-                          target="_blank", className="btn btn-sm btn-primary ms-2"),
+        # Método con script
+        html.Div([
+            html.H5("Método de Actualización con Script Python", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.P([
+                html.Strong("Versiones 1.2.4+"), " incluyen un script de instalación Python que automatiza el proceso:"
+            ], style={'color': '#475569', 'marginBottom': '15px'}),
+            html.Pre("""python admx2001_flash_pof.py --pof "C:\\Analog Devices\\Admx2001Firmware-Relx.y.z\\Firmware\\admx_lcr_encrypted.pof"
+""", style={
+                'background': '#1e293b',
+                'color': '#10b981',
+                'padding': '20px',
+                'borderRadius': '12px',
+                'fontFamily': 'monospace',
+                'fontSize': '0.9rem',
+                'overflowX': 'auto',
+                'marginBottom': '15px'
+            }),
+            info_box([
+                html.Strong("⚠️ IMPORTANTE: "),
+                "NO desconectar la placa ni interrumpir el proceso de programación. ",
+                "El proceso toma entre 20-30 segundos. Una interrupción puede dañar permanentemente el módulo."
+            ], "danger")
+        ], style={'marginBottom': '40px'}),
+        
+        # Procedimiento manual
+        html.Div([
+            html.H5("Procedimiento Manual de Actualización", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            
+            html.Div([
+                html.H6([
+                    html.Span("1", style={
+                        'display': 'inline-block',
+                        'width': '32px',
+                        'height': '32px',
+                        'background': '#ef4444',
+                        'color': '#ffffff',
+                        'borderRadius': '50%',
+                        'textAlign': 'center',
+                        'lineHeight': '32px',
+                        'fontSize': '1rem',
+                        'marginRight': '12px',
+                        'fontWeight': '700'
+                    }),
+                    "Descargar Firmware"
+                ], className="fw-bold mb-3", style={'color': '#0f172a'}),
+                html.P([
+                    "Contacta ", html.Strong("admx-support@analog.com"), " para obtener el archivo de programación (*.pof) más reciente."
+                ], style={'color': '#475569', 'marginLeft': '44px'})
+            ], style={'background': '#fee2e2', 'padding': '20px', 'borderRadius': '12px', 'border': '2px solid #ef4444', 'marginBottom': '20px'}),
+            
+            html.Div([
+                html.H6([
+                    html.Span("2", style={
+                        'display': 'inline-block',
+                        'width': '32px',
+                        'height': '32px',
+                        'background': '#ef4444',
+                        'color': '#ffffff',
+                        'borderRadius': '50%',
+                        'textAlign': 'center',
+                        'lineHeight': '32px',
+                        'fontSize': '1rem',
+                        'marginRight': '12px',
+                        'fontWeight': '700'
+                    }),
+                    "Instalar Software"
+                ], className="fw-bold mb-3", style={'color': '#0f172a'}),
+                html.Ol([
+                    html.Li("Descargar e instalar Intel Quartus Prime Programmer", style={'marginBottom': '8px'}),
+                    html.Li("Instalar drivers para Altera USB Blaster", style={'marginBottom': '8px'}),
+                    html.Li("Verificar Python 3.7+ instalado", style={'marginBottom': '8px'})
+                ], style={'color': '#475569', 'marginLeft': '44px'})
+            ], style={'background': '#fee2e2', 'padding': '20px', 'borderRadius': '12px', 'border': '2px solid #ef4444', 'marginBottom': '20px'}),
+            
+            html.Div([
+                html.H6([
+                    html.Span("3", style={
+                        'display': 'inline-block',
+                        'width': '32px',
+                        'height': '32px',
+                        'background': '#ef4444',
+                        'color': '#ffffff',
+                        'borderRadius': '50%',
+                        'textAlign': 'center',
+                        'lineHeight': '32px',
+                        'fontSize': '1rem',
+                        'marginRight': '12px',
+                        'fontWeight': '700'
+                    }),
+                    "Conexión de Hardware"
+                ], className="fw-bold mb-3", style={'color': '#0f172a'}),
+                html.Ol([
+                    html.Li("Conectar adaptador de corriente 9VDC a la placa EVAL-ADMX2001EBZ", style={'marginBottom': '8px'}),
+                    html.Li("Conectar cable del Altera USB Blaster al conector JTAG de la placa", style={'marginBottom': '8px'}),
+                    html.Li("Conectar USB Blaster a la PC", style={'marginBottom': '8px'}),
+                    html.Li("Verificar que el LED de power esté encendido", style={'marginBottom': '8px'})
+                ], style={'color': '#475569', 'marginLeft': '44px'})
+            ], style={'background': '#fee2e2', 'padding': '20px', 'borderRadius': '12px', 'border': '2px solid #ef4444', 'marginBottom': '20px'}),
+            
+            html.Div([
+                html.H6([
+                    html.Span("4", style={
+                        'display': 'inline-block',
+                        'width': '32px',
+                        'height': '32px',
+                        'background': '#ef4444',
+                        'color': '#ffffff',
+                        'borderRadius': '50%',
+                        'textAlign': 'center',
+                        'lineHeight': '32px',
+                        'fontSize': '1rem',
+                        'marginRight': '12px',
+                        'fontWeight': '700'
+                    }),
+                    "Programación"
+                ], className="fw-bold mb-3", style={'color': '#0f172a'}),
+                html.P("Ejecutar el script de programación:", style={'color': '#475569', 'marginLeft': '44px', 'marginBottom': '10px'}),
+                html.Pre("""python admx2001_flash_pof.py --pof firmware.pof
+""", style={
+                    'background': '#1e293b',
+                    'color': '#10b981',
+                    'padding': '15px',
+                    'borderRadius': '8px',
+                    'fontFamily': 'monospace',
+                    'fontSize': '0.9rem',
+                    'marginLeft': '44px',
+                    'marginBottom': '10px'
+                }),
+                html.P([
+                    html.Strong("Duración esperada: "), "20-30 segundos"
+                ], style={'color': '#475569', 'marginLeft': '44px'})
+            ], style={'background': '#fee2e2', 'padding': '20px', 'borderRadius': '12px', 'border': '2px solid #ef4444', 'marginBottom': '20px'}),
+            
+            html.Div([
+                html.H6([
+                    html.Span("5", style={
+                        'display': 'inline-block',
+                        'width': '32px',
+                        'height': '32px',
+                        'background': '#ef4444',
+                        'color': '#ffffff',
+                        'borderRadius': '50%',
+                        'textAlign': 'center',
+                        'lineHeight': '32px',
+                        'fontSize': '1rem',
+                        'marginRight': '12px',
+                        'fontWeight': '700'
+                    }),
+                    "Verificación"
+                ], className="fw-bold mb-3", style={'color': '#0f172a'}),
+                html.Ol([
+                    html.Li("Desconectar el USB Blaster", style={'marginBottom': '8px'}),
+                    html.Li("Conectar cable UART-USB", style={'marginBottom': '8px'}),
+                    html.Li("Abrir terminal (TeraTerm, 115200 baud)", style={'marginBottom': '8px'}),
+                    html.Li([
+                        "Ejecutar comando: ",
+                        html.Code("*idn", style={'background': '#1e293b', 'color': '#10b981', 'padding': '2px 8px', 'borderRadius': '4px'}),
+                        " para verificar la nueva versión"
+                    ], style={'marginBottom': '8px'}),
+                    html.Li("Verificar self-test (LED verde)", style={'marginBottom': '8px'})
+                ], style={'color': '#475569', 'marginLeft': '44px'})
+            ], style={'background': '#fee2e2', 'padding': '20px', 'borderRadius': '12px', 'border': '2px solid #ef4444', 'marginBottom': '20px'})
+        ]),
+        
+        # Obtener archivos
+        html.Div([
+            html.H5("Cómo Obtener Archivos de Firmware", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.P("Los archivos de programación deben solicitarse directamente a Analog Devices:", style={'color': '#475569', 'marginBottom': '15px'}),
+            html.Div([
+                html.Div([
+                    html.I(className="fas fa-envelope", style={'color': '#ef4444', 'fontSize': '2rem', 'marginBottom': '15px'}),
                     html.Br(),
-                    "Solo necesitas el componente 'Programmer And Tools' (~4GB), no el IDE completo."
-                ], "info"),
-            ]
-        ),
-        
-        doc_section(
-            "Procedimiento de Actualización",
-            "clipboard-list",
-            [
-                step_card(
-                    1,
-                    "Respaldo de Calibraciones",
-                    [
-                        html.P([
-                            html.Strong("CRÍTICO: "), 
-                            "Guarda TODAS tus calibraciones antes de continuar."
-                        ], className="text-danger fw-bold mb-3"),
-                        
-                        command_card("calibrate list", "Listar todas las frecuencias calibradas"),
-                        html.P("Para cada frecuencia listada:", className="mt-2"),
-                        command_card("calibrate list 1000", "Ver configuraciones calibradas a esa frecuencia"),
-                        command_card("rdcal 0 1", "Leer coeficientes de una configuración específica"),
-                        
-                        info_box([
-                            html.Strong("💾 Recomendación: "),
-                            "Copia y pega toda la salida en un archivo de texto. ",
-                            "También puedes usar el comando de backup de ZORIA."
-                        ], "warning"),
-                    ],
-                    color="danger"
-                ),
-                
-                step_card(
-                    2,
-                    "Obtener Firmware",
-                    [
-                        html.P("Contacta al soporte de Analog Devices:"),
-                        html.Div([
-                            html.Strong("Email: "),
-                            html.A("admx-support@analog.com", 
-                                  href="mailto:admx-support@analog.com",
-                                  className="btn btn-primary ms-2")
-                        ], className="mb-3"),
-                        
-                        html.P("Solicita:", className="fw-bold mt-3"),
-                        html.Ul([
-                            html.Li("Paquete de firmware versión 1.3.2"),
-                            html.Li("Archivo .pof (Program Object File)"),
-                            html.Li("Script admx2001_flash_pof.py"),
-                            html.Li("Notas de release y changelog"),
-                        ]),
-                        
-                        html.P("Recibirás un archivo comprimido con estructura:", className="fw-bold mt-3"),
-                        html.Pre([
-                            "Admx2001Firmware-Rel1.3.2/\n",
-                            "├── Firmware/\n",
-                            "│   └── admx_lcr_encrypted.pof\n",
-                            "├── admx2001_flash_pof.py\n",
-                            "├── GUI/\n",
-                            "├── README.txt\n",
-                            "└── RELEASE_NOTES.txt\n"
-                        ], className="bg-dark text-info p-3 rounded small font-monospace"),
-                    ],
-                    color="info"
-                ),
-                
-                step_card(
-                    3,
-                    "Conectar Hardware",
-                    [
-                        html.Ol([
-                            html.Li("Conecta la placa EVAL-ADMX2001EBZ al adaptador 9VDC y enciéndela"),
-                            html.Li("Conecta el USB Blaster al puerto JTAG de la placa"),
-                            html.Li("Conecta el USB Blaster a tu PC"),
-                            html.Li("Verifica que el USB Blaster sea detectado:"),
-                        ]),
-                        
-                        html.Div([
-                            html.Strong("Windows:", className="me-2"),
-                            "Debe aparecer en Administrador de Dispositivos"
-                        ], className="mb-2"),
-                        html.Div([
-                            html.Strong("Linux:", className="me-2"),
-                            html.Code("lsusb | grep Altera")
-                        ], className="mb-2"),
-                        
-                        info_box([
-                            html.Strong("🔌 Problema de detección: "),
-                            "En Linux, puede requerir configuración de udev rules. ",
-                            "Consulta la documentación de Quartus Prime."
-                        ], "warning"),
-                    ],
-                    color="warning"
-                ),
-                
-                step_card(
-                    4,
-                    "Ejecutar Actualización",
-                    [
-                        html.P("Navega a la carpeta del firmware y ejecuta:", className="mb-3"),
-                        html.Pre([
-                            'cd Admx2001Firmware-Rel1.3.2\n',
-                            'python admx2001_flash_pof.py --pof "Firmware/admx_lcr_encrypted.pof"\n'
-                        ], className="bg-dark text-success p-3 rounded font-monospace"),
-                        
-                        html.P("El script automáticamente:", className="fw-bold mt-3"),
-                        html.Ul([
-                            html.Li("Detecta el USB Blaster"),
-                            html.Li("Carga el firmware al ADMX2001B"),
-                            html.Li("Verifica la programación"),
-                            html.Li("Reporta éxito o errores"),
-                        ]),
-                        
-                        html.P("Duración: 20-30 segundos", className="text-muted mt-2"),
-                        
-                        info_box([
-                            html.I(className="fas fa-exclamation-triangle me-2"),
-                            html.Strong("⚠️ NO interrumpir: "),
-                            "No desconectes la placa ni el USB Blaster durante el proceso. ",
-                            "Interrumpir puede dañar el firmware."
-                        ], "danger"),
-                    ],
-                    color="success"
-                ),
-                
-                step_card(
-                    5,
-                    "Verificación",
-                    [
-                        html.P("Después de la actualización:", className="mb-3"),
-                        html.Ol([
-                            html.Li("Desconecta el USB Blaster"),
-                            html.Li("Reinicia la placa (ciclo de alimentación)"),
-                            html.Li("Conecta mediante UART"),
-                            html.Li("Verifica la versión:"),
-                        ]),
-                        
-                        command_card("*idn", "Ver información del dispositivo", "Debe mostrar firmware 1.3.2"),
-                        command_card("selftest", "Verificar que el self-test pase"),
-                        
-                        html.P("Restaura tus calibraciones usando el respaldo.", className="fw-bold text-warning mt-3"),
-                    ],
-                    color="primary"
-                ),
-            ]
-        ),
-        
-    ], id="content-firmware", style={"display": "none"})
+                    html.Strong("Email de Soporte:", style={'display': 'block', 'marginBottom': '8px'}),
+                    html.A("admx-support@analog.com", href="mailto:admx-support@analog.com", style={'color': '#3b82f6', 'textDecoration': 'none', 'fontSize': '1.1rem'})
+                ], style={'textAlign': 'center', 'padding': '30px'})
+            ], style={
+                'background': '#ffffff',
+                'borderRadius': '12px',
+                'border': '2px solid #ef4444',
+                'marginBottom': '20px'
+            })
+        ])
+    ])
 
 
-def tab_support():
-    """Contenido de la pestaña Soporte"""
+# ==================== COMPONENTES PREMIUM ====================
+
+def hero_section():
+    """Hero ejecutivo para documentación"""
     return html.Div([
         html.Div([
-            html.H3([
-                html.I(className="fas fa-question-circle me-3 text-primary"),
-                "Soporte y Recursos"
-            ], className="mb-3 fw-bold"),
+            # Badge
+            html.Div([
+                html.Span("●", style={
+                    'color': '#d4af37',
+                    'fontSize': '8px',
+                    'marginRight': '12px',
+                    'animation': 'pulse 2s infinite'
+                }),
+                html.Span("DOCUMENTACIÓN OFICIAL", style={
+                    'fontSize': '0.75rem',
+                    'letterSpacing': '0.3em',
+                    'fontWeight': '500',
+                    'color': '#64748b'
+                })
+            ], style={
+                'marginBottom': '40px',
+                'display': 'flex',
+                'alignItems': 'center',
+                'justifyContent': 'center'
+            }),
+            
+            # Título
+            html.H1([
+                html.Span("Guía ZORIA", style={
+                    'display': 'block',
+                    'fontSize': 'clamp(3rem, 8vw, 6rem)',
+                    'fontWeight': '200',
+                    'letterSpacing': '-0.03em',
+                    'lineHeight': '0.9',
+                    'color': '#0f172a',
+                    'marginBottom': '10px'
+                }),
+                html.Span("EVAL-ADMX2001", style={
+                    'display': 'block',
+                    'fontSize': 'clamp(1rem, 2vw, 1.5rem)',
+                    'fontWeight': '300',
+                    'letterSpacing': '0.3em',
+                    'color': '#d4af37',
+                    'textTransform': 'uppercase'
+                })
+            ], style={
+                'textAlign': 'center',
+                'marginBottom': '40px'
+            }),
+            
+            # Línea decorativa
+            html.Div(style={
+                'width': '60px',
+                'height': '1px',
+                'background': 'linear-gradient(90deg, transparent, #d4af37, transparent)',
+                'margin': '0 auto 40px'
+            }),
+            
+            # Descripción
             html.P([
-                "Información de contacto, recursos adicionales y solución de problemas comunes."
-            ], className="lead text-muted mb-0")
-        ], className="p-4 bg-light rounded shadow-sm mb-4"),
-        
-        doc_section(
-            "Canales de Soporte",
-            "headset",
-            [
-                html.Div([
-                    html.Div([
-                        html.Div([
-                            html.I(className="fas fa-envelope fa-3x text-primary mb-3"),
-                            html.H5("Email Oficial", className="fw-bold"),
-                            html.P("Soporte técnico de Analog Devices", className="text-muted mb-3"),
-                            html.A([
-                                html.I(className="fas fa-paper-plane me-2"),
-                                "admx-support@analog.com"
-                            ], href="mailto:admx-support@analog.com", className="btn btn-primary btn-lg")
-                        ], className="text-center p-4 border rounded shadow-sm bg-white h-100")
-                    ], className="col-md-6 mb-4"),
-                    
-                    html.Div([
-                        html.Div([
-                            html.I(className="fas fa-book fa-3x text-success mb-3"),
-                            html.H5("Wiki Oficial", className="fw-bold"),
-                            html.P("Documentación y guías de Analog Devices", className="text-muted mb-3"),
-                            html.A([
-                                html.I(className="fas fa-external-link-alt me-2"),
-                                "Wiki ADMX2001"
-                            ], href="https://wiki.analog.com/resources/eval/user-guides/admx/eval-admx2001ebz", 
-                               target="_blank", className="btn btn-success btn-lg")
-                        ], className="text-center p-4 border rounded shadow-sm bg-white h-100")
-                    ], className="col-md-6 mb-4"),
-                ], className="row"),
-            ]
-        ),
-        
-        doc_section(
-            "Recursos Adicionales",
-            "link",
-            [
-                html.H5("Software y Drivers", className="fw-bold mb-3"),
-                html.Ul([
-                    html.Li([
-                        html.A("Drivers FTDI VCP", href="https://www.ftdichip.com/Drivers/VCP.htm", target="_blank"),
-                        " - Virtual COM Port para cable USB-UART"
-                    ]),
-                    html.Li([
-                        html.A("TeraTerm", href="https://github.com/TeraTermProject/teraterm/releases", target="_blank"),
-                        " - Emulador de terminal recomendado"
-                    ]),
-                    html.Li([
-                        html.A("Intel Quartus Prime", href="https://www.intel.com/content/www/us/en/software-kit/785086/", target="_blank"),
-                        " - Para actualización de firmware"
-                    ]),
-                ]),
-                
-                html.H5("Comunidad ZORIA", className="fw-bold mb-3 mt-4"),
-                html.Ul([
-                    html.Li([
-                        html.A("GitHub Repository", href="https://github.com/mario1027/ZORIA", target="_blank"),
-                        " - Código fuente, issues y contribuciones"
-                    ]),
-                    html.Li([
-                        html.A("GitHub Discussions", href="https://github.com/mario1027/ZORIA/discussions", target="_blank"),
-                        " - Foro de la comunidad"
-                    ]),
-                ]),
-            ]
-        ),
-        
-        doc_section(
-            "Problemas Comunes",
-            "wrench",
-            [
-                collapsible_section(
-                    "No se detecta el puerto serial",
-                    [
-                        html.P("Soluciones:", className="fw-bold mb-2"),
-                        html.Ul([
-                            html.Li("Verifica que los drivers FTDI estén instalados"),
-                            html.Li(["En Linux, agrega tu usuario al grupo 'dialout': ", html.Code("sudo usermod -a -G dialout $USER")]),
-                            html.Li("Reinicia la aplicación después de conectar el cable"),
-                            html.Li("Prueba con otro puerto USB"),
-                            html.Li("Verifica el cable USB-UART (puede estar dañado)"),
-                        ])
-                    ],
-                    "faq-1",
-                    "usb",
-                    "warning",
-                    default_open=True
-                ),
-                
-                collapsible_section(
-                    "LED de self-test en rojo",
-                    [
-                        html.P("Causas posibles:", className="fw-bold mb-2"),
-                        html.Ul([
-                            html.Li("Switches S1/S2 no en posición OPEN/GND para self-test"),
-                            html.Li("Módulo ADMX2001B no insertado correctamente"),
-                            html.Li("Firmware corrupto o faltante"),
-                            html.Li("Problema de alimentación (verificar adaptador 9VDC)"),
-                        ]),
-                        html.P("Solución:", className="fw-bold mt-2 mb-2"),
-                        html.Ol([
-                            html.Li("Posicionar switches en OPEN y GND"),
-                            html.Li("Reiniciar la placa"),
-                            html.Li(["Ejecutar: ", html.Code("selftest run")]),
-                        ])
-                    ],
-                    "faq-2",
-                    "lightbulb",
-                    "danger"
-                ),
-                
-                collapsible_section(
-                    "Mediciones inconsistentes",
-                    [
-                        html.P("Verificaciones:", className="fw-bold mb-2"),
-                        html.Ul([
-                            html.Li([html.Strong("Calibración: "), "¿Está calibrado para la frecuencia y ganancia actuales?"]),
-                            html.Li([html.Strong("Cables: "), "¿Están en buen estado? ¿Introducen capacitancia parásita?"]),
-                            html.Li([html.Strong("Promediado: "), "Aumenta 'average' a 100-200 para reducir ruido"]),
-                            html.Li([html.Strong("Rango: "), "¿La ganancia es apropiada para la impedancia del DUT?"]),
-                            html.Li([html.Strong("Frecuencia: "), "¿Está dentro del rango óptimo del DUT?"]),
-                        ])
-                    ],
-                    "faq-3",
-                    "chart-line",
-                    "info"
-                ),
-                
-                collapsible_section(
-                    "Error al actualizar firmware",
-                    [
-                        html.P("Soluciones:", className="fw-bold mb-2"),
-                        html.Ul([
-                            html.Li("Verifica que Quartus Prime esté instalado y en PATH"),
-                            html.Li("Confirma que el USB Blaster esté conectado y detectado"),
-                            html.Li("En Linux, configura udev rules para USB Blaster"),
-                            html.Li("Reinicia la placa y reintenta"),
-                            html.Li(["Contacta ", html.A("admx-support@analog.com", href="mailto:admx-support@analog.com"), " si persiste"]),
-                        ])
-                    ],
-                    "faq-4",
-                    "microchip",
-                    "danger"
-                ),
-            ]
-        ),
-        
-        doc_section(
-            "Equipo de Desarrollo",
-            "users",
-            [
-                html.P("ZORIA es desarrollado y mantenido por:", className="mb-3"),
-                html.Div([
-                    html.Div([
-                        html.Div([
-                            html.I(className="fas fa-user-circle fa-3x text-primary mb-2"),
-                            html.H6("Mario Ricardo Montero", className="fw-bold"),
-                            html.P("Lead Developer", className="text-muted small mb-0")
-                        ], className="text-center p-3 border rounded bg-white shadow-sm")
-                    ], className="col-md-4 mb-3"),
-                    html.Div([
-                        html.Div([
-                            html.I(className="fas fa-user-circle fa-3x text-success mb-2"),
-                            html.H6("Juan Carlos Alvarez", className="fw-bold"),
-                            html.P("Developer", className="text-muted small mb-0")
-                        ], className="text-center p-3 border rounded bg-white shadow-sm")
-                    ], className="col-md-4 mb-3"),
-                    html.Div([
-                        html.Div([
-                            html.I(className="fas fa-user-circle fa-3x text-info mb-2"),
-                            html.H6("Francisco J. Racedo N.", className="fw-bold"),
-                            html.P("Developer", className="text-muted small mb-0")
-                        ], className="text-center p-3 border rounded bg-white shadow-sm")
-                    ], className="col-md-4 mb-3"),
-                ], className="row"),
-                
-                html.Hr(className="my-4"),
-                
-                html.P([
-                    "Agradecimientos especiales a ",
-                    html.Strong("Analog Devices"),
-                    " por el soporte técnico y documentación del ADMX2001."
-                ], className="text-center text-muted"),
-            ]
-        ),
-        
-    ], id="content-support", style={"display": "none"})
+                "Documentación completa del sistema de análisis de impedancia.",
+                html.Br(),
+                "Selecciona una sección para comenzar."
+            ], style={
+                'fontSize': 'clamp(1rem, 1.5vw, 1.25rem)',
+                'fontWeight': '300',
+                'color': '#475569',
+                'textAlign': 'center',
+                'maxWidth': '600px',
+                'margin': '0 auto'
+            })
+        ], style={
+            'maxWidth': '1200px',
+            'margin': '0 auto',
+            'padding': '100px 40px 60px'
+        })
+    ], style={
+        'background': 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
+        'position': 'relative'
+    })
 
 
 # ==================== LAYOUT PRINCIPAL ====================
-
-def layout():
-    """Layout principal de la página de documentación"""
-    return html.Div([
-        mobileNavBar(),
+layout = html.Div([
+    dcc.Location(id='url', refresh=False),
+    sideBar(),
+    mobileNavBar(),
+    
+    html.Main([
+        # Hero
+        hero_section(),
+        
+        # Tabs con contenido
         html.Div([
-            sideBar(),
-            html.Main([
-                html.Div([
-                    # Header mejorado
-                    html.Div([
-                        html.Div([
-                            html.H2([
-                                html.I(className="fas fa-book-open me-3 text-primary"),
-                                "Documentación Oficial"
-                            ], className="h2 mb-2 fw-bold"),
-                            html.P([
-                                "Guía completa del software ",
-                                html.Strong("ZORIA", className="text-primary"),
-                                " y el analizador de impedancia ",
-                                html.Strong("EVAL-ADMX2001", className="text-success")
-                            ], className="text-muted mb-0 fs-5")
-                        ], className="col-12 col-md-8 mb-3 mb-md-0"),
-                        html.Div([
-                            html.A([
-                                html.I(className="fas fa-external-link-alt me-2"),
-                                "Wiki Analog"
-                            ], href="https://wiki.analog.com/resources/eval/user-guides/admx/eval-admx2001ebz", 
-                               target="_blank", className="btn btn-outline-primary me-2 shadow-sm"),
-                            html.Span([
-                                html.I(className="fas fa-code-branch me-2"),
-                                "v1.3.2"
-                            ], className="badge bg-success px-3 py-2 fs-6 shadow-sm")
-                        ], className="col-12 col-md-4 d-flex justify-content-md-end align-items-center flex-wrap gap-2")
-                    ], className="row align-items-center py-4 mb-4 bg-gradient border-bottom border-3 border-primary rounded shadow"),
-
-                    # Navegación por pestañas mejorada
-                    html.Div([
-                        html.Div([
-                            html.Button([
-                                html.I(className="fas fa-rocket me-2"),
-                                "Inicio Rápido"
-                            ], id="btn-quickstart", className="btn btn-primary active me-2 mb-2 fw-bold shadow-sm"),
-                            html.Button([
-                                html.I(className="fas fa-microchip me-2"),
-                                "Hardware"
-                            ], id="btn-hardware", className="btn btn-outline-primary me-2 mb-2 fw-bold"),
-                            html.Button([
-                                html.I(className="fas fa-laptop-code me-2"),
-                                "Software"
-                            ], id="btn-software", className="btn btn-outline-primary me-2 mb-2 fw-bold"),
-                            html.Button([
-                                html.I(className="fas fa-balance-scale me-2"),
-                                "Calibración"
-                            ], id="btn-calibration", className="btn btn-outline-primary me-2 mb-2 fw-bold"),
-                            html.Button([
-                                html.I(className="fas fa-terminal me-2"),
-                                "CLI"
-                            ], id="btn-cli", className="btn btn-outline-primary me-2 mb-2 fw-bold"),
-                            html.Button([
-                                html.I(className="fas fa-microchip me-2"),
-                                "Firmware"
-                            ], id="btn-firmware", className="btn btn-outline-primary me-2 mb-2 fw-bold"),
-                            html.Button([
-                                html.I(className="fas fa-question-circle me-2"),
-                                "Soporte"
-                            ], id="btn-support", className="btn btn-outline-primary me-2 mb-2 fw-bold"),
-                        ], className="nav-pills-container p-3 bg-white rounded shadow border")
-                    ], className="mb-4"),
-
-                    # Contenido de las pestañas
-                    html.Div([
-                        tab_quickstart(),
-                        tab_hardware(),
-                        tab_software(),
-                        tab_calibration(),
-                        tab_cli(),
-                        tab_firmware(),
-                        tab_support(),
-                    ], className="container-fluid px-0")
-                    
-                ], className="container py-4 px-4", style={"maxWidth": "1400px"})
-            ], className="main-content w-100")
-        ], className="d-flex flex-grow-1"),
-        footer(),
-        floating_terminal_button()
-    ], className="d-flex flex-column min-vh-100")
+            html.Div([
+                dcc.Tabs([
+                    dcc.Tab(
+                        label='🚀 Inicio Rápido',
+                        value='inicio',
+                        children=content_inicio_rapido(),
+                        className='doc-tab',
+                        selected_className='doc-tab-selected'
+                    ),
+                    dcc.Tab(
+                        label='🔧 Hardware',
+                        value='hardware',
+                        children=content_hardware(),
+                        className='doc-tab',
+                        selected_className='doc-tab-selected'
+                    ),
+                    dcc.Tab(
+                        label='💻 Software',
+                        value='software',
+                        children=content_software(),
+                        className='doc-tab',
+                        selected_className='doc-tab-selected'
+                    ),
+                    dcc.Tab(
+                        label='⚖️ Calibración',
+                        value='calibracion',
+                        children=content_calibracion(),
+                        className='doc-tab',
+                        selected_className='doc-tab-selected'
+                    ),
+                    dcc.Tab(
+                        label='⌨️ CLI',
+                        value='cli',
+                        children=content_cli(),
+                        className='doc-tab',
+                        selected_className='doc-tab-selected'
+                    ),
+                    dcc.Tab(
+                        label='🔌 Firmware',
+                        value='firmware',
+                        children=content_firmware(),
+                        className='doc-tab',
+                        selected_className='doc-tab-selected'
+                    )
+                ], 
+                id='doc-tabs',
+                value='inicio',
+                className='doc-tabs-container',
+                parent_className='doc-tabs-parent',
+                content_className='doc-tabs-content'
+                )
+            ], style={
+                'maxWidth': '1200px',
+                'margin': '0 auto',
+                'padding': '0 40px 80px'
+            })
+        ])
+    ], className="content", style={'background': '#ffffff'}),
+    
+    footer(),
+    floating_terminal_button()
+    
+], className="sc-chart d-flex flex-column", style={
+    'minHeight': '100vh',
+    'background': '#ffffff'
+})
 
 
-@callback(
-    [Output('btn-quickstart', 'className'),
-     Output('btn-hardware', 'className'),
-     Output('btn-software', 'className'),
-     Output('btn-calibration', 'className'),
-     Output('btn-cli', 'className'),
-     Output('btn-firmware', 'className'),
-     Output('btn-support', 'className'),
-     Output('content-quickstart', 'style'),
-     Output('content-hardware', 'style'),
-     Output('content-software', 'style'),
-     Output('content-calibration', 'style'),
-     Output('content-cli', 'style'),
-     Output('content-firmware', 'style'),
-     Output('content-support', 'style')],
-    [Input('btn-quickstart', 'n_clicks'),
-     Input('btn-hardware', 'n_clicks'),
-     Input('btn-software', 'n_clicks'),
-     Input('btn-calibration', 'n_clicks'),
-     Input('btn-cli', 'n_clicks'),
-     Input('btn-firmware', 'n_clicks'),
-     Input('btn-support', 'n_clicks')]
-)
-def update_tabs(n1, n2, n3, n4, n5, n6, n7):
-    from dash import ctx
-    button_id = ctx.triggered_id if ctx.triggered_id else 'btn-quickstart'
-    
-    base = "btn btn-outline-primary me-2 mb-2 fw-bold"
-    active = "btn btn-primary active me-2 mb-2 fw-bold shadow-sm"
-    
-    tabs = {
-        'btn-quickstart': 0, 
-        'btn-hardware': 1, 
-        'btn-software': 2,
-        'btn-calibration': 3, 
-        'btn-cli': 4,
-        'btn-firmware': 5,
-        'btn-support': 6
-    }
-    active_idx = tabs.get(button_id, 0)
-    
-    buttons = [base] * 7
-    buttons[active_idx] = active
-    
-    contents = [{"display": "none"}] * 7
-    contents[active_idx] = {"display": "block"}
-    
-    return buttons + contents
+def register_callbacks(app):
+    pass
+
+
+def register_documentation_page(app):
+    register_callbacks(app)

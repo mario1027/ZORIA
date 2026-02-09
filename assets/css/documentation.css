@@ -173,3 +173,231 @@
 .main-content::-webkit-scrollbar-thumb:hover {
     background: #555;
 }
+/* Estilos para dcc.Tabs */
+.custom-tabs .tab {
+    background-color: #ffffff !important;
+    border: 2px solid #e9ecef !important;
+    border-bottom: none !important;
+    color: #0d6efd !important;
+    padding: 12px 24px !important;
+    margin-right: 8px !important;
+    margin-bottom: 0 !important;
+    border-radius: 8px 8px 0 0 !important;
+    font-weight: 500 !important;
+    transition: all 0.3s ease !important;
+    cursor: pointer !important;
+}
+
+.custom-tabs .tab:hover {
+    background-color: #f8f9fa !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+.custom-tabs .tab--selected {
+    background-color: #0d6efd !important;
+    color: #ffffff !important;
+    border-color: #0d6efd !important;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3) !important;
+    font-weight: 600 !important;
+}
+
+.custom-tabs .tabs-container {
+    background-color: #ffffff !important;
+    border-radius: 8px !important;
+    padding: 16px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    border: 1px solid #e9ecef !important;
+    margin-bottom: 24px !important;
+}
+
+/* ==========================================================================
+   DOCUMENTACIÓN PREMIUM - Tabs estilo Cards
+   ========================================================================== */
+
+/* Contenedor principal de tabs */
+.doc-tabs-parent {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 40px;
+    padding: 20px 0;
+}
+
+/* Tab individual (estilo card) */
+.doc-tab {
+    flex: 0 0 auto;
+    width: 150px;
+    padding: 25px 15px !important;
+    background: #ffffff !important;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 16px !important;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Línea dorada superior en hover */
+.doc-tab::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #d4af37, transparent);
+    transform: scaleX(0);
+    transition: transform 0.4s ease;
+}
+
+.doc-tab:hover::before {
+    transform: scaleX(1);
+}
+
+/* Efecto hover */
+.doc-tab:hover {
+    transform: translateY(-8px) !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1) !important;
+    border-color: #d4af37 !important;
+}
+
+/* Tab seleccionada */
+.doc-tab-selected {
+    background: #ffffff !important;
+    border-color: #d4af37 !important;
+    box-shadow: 0 15px 35px rgba(212, 175, 55, 0.2) !important;
+}
+
+.doc-tab-selected::before {
+    transform: scaleX(1);
+}
+
+/* Icono en tab seleccionada */
+.doc-tab-selected i {
+    color: #d4af37 !important;
+}
+
+/* Contenedor de contenido */
+.doc-tabs-content {
+    background: transparent;
+    border: none;
+    padding: 0;
+    animation: fadeInUp 0.5s ease-out;
+}
+
+/* Animación de entrada */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .doc-tabs-parent {
+        gap: 10px;
+    }
+    
+    .doc-tab {
+        width: calc(50% - 10px);
+        padding: 20px 10px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .doc-tab {
+        width: 100%;
+    }
+}
+
+/* ==========================================================================
+   DOCUMENTACIÓN PREMIUM - Cards de Navegación
+   ========================================================================== */
+
+/* Cards de navegación principal */
+.doc-nav-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.doc-nav-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, currentColor, transparent);
+    transform: scaleX(0);
+    transition: transform 0.4s ease;
+    opacity: 0.3;
+}
+
+.doc-nav-card:hover::before {
+    transform: scaleX(1);
+}
+
+.doc-nav-card:hover > div {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    border-color: #d4af37;
+}
+
+.doc-nav-card:hover .fa-arrow-right {
+    transform: translateX(5px);
+}
+
+/* Search input focus */
+#doc-search-input:focus {
+    outline: none;
+}
+
+#doc-search-input:focus + div,
+div:has(> #doc-search-input:focus) {
+    border-color: #d4af37 !important;
+    box-shadow: 0 4px 25px rgba(212, 175, 55, 0.2) !important;
+}
+
+/* Animaciones */
+@keyframes docFadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.doc-nav-card {
+    animation: docFadeInUp 0.6s ease-out forwards;
+    opacity: 0;
+}
+
+.doc-nav-card:nth-child(1) { animation-delay: 0.1s; }
+.doc-nav-card:nth-child(2) { animation-delay: 0.2s; }
+.doc-nav-card:nth-child(3) { animation-delay: 0.3s; }
+.doc-nav-card:nth-child(4) { animation-delay: 0.4s; }
+.doc-nav-card:nth-child(5) { animation-delay: 0.5s; }
+.doc-nav-card:nth-child(6) { animation-delay: 0.6s; }
+
+/* Enlaces de recursos hover */
+div:has(> a) > a:hover {
+    color: #d4af37 !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .doc-nav-card {
+        margin-bottom: 20px;
+    }
+}
