@@ -1,0 +1,83 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+  "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <title>Additional settings / "Visual" tab ([Setup] menu)</title>
+    <META http-equiv="Content-Style-Type" content="text/css">
+    <link rel="stylesheet" href="../style.css" type="text/css">
+  </head>
+
+  <body>
+    <h1><a href="setup-additional.html">Additional settings</a> / "Visual" tab ([Setup] menu)</h1>
+
+    <dl>
+      <dt id="AlphaBlendActive">Window Opacity / Active</dt>
+      <dt id="AlphaBlend">Window Opacity / Inactive</dt>
+      <dd>
+	You can set up the value of opacity when the window is active (on focus) and not active (non-focus).
+	The range of opacity is from 0 to 255. The more reduces the this value, the more
+	window transparency is blinding.<br>
+	See <a href="../usage/transparent.html">Background transparency</a>.
+      </dd>
+
+      <dt id="MouseCursor">MouseCursor</dt>
+      <dd>
+	Mouse cursor can have one of the 4 shapes listed below:
+<pre>
+ARROW = standard arrow cursor
+IBEAM = ibeam cursor(default)
+CROSS = cross cursor
+HAND  = hand cursor
+</pre>
+      </dd>
+
+      <dt id="ANSIColor">ANSI color</dt>
+      <dd>Specifies the RGB value of the color for PC style and aixterm style 16 colors mode.</dd>
+
+      <dt id="FontQuality">Font quality</dt>
+      <dd>
+	Specifies the font quality. This feature will work well only if the operating system supports.
+<pre>
+Default         = Dependent on OS configuration(Smooth edges of screen fonts).
+Non-Antialiased = Disable the anti-aliasing.
+Antialiased     = Enable the anti-aliasing.
+ClearType       = Use the ClearType.
+</pre>
+      </dd>
+
+      <dt id="WindowCornerDontround">Window corner don't round</dt>
+      <dd>
+	On Windows 11, the corners of the windows are rounded, which may prevent some areas from being displayed.<br>
+	Enable right angles for the corners of the VT and TEK windows.
+      </dd>
+
+      <dt id="EnableBoldAttrColor">Enable Bold attribute color</dt>
+      <dt id="EnableBoldAttrFont">Enable Bold attribute font</dt>
+      <dt id="EnableUnderlineAttrColor">Enable Underline attribute color</dt>
+      <dt id="EnableUnderlineAttrFont">Enable Underline attribute font</dt>
+      <dt id="EnableBlinkAttrColor">Enable Blink attribute color</dt>
+      <dt id="EnableReverseAttrColor">Enable Reverse attribute color</dt>
+      <dt id="EnableURLAttrColor">Enable URL attribute color</dt>
+      <dt id="EnableURLAttrFont">Enable URL attribute font</dt>
+      <dd>
+	Enables each color attributes and color setting.
+      </dd>
+
+      <dt id="EnableANSIColor">Enable ANSI color</dt>
+      <dd>
+	If ANSI color is disabled, 16 colors and 256 colors modes are also disabled.
+      </dd>
+
+      <dt id="FlickerlessMove">Flickerless move</dt>
+      <dd>
+        Reduces flicker of drawing in a window when window is moved or resized.<br>
+        Implementation:<br>
+        Set SWP_NOCOPYBITS in flags of the WINDOWPOS structure (lParam)
+        in WM_WINDOWPOSCHANGING message.
+      </dd>
+
+    </dl>
+
+  </body>
+</html>

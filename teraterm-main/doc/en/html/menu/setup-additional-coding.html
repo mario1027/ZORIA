@@ -1,0 +1,278 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+  "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <title>Additional settings / "Encoding" tab ([Setup] menu)</title>
+    <META http-equiv="Content-Style-Type" content="text/css">
+    <link rel="stylesheet" href="../style.css" type="text/css">
+  </head>
+
+  <body>
+    <h1><a href="setup-additional.html">Additional settings</a> / "Encoding" tab ([Setup] menu)</h1>
+
+    <h2>Encoding</h2>
+
+    <dl>
+      <dt id="KanjiReceive">receive</dt>
+      <dd>
+        Kanji character that is received from host.<br>
+        Please refer to <a href="../usage/character_encoding.html">available character encoding page</a>.
+      </dd>
+      <dt id="KanjiSend">transmit (Use different code)</dt>
+      <dd>
+        Kanji character that is sent from client.<br>
+        Please refer to <a href="../usage/character_encoding.html">available character encoding page</a>.
+      </dd>
+    </dl>
+
+    <h2>Unicode</h2>
+
+    <h3 id="AmbiguousCharactersWidth">Ambiguous Characters width</h3>
+
+    Select 1 Cell or 2 Cell.<br>
+    Specify character width assumed by Tera Term connecting destination.<br>
+    Refer to <a href="#EastAsianWidth">East_Asian_Width and width (cells)</a>.<br>
+    Refer to <a href="setup-additional-font.html#ResizedFont">Drawing resized font to fit cell width</a> for Tera Term drawing character width.
+    If you change Encoding-receive by pull-down, width is changed to typical character width of that code automatically. Nevertheless, that width is not absolutely recommend, you can choose the width what you want for font or other reasons.
+
+    <h3 id="UnicodeEmojiOverride">Override Emoji Characters width</h3>
+
+    When checked, Overrides characters width from East_Asian_Width.<br>
+    Refer to <a href="#emoji">About Emoji width (cells)</a>.
+    <ul>
+      <li>Emoji with U+1F000 and above are 2Cell (full-width).
+      <li>Emoji less than U+1F000:
+        <dl>
+          <dt>selected 2cell</dt>
+          <dd>2Cell(full-width)</dd>
+          <dt>selected 1cell</dt>
+          <dd>1Cell(half-width)</dd>
+        </dl>
+    </ul>
+
+    <h2 id="DecSpecial">DEC Special Graphics</h2>
+
+    Select display method for <a href="../about/emulations_dec_special.html">DEC Special Graphics</a>
+
+    <dl>
+      <dt>Mapping Unicode to DEC Special Graphics</dt>
+      <dd>
+        Unicode is converted to DEC Special Graphic, displays with "Tera Special" font.<br>
+        Character width of DEC Special Graphic is 1 cell (half-width).<br>
+        Select character type to be converted.
+        See <a href="../setup/teraterm-term.html#UnicodeDecSpMapping">Mapping of Unicode to DEC special character</a>
+        <dl>
+          <dt>Box-drawing character (U+2500-U+257F)</dt>
+          <dt>Punctuation, Block Elements, Shade</dt>
+          <dt>Middle dots(U+00B7,U+2024,U+2219)</dt>
+        </dl>
+      </dd>
+      <dt>Mapping DEC Special Graphics to Unicode</dt>
+      <dd>
+        DEC Special Graphic is converted to Unicode, displays with VT Window font.
+        The character width displayed in Unicode differs for each character.
+        It changes depending on Ambiguous Characters width setting.
+      </dd>
+      <dt>Do not mapping</dt>
+      <dd>
+        DEC Special Graphic displays with "Tera Special" font.
+        No Unicode replacement is performed.
+      </dd>
+    </dl>
+
+    <h2 id="JapaneseJIS">Japanese JIS</h2>
+
+    <h3>Reveive</h3>
+
+    <dl>
+      <dt id="KatakanaReceive">Half-width kana</dt>
+      <dd>
+        When "HANKAKU" katakana code from host is described for 7bit
+        (Shift control with SO/SI is using), please select this entry.
+        This is only enabled when Kanji (receive) is JIS.
+      </dd>
+    </dl>
+
+    <h3>Transmit</h3>
+
+    <dl>
+      <dt id="KatakanaSend">Half-width kana transmit</dt>
+      <dd>
+        When "HANKAKU" katakana code from host is described for 7bit
+        (Shift control with SO/SI is using), please select this entry.
+        This is only enabled when Kanji (transmit) is JIS.
+      </dd>
+      <dt id="KanjiIn">Kanji-in</dt>
+      <dd>
+        The escape sequence is used when Kanji (transmit) is JIS.
+        (Sequence regarding Kanji character is specified to G0.
+        ^[$@ or ^[$B).
+        The escape sequence from host can use any sequence.
+      </dd>
+      <dt id="KanjiOut">Kanji-out</dt>
+      <dd>
+        The escape sequence is used when Kanji (transmit) is JIS.
+        (Sequence regarding ASCII and JIS Roman code is specified to G0.
+        ^[(B or ^[(J ).
+        The escape sequence from host can use any sequence.
+        <p>
+          NOTICE: ^[(H can not be selected on initial setting. <br>
+          <!--a href="../usage/tips/incorrect-kanjiout.html">¨ ^[(H ‚ð‘I‘ð‰Â”\‚É‚·‚éB</a-->
+        </p>
+      </dd>
+    </dl>
+
+    <hr>
+
+    <h1>Unicode setting</h1>
+
+    <h2>Character width (cells)</h2>
+
+    <p>
+      Character width for <a href="../about/glossary.html#SBCS">single-byte character code</a> such as Latin-1 is 1 cell.
+    </p>
+
+    <p>
+      Character width for <a href="../about/glossary.html#DBCS">double-byte character code</a> such as Shift_JIS is 1 cell for 1-byte characters and 2 cells for 2-byte characters.
+    </p>
+
+    <p>
+      In Unicode, character width of a single character changes case-by-case.
+    </p>
+
+    Example, "&#x00A7;" (section sign, section mark)
+<pre>
+| code               | character code(code point) | cell   |
+|--------------------|----------------------------|--------|
+| ISO8859-1(Latin-1) | 0xA7                       | 1      |
+| Shift_JIS(CP932)   | 0x8198                     | 2      |
+| KS5601(CP949)      | 0xA1D7                     | 2      |
+| Big5(CP950)        | 0xA1B1                     | 2      |
+| BG2312(CP936)      | 0xA1EC                     | 2      |
+| Unicode            | 0xA7 (U+00A7)              | 1 or 2 |
+</pre>
+
+    <p>
+      In a multibyte character code environment (<a href="../about/glossary.html#CJK">CJK</a>), character width should be 2 cell, and in other environments it should be 1 cell for natural use.
+      Type of character whose width changes are called Ambiguous.
+
+      Refer to <a href="#EastAsianWidth">East_Asian_Width and width (cells)</a> for detail.
+
+    <h2>About displayed characters</h2>
+    test text in Tera Term repository can be displayed and checked.
+    <ul>
+      <li>Unicode (Kanji) width<br>
+        "wget https://github.com/TeraTermProject/teraterm/raw/main/tests/unicodebuf-east_asian_width.txt -O -"
+      <li>Unicode Emoji width<br>
+        "wget https://raw.githubusercontent.com/TeraTermProject/teraterm/main/tests/unicodebuf-text-emoji.txt -O -"
+    </ul>
+    Please note the following:
+    <ul>
+      <li>Font is displayed unchanged or resized.<br>
+        See <a href="setup-additional-font.html#ResizedFont">Font setting</a>.
+      </li>
+      <li>Character width handled by Tera Term and intended by host may differ.<br>
+        Programs, library examples
+        <ul>
+          <li>Text editor(vim,emacs,nano etc)
+          <li>viewer(more,less,lv etc)
+          <li>readline library linked to bash, etc.
+          <li>curses library linked to aptitude, etc.
+        </ul>
+      </li>
+      <li>Character to be displayed may not be stored in font file.
+        <ul>
+          <li>If the character to be displayed (glyph) does not exist,<br>
+            a black dot will be drawn by OS.
+            Depending on the version of OS, other character may be used.
+          <li>Some OS versions automatically draw using other fonts.<br>
+            This feature is called font linking.
+        </ul>
+      </li>
+    </ul>
+
+    <h2 id="EastAsianWidth">East_Asian_Width and width (cells)</h2>
+
+    <p>
+      Each characters are assigned East_Asian_Width property.
+    </p>
+
+    <p>
+      5 types exsit, each types are defined character width.
+    </p>
+
+    <p>
+      In addition, there are two types of interpretation of character width
+      <ol>
+        <li>In an East Asian context</li>
+        <li>in a non-East Asian context</li>
+      </ol>
+    </p>
+
+    <p>
+      The following table
+    </p>
+
+<pre>
+cells(2=full/1=half)
+|              | East Asian | non-East Asian |
+| property     | context    | context        |
+| F(Fullwidth) | 2          | 2              |
+| H(Halfwidth) | 1          | 1              |
+| W(Wide)      | 2          | 2              |
+| Na(Narrow)   | 1          | 1              |
+| A(Ambiguous) | 2          | 1              |
+| N(Neutral)   | 1          | 1              |
+</pre>
+
+    <p>
+      In <a href="../about/glossary.html#CJK">CJK</a> environment, it is more natural to set the Ambiguous character width to 2Cell.<br>
+      In addition, most Japanese fonts are designed in 2Cell.
+    </p>
+
+    <p>
+      Attributes are determined based on the following data<br>
+      <a href="https://www.unicode.org/Public/UCD/latest/ucd/EastAsianWidth.txt" target="_blank">https://www.unicode.org/Public/UCD/latest/ucd/EastAsianWidth.txt</a>
+    </p>
+
+    <h2 id="emoji">About Emoji width (cells)</h2>
+
+    <p>
+      Emoji property is other propery from East Asian Width property.
+    </p>
+
+    <p>
+      In the CJK environment, as with the East_Asian_Width property,
+      Characters that are 2 byte in DBCS, 2 cell is more natural.
+    </p>
+
+    <p>
+      In non-CJK environments, many characters handling 1 cell is natural, because 2 cell characters did not exist in traditional character codes.
+      Emoji with code points U+1F000 or higher that did not exist before Unicode, so they may be handled as 2 cell characters.
+    </p>
+
+    <p>
+      The following data's Extended_Pictographic property is used to determine if a character is an emoji.<br>
+      <a href="https://www.unicode.org/Public/UCD/latest/ucd/emoji/emoji-data.txt" target="_blank">https://www.unicode.org/Public/UCD/latest/ucd/emoji/emoji-data.txt</a>
+    </p>
+
+    <p>
+      Neutral contains Emoji, that Emoji is unnatural in Japan when rendered in 1cell.
+      Emoji's width can be changed to make them appear more natural.
+    </p>
+
+    <p>Example</p>
+    <dl>
+      <dt>"&#x263a;", U+263A</dt>
+      <dd>WHITE SMILING FACE</dd>
+      <dt>"&#x2764;", U+2764</dt>
+      <dd>HEAVY BLACK HEART</dd>
+    </dl>
+
+    <h2 id="width_decision">Character width decision flow</h2>
+
+    <img src="cell_width.png">
+
+  </body>
+</html>

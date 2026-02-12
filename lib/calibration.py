@@ -365,7 +365,13 @@ class CalibrationManager:
         Returns:
             Lista de strings con información de calibraciones
         """
-        response = self.device.send_command("calibrate list")
+        try:
+            self.device.send_command("abort", timeout=2.0)
+            self.device.send_command("stop", timeout=2.0)
+        except Exception:
+            pass
+
+        response = self.device.send_command("calibrate list", timeout=30.0)
         return response
     
     def reload_calibration(self) -> None:

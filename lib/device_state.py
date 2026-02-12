@@ -30,6 +30,8 @@ class DeviceState:
                     cls._instance._streaming_lock = threading.Lock()
                     cls._instance._command_in_progress = False
                     cls._instance._streaming_complete = threading.Event()
+                    cls._instance._stop_requested = threading.Event()
+                    cls._instance._stop_requested_at = None
                     # Buffer de streaming para sweeps (puntos de gráfico)
                     cls._instance._sweep_buffer = []  # Buffer de puntos (freq, z_real, z_imag, z_mag, phase)
                     cls._instance._sweep_lock = threading.Lock()
@@ -158,7 +160,7 @@ class DeviceState:
         finally:
             self._operation_lock.release()
     
-    def send_command(self, command, timeout=None):
+    def send_command(self, command, timeout=None, lock_timeout=90.0):
         """
         Envía un comando al dispositivo si está conectado.
         
@@ -168,10 +170,16 @@ class DeviceState:
         """
         if not self._device or not self._is_connected.is_set():
             raise ConnectionError("Dispositivo no conectado")
+
+        # Si hay streaming activo, solicitar stop antes de enviar otro comando
+        cmd_lower = (command or "").strip().lower()
+        if cmd_lower and cmd_lower != 'stop' and self._command_in_progress:
+            self.stop_streaming_command(wait_timeout=3.0)
         
         # Usar lock para evitar comandos simultáneos
-        # Timeout largo (30s) para comandos que tardan como z, sweep, calibrate
-        if not self._operation_lock.acquire(blocking=True, timeout=30.0):
+        # Timeout muy largo (90s) para dar tiempo a comandos lentos + overhead
+        # (comandos pueden tardar hasta 60s con averaging alto)
+        if not self._operation_lock.acquire(blocking=True, timeout=lock_timeout):
             raise TimeoutError("No se pudo obtener acceso al dispositivo (ocupado)")
         
         try:
@@ -214,6 +222,8 @@ class DeviceState:
             self._streaming_buffer.clear()
             self._command_in_progress = True
             self._streaming_complete.clear()
+            self._stop_requested.clear()
+            self._stop_requested_at = None
         
         # Iniciar comando en un thread separado
         def _execute_streaming():
@@ -329,10 +339,30 @@ class DeviceState:
                                     # Log líneas vacías para debugging
                                     logger.warning(f"[Streaming] ⚠️ Línea vacía detectada y OMITIDA (después de limpieza). Línea original: {repr(line)}")
                             
-                            # Si vimos el prompt en el buffer, finalizar
-                            if prompt_seen:
+                            # Si vimos el prompt, procesar buffer restante ANTES de salir
+                            if prompt_seen and response_buffer:
+                                buffer_clean = ansi_escape.sub('', response_buffer).strip()
+                                buffer_clean = buffer_clean.replace('ADMX2001>', '').strip()
+                                if buffer_clean:
+                                    with self._streaming_lock:
+                                        self._streaming_buffer.append({
+                                            'type': 'data',
+                                            'line': buffer_clean,
+                                            'index': line_count
+                                        })
+                                    line_count += 1
+                                    logger.info(f"[Streaming] ✅ Línea final {line_count} agregada desde buffer restante")
                                 logger.info(f"[Streaming] 🏁 Finalizado correctamente - Total: {line_count} líneas")
                                 break
+
+                        # Si se pidió detener, salir cuando no haya datos pendientes
+                        if self._stop_requested.is_set() and self._stop_requested_at:
+                            if time.time() - self._stop_requested_at > 1.5:
+                                logger.info("[Streaming] 🛑 Stop solicitado - timeout de salida")
+                                break
+                        if self._stop_requested.is_set() and device.serial.in_waiting == 0:
+                            logger.info("[Streaming] 🛑 Stop solicitado - finalizando lectura")
+                            break
                         else:
                             # No hay datos, esperar
                             time.sleep(0.05)
@@ -378,6 +408,37 @@ class DeviceState:
     def is_streaming_complete(self):
         """Retorna True si el comando de streaming ha terminado."""
         return self._streaming_complete.is_set()
+
+    def stop_streaming_command(self, wait_timeout=3.0):
+        """
+        Solicita detener el streaming enviando 'stop' y espera finalización.
+        Retorna True si el streaming terminó dentro del timeout.
+        """
+        if not self._command_in_progress or not self._device:
+            return True
+
+        self._stop_requested.set()
+        self._stop_requested_at = time.time()
+
+        try:
+            # Enviar varios 'stop' para asegurar que el dispositivo lo reciba
+            try:
+                self._device.serial.write(b'abort\n')
+                self._device.serial.flush()
+                time.sleep(0.05)
+            except Exception as e:
+                logger.warning(f"[Streaming] No se pudo enviar abort: {e}")
+            for _ in range(3):
+                self._device.serial.write(b'stop\n')
+                self._device.serial.flush()
+                time.sleep(0.05)
+        except Exception as e:
+            logger.warning(f"[Streaming] No se pudo enviar stop: {e}")
+
+        stopped = self._streaming_complete.wait(timeout=wait_timeout)
+        if not stopped:
+            logger.warning("[Streaming] Stop solicitado pero no finalizó a tiempo")
+        return stopped
     
     # ===== MÉTODOS PARA STREAMING DE SWEEP =====
     

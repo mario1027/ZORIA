@@ -336,39 +336,54 @@ def recommend_gain_settings(impedance: float, magnitude: float = 1.0, offset: fl
     return (ch0_gain, ch1_gain)
 
 
-def clean_response_line(line: str) -> str:
+def clean_response_line(line: str, preserve_indent: bool = False) -> str:
     """
-    Limpia una línea de respuesta del dispositivo.
+    Limpia una línea de respuesta del dispositivo (MEJORADO estilo TeraTerm).
     
     Remueve:
     - Códigos ANSI de escape (secuencias de escape estándar)
     - Códigos de control de cursor VT100 (ESC 7, ESC 8, etc.)
     - Prompts (ADMX2001>)
-    - Espacios en blanco al inicio/final
+    - Line endings (CR+LF, CR, LF normalizados)
+    - Caracteres de control NULL
+    - Espacios (configurable)
     
     Args:
         line: Línea cruda del dispositivo
+        preserve_indent: Si True, preserva espacios de indentación (solo limpia trailing)
     
     Returns:
         Línea limpia
     """
-    # Remover códigos ANSI estándar (secuencias de escape complejas)
+    # 1. Remover códigos ANSI estándar (secuencias de escape complejas)
     ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
     line = ansi_escape.sub('', line)
     
-    # Remover códigos de control de cursor VT100 simples (ESC + dígito/letra)
-    # ESC 7 = save cursor, ESC 8 = restore cursor, etc.
+    # 2. Remover códigos de control de cursor VT100 simples (ESC + dígito/letra)
     vt100_control = re.compile(r'\x1B[0-9A-Za-z]')
     line = vt100_control.sub('', line)
     
-    # Remover cualquier ESC solitario que pueda quedar
+    # 3. Remover cualquier ESC solitario que pueda quedar
     line = line.replace('\x1B', '')
     
-    # Remover prompt
+    # 4. Normalizar line endings (CR+LF -> espacio, CR -> espacio, mantener estructura)
+    line = line.replace('\r\n', ' ').replace('\r', ' ')
+    
+    # 5. Remover NULL bytes y caracteres de control (excepto espacios y tabs)
+    line = ''.join(ch for ch in line if ch >= ' ' or ch == '\t')
+    
+    # 6. Remover prompt
     line = line.replace('ADMX2001>', '')
     
-    # Limpiar espacios
-    return line.strip()
+    # 7. Limpiar espacios según configuración
+    if preserve_indent:
+        # Solo remover espacios finales (trailing whitespace)
+        line = line.rstrip()
+    else:
+        # Strip completo (comportamiento original)
+        line = line.strip()
+    
+    return line
 
 
 def parse_numeric_response(line: str) -> Optional[float]:

@@ -571,16 +571,9 @@ def sweep_worker(config):
                     sweep_timeout = max(120, 60 + seg_points * 3)   # 3s por punto
                 print(f"  Iniciando segmento con timeout: {sweep_timeout}s ({sweep_timeout/seg_points:.1f}s por punto)")
                 
-                # Enviar progreso inicial para este segmento
+                # ELIMINADO: Envío manual de progreso - ahora se obtiene automáticamente del streaming
+                # El progreso real se actualiza vía add_sweep_point() en el callback
                 segment_start_point = sum(seg[2] for seg in segments[:seg_idx])
-                sweep_queue.put({
-                    'current': segment_start_point,
-                    'total': points,
-                    'freq': seg_start,
-                    'z_real': 0,
-                    'z_imag': 0,
-                    'update_graphs': False
-                })
                 
                 # Ejecutar barrido (bloqueante)
                 import time
@@ -631,34 +624,11 @@ def sweep_worker(config):
                 acq_thread = threading.Thread(target=acquire_segment, daemon=True)
                 acq_thread.start()
                 
-                # Simular progreso mientras se adquiere
-                start_time = time.time()
-                estimated_duration = seg_points * 0.15  # ~150ms por punto estimado
-                last_progress = 0
+                # ELIMINADO: Progreso estimado basado en tiempo que causaba bucles
+                # El progreso real se obtiene directamente del streaming via get_sweep_progress()
+                # que se actualiza automáticamente con cada add_sweep_point en el callback
                 
-                while not acquisition_complete.is_set():
-                    elapsed = time.time() - start_time
-                    # Progreso estimado basado en tiempo (máximo 95% hasta que termine realmente)
-                    estimated_progress = min(0.95, elapsed / estimated_duration)
-                    current_estimated_point = segment_start_point + int(seg_points * estimated_progress)
-                    
-                    # Enviar actualización de progreso cada 5%
-                    progress_pct = int((current_estimated_point / points) * 100)
-                    if progress_pct > last_progress and progress_pct % 5 == 0:
-                        sweep_queue.put({
-                            'current': current_estimated_point,
-                            'total': points,
-                            'freq': seg_start + (seg_end - seg_start) * estimated_progress,
-                            'z_real': 0,
-                            'z_imag': 0,
-                            'update_graphs': False
-                        })
-                        last_progress = progress_pct
-                        print(f"  Progreso estimado: {progress_pct}%")
-                    
-                    time.sleep(0.5)  # Actualizar cada 500ms
-                
-                # Esperar a que termine
+                # Solo esperar a que termine
                 acq_thread.join()
                 
                 if segment_results:
@@ -668,18 +638,10 @@ def sweep_worker(config):
                         print(f"  ⚠️⚠️⚠️ PROBLEMA: Esperábamos {seg_points} puntos pero obtuvimos {len(segment_results)}")
                         print(f"  ⚠️⚠️⚠️ Faltan {seg_points - len(segment_results)} puntos!")
                     
-                    # IMPORTANTE: Enviar progreso al 100% para este segmento
+                    # ELIMINADO: Envío manual de progreso - el streaming lo maneja automáticamente
                     segment_end_point = segment_start_point + seg_points
                     final_progress_pct = int((segment_end_point / points) * 100)
-                    sweep_queue.put({
-                        'current': segment_end_point,
-                        'total': points,
-                        'freq': seg_end,
-                        'z_real': 0,
-                        'z_imag': 0,
-                        'update_graphs': False
-                    })
-                    print(f"  📊 Progreso actualizado a {final_progress_pct}% ({segment_end_point}/{points} puntos)")
+                    print(f"  📊 Progreso automático vía streaming: {final_progress_pct}% ({segment_end_point}/{points} puntos)")
                 else:
                     print(f"  ⚠️ Segmento sin resultados")
             
@@ -715,16 +677,8 @@ def sweep_worker(config):
 
                 print(f"✅ Consolidación completada: {len(sweep_data['param'])} puntos finales")
                 
-                # IMPORTANTE: Enviar progreso final al 100% antes del mensaje 'completed'
-                sweep_queue.put({
-                    'current': points,
-                    'total': points,
-                    'freq': sweep_data['param'][-1] if sweep_data['param'] else 0,
-                    'z_real': sweep_data['z_real'][-1] if sweep_data['z_real'] else 0,
-                    'z_imag': sweep_data['z_imag'][-1] if sweep_data['z_imag'] else 0,
-                    'update_graphs': False
-                })
-                print(f"📊 Progreso final: 100% ({points}/{points} puntos)")
+                # ELIMINADO: Envío manual de progreso - el streaming ya está al 100%
+                print(f"📊 Progreso final confirmado por streaming: 100% ({points}/{points} puntos)")
                 
             except Exception as e:
                 print(f"❌ ERROR en procesamiento: {e}")
@@ -1695,6 +1649,7 @@ def register_callbacks(app):
 
         # Inicializar variables básicas
         sweep_completed_trigger = False
+        has_new_data = False  # CRÍTICO: Inicializar antes de cualquier uso
         # Inicializar gráficas con stored_data si existe, sino gráficas vacías
         # Estas se regenerarán durante el procesamiento si hay nuevos datos
         if stored_data and len(stored_data.get('param', [])) > 0:
@@ -1728,6 +1683,14 @@ def register_callbacks(app):
         # Procesar mensajes de la cola si hay un sweep activo o mensajes pendientes
         if has_active_sweep:
             try:
+                # Inicializar TODAS las variables necesarias para el return
+                modal_style = {'display': 'flex'}
+                modal_class = 'modal fade show'
+                progress_style = {'width': f'{sweep_progress}%'}
+                progress_text = f"{sweep_progress}%"
+                status_text = "Procesando..."
+                sweep_completed = False  # Flag local para detectar completado en ESTA ejecución
+                
                 # Usar progreso anterior
                 progress_value = sweep_progress
                 print(f"Progreso actual: {progress_value}%")
@@ -1737,56 +1700,19 @@ def register_callbacks(app):
                 current_point = 0
                 has_new_data = False
 
-                # CAMBIO CRÍTICO: Procesar SOLO UN mensaje por ejecución del callback
-                # Esto permite que el UI se actualice con cada progreso intermedio
+                # ELIMINADO: Procesamiento de mensajes 'current' - el progreso ahora se maneja 100% por streaming
+                # Solo procesamos 'completed' y 'error' de la cola
                 if not sweep_queue.empty():
                     try:
                         data = sweep_queue.get_nowait()
                         print(f"CALLBACK: Recibido mensaje de cola: {list(data.keys())}")
                         has_new_data = True
+                        
+                        # SOLO procesar 'completed' y 'error', ignorar 'current'
                         if 'current' in data:
-                            current_point = data['current']
-                            total_points = data['total']
-                            calculated_progress = int((current_point / total_points) * 100) if total_points > 0 else 0
-                            
-                            # CRÍTICO: Actualizar TODAS las variables de progreso al mismo valor
-                            progress_value = calculated_progress  # aria-valuenow
-                            sweep_progress = calculated_progress  # variable global
-                            progress_style = {'width': f'{calculated_progress}%'}  # ancho visual
-                            progress_text = f"{calculated_progress}%"  # texto mostrado
-                            
-                            status_text = f"Analizando punto {current_point}/{total_points} - {data.get('freq', 0):.1f} Hz"
-                            # modal_class y modal_style se establecerán al final
-                            print(f"📊 PROGRESO ACTUALIZADO: {calculated_progress}% (punto {current_point}/{total_points})")
-
-                            # Actualizar gráficos en tiempo real si hay suficientes datos
-                            if data.get('update_graphs', False) and sweep_data and len(sweep_data.get('param', [])) >= 3:
-                                try:
-                                    bode_fig = create_bode_plot(
-                                        sweep_data['param'],
-                                        sweep_data['z_mag'],
-                                        sweep_data['phase'],
-                                        negative_phase,
-                                        theme
-                                    )
-                                    nyquist_fig = create_nyquist_plot(
-                                        sweep_data['z_real'],
-                                        sweep_data['z_imag'],
-                                        sweep_data['param'],
-                                        theme
-                                    )
-                                    graphs_updated = True  # Marcar que las gráficas se actualizaron
-                                    # Actualizar el store con los datos actuales del sweep
-                                    stored_data = {
-                                        'param': sweep_data['param'].copy(),
-                                        'z_real': sweep_data['z_real'].copy(),
-                                        'z_imag': sweep_data['z_imag'].copy(),
-                                        'z_mag': sweep_data['z_mag'].copy(),
-                                        'phase': sweep_data['phase'].copy()
-                                    }
-                                except Exception as e:
-                                    bode_fig = create_empty_figure("Procesando datos...", theme)
-                                    nyquist_fig = create_empty_figure("Procesando datos...", theme)
+                            # IGNORAR - el progreso lo maneja poll_sweep_streaming
+                            print(f"[manage_sweep] Mensaje 'current' ignorado - progreso manejado por streaming")
+                            pass
 
                         elif 'completed' in data:
                             # CRÍTICO: Actualizar TODAS las variables de progreso al 100%
@@ -1799,12 +1725,16 @@ def register_callbacks(app):
                             sweep_completed = True  # Marcar que el sweep se completó
                             sweep_completed_successfully = True  # Marcar que se completó exitosamente
                             
+                            # CERRAR MODAL INMEDIATAMENTE (no esperar 1s)
+                            modal_style = {'display': 'none'}
+                            modal_class = 'modal fade'
+                            modal_close_interval_disabled = True  # Ya cerrado, no necesita interval
+                            
                             # CRÍTICO: Marcar sweep como NO en progreso para detener polling
                             device_state.end_sweep_streaming()
                             print(f"📡 Sweep streaming finalizado desde callback (redundancia)")
                             
-                            # modal_style y modal_class se establecerán al final
-                            print(f"🎉 BARRIDO COMPLETADO: 100%")
+                            print(f"🎉 BARRIDO COMPLETADO: 100% - cerrando modal inmediatamente")
                             # Forzar actualización inmediata de gráficos cuando se completa el sweep
                             if sweep_data and sweep_data.get('param') and len(sweep_data['param']) > 0:
                                 try:
@@ -1839,13 +1769,29 @@ def register_callbacks(app):
                                     bode_fig = create_empty_figure("Error en gráfico de Bode", theme)
                                     nyquist_fig = create_empty_figure("Error en gráfico de Nyquist", theme)
                                     sweep_completed_trigger = False
+                            
+                            # RETORNAR INMEDIATAMENTE con modal cerrado
+                            interval_disabled = True  # Detener interval
+                            streaming_interval_disabled = True  # Detener streaming
+                            print(f"🔒 RETORNANDO: Modal cerrado, intervals detenidos, {len(stored_data['param'])} puntos guardados")
+                            return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, str(progress_value), status_text, status_text, stored_data, sweep_completed_trigger, interval_disabled, modal_close_interval_disabled, streaming_interval_disabled)
 
                         elif 'error' in data:
-                            # modal_style = {'display': 'none'}
-                            # modal_class = 'modal fade'
+                            # CERRAR MODAL Y DETENER TODO cuando hay error
+                            modal_style = {'display': 'none'}
+                            modal_class = 'modal fade'
                             sweep_progress = 0  # Reiniciar progreso en caso de error
                             progress_value = 0
+                            progress_style = {'width': '0%'}
+                            progress_text = "0%"
                             status_text = f"❌ Error: {data['message']}"
+                            interval_disabled = True  # Detener interval
+                            streaming_interval_disabled = True  # Detener streaming
+                            modal_close_interval_disabled = True  # No necesita cerrar (ya cerrado)
+                            
+                            # Detener sweep streaming
+                            device_state.end_sweep_streaming()
+                            print(f"❌ Error en sweep - modal cerrado, intervals detenidos")
 
                     except Exception as e:
                         # Si hay error procesando el mensaje, simplemente mantener estado actual
@@ -1949,12 +1895,8 @@ def register_callbacks(app):
                     # Iniciar nuevo barrido
                     stop_sweep.clear()
                     
-                    # LIMPIAR DATOS Y GRÁFICOS AL INICIAR NUEVO BARRIDO
-                    stored_data = {'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}
-                    bode_fig = create_empty_figure("Esperando datos...", theme)
-                    nyquist_fig = create_empty_figure("Esperando datos...", theme)
-                    print(f"🧹 Datos y gráficos limpiados para nuevo barrido")
-                    
+                    # Mantener stored_data para que los gráficos NO desaparezcan
+                    # Los nuevos puntos llegarán vía poll_sweep_streaming
                     print(f"✅ Iniciando thread de barrido con configuración:")
                     print(f"   Config completa: {config}")
                     sweep_thread = threading.Thread(target=sweep_worker, args=(config,), daemon=True)
@@ -1966,9 +1908,16 @@ def register_callbacks(app):
                     modal_style = {'display': 'block'}
                     modal_class = 'modal fade show'
                     progress_value = sweep_progress  # Usar el progreso actual (0 si es nuevo)
+                    progress_style = {'width': '0%'}  # Inicializar estilo de progreso
+                    progress_text = "0%"  # Inicializar texto de progreso
                     status_text = "Iniciando barrido..."
                     interval_disabled = False  # HABILITAR interval durante el barrido
                     streaming_interval_disabled = False  # HABILITAR interval de streaming durante el barrido
+                    modal_close_interval_disabled = True  # Deshabilitar modal-close al inicio
+                    
+                    # RETORNAR INMEDIATAMENTE después de iniciar el sweep
+                    # Mantener stored_data para preservar gráficos anteriores
+                    return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, str(progress_value), status_text, status_text, stored_data, False, interval_disabled, modal_close_interval_disabled, streaming_interval_disabled)
 
                 except Exception as e:
                     status_text = f"❌ Error: {str(e)}"
@@ -1983,13 +1932,19 @@ def register_callbacks(app):
                 stop_sweep.set()
                 modal_style = {'display': 'none'}
                 modal_class = 'modal fade'
+                progress_style = {'width': '0%'}
+                progress_text = "0%"
                 sweep_progress = 0  # Reiniciar progreso al cancelar
                 interval_disabled = True  # DESHABILITAR interval cuando se cancela
                 streaming_interval_disabled = True  # DESHABILITAR interval de streaming cuando se cancela
+                modal_close_interval_disabled = True  # Deshabilitar modal-close al cancelar
                 progress_value = 0
                 progress_text = "0%"
                 status_text = "Barrido cancelado"
                 sweep_completed_successfully = False  # Resetear estado de completado
+                
+                # RETORNAR INMEDIATAMENTE después de cancelar
+                return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, str(progress_value), status_text, status_text, stored_data, False, interval_disabled, modal_close_interval_disabled, streaming_interval_disabled)
 
             # Establecer valores por defecto SOLO si no fueron actualizados durante el procesamiento
             # Esto preserva los valores establecidos al procesar mensajes de la cola
@@ -1999,6 +1954,12 @@ def register_callbacks(app):
                 progress_style = {'width': f'{sweep_progress}%'}
             if 'progress_text' not in locals():
                 progress_text = f"{sweep_progress}%"
+            if 'modal_style' not in locals():
+                modal_style = {'display': 'flex'}
+            if 'modal_class' not in locals():
+                modal_class = 'modal fade show'
+            if 'status_text' not in locals():
+                status_text = "Procesando..."
             if 'status_text' not in locals():
                 status_text = "Procesando..." if has_active_sweep else "Listo"
             if 'modal_style' not in locals():
@@ -2013,42 +1974,54 @@ def register_callbacks(app):
             
             print(f"🔍 Valores finales - Progress: {progress_value}%, Style width: {progress_style.get('width')}, Text: {progress_text}")
             
-            # Actualizar gráficos SOLO si NO se actualizaron durante el procesamiento de mensajes
-            # La bandera graphs_updated se establece a True cuando se procesan mensajes con datos
-            if not graphs_updated:
-                # Las gráficas NO se actualizaron durante procesamiento - generar con stored_data o sweep_data
-                # PRIORIZAR sweep_data si tiene más puntos que stored_data (barrido en curso)
-                sweep_points = len(sweep_data.get('param', [])) if sweep_data else 0
-                stored_points = len(stored_data.get('param', [])) if stored_data else 0
-                
-                # Usar sweep_data si tiene datos (barrido activo o recién completado)
-                # Usar stored_data solo si sweep_data está vacío (no hay barrido activo)
-                if sweep_points > 0:
-                    data_source = sweep_data
-                    source_name = 'sweep_data'
-                elif stored_points > 0:
+            # Actualizar gráficos con la mejor fuente de datos disponible
+            # PRIORIDAD: stored_data > sweep_data (stored_data es persistente después del sweep)
+            stored_points = len(stored_data.get('param', [])) if stored_data else 0
+            sweep_points = len(sweep_data.get('param', [])) if sweep_data else 0
+            
+            # Si NO tenemos gráficos actualizados O el sweep ya terminó, regenerar con los datos disponibles
+            if not graphs_updated or not has_active_sweep:
+                # Priorizar stored_data si tiene datos (es la fuente persistente post-sweep)
+                if stored_points > 0:
                     data_source = stored_data
-                    source_name = 'stored_data'
+                    source_name = 'stored_data (persistente)'
+                elif sweep_points > 0:
+                    data_source = sweep_data
+                    source_name = 'sweep_data (activo)'
                 else:
                     data_source = None
                     source_name = 'ninguna'
                 
                 if data_source and len(data_source.get('param', [])) > 0:
-                    print(f"📊 Generando gráficas finales con {len(data_source['param'])} puntos (fuente: {source_name})")
+                    print(f"📊 Generando gráficas con {len(data_source['param'])} puntos (fuente: {source_name})")
                     bode_fig = create_bode_plot(data_source['param'], data_source['z_mag'], data_source['phase'], negative_phase, theme)
                     nyquist_fig = create_nyquist_plot(data_source['z_real'], data_source['z_imag'], data_source['param'], theme)
                 else:
                     safe_print(f"⚠️ No hay datos disponibles - manteniendo gráficas actuales")
             else:
-                safe_print(f"📊 Gráficas ya actualizadas durante procesamiento con {len(sweep_data.get('param', []))} puntos - mantener")
+                safe_print(f"📊 Gráficas ya actualizadas durante procesamiento - mantener")
             
             # Log de control del interval para debugging
             safe_print(f"🔄 Return interval state - Thread alive: {sweep_thread and sweep_thread.is_alive()}, Queue empty: {sweep_queue.empty()}, Interval disabled: {interval_disabled}")
             
             # Determinar si debe activarse el intervalo de cierre del modal
             # Solo se activa cuando el sweep se completa exitosamente (100%)
-            modal_close_interval_disabled = not sweep_completed  # False cuando sweep completo (habilitar intervalo)
+            # Si ya fue establecido en el bloque 'completed', no sobrescribir
+            if 'modal_close_interval_disabled' not in locals():
+                modal_close_interval_disabled = not sweep_completed  # False cuando sweep completo (habilitar intervalo)
             
+            print(f"🔔 Modal close interval: disabled={modal_close_interval_disabled}, sweep_completed={sweep_completed}")
+            
+            # CRÍTICO: Si no hay mensaje en la cola Y el sweep está en progreso, NO actualizar progreso
+            # Dejar que poll_sweep_streaming sea el ÚNICO que actualice durante el sweep
+            if not has_new_data and sweep_thread and sweep_thread.is_alive():
+                # Sweep en progreso pero sin mensaje - NO actualizar progreso
+                return (bode_fig, nyquist_fig, modal_style, modal_class, 
+                       dash.no_update, dash.no_update, dash.no_update,  # NO actualizar progreso
+                       status_text, status_text, stored_data, sweep_completed_trigger, 
+                       interval_disabled, modal_close_interval_disabled, streaming_interval_disabled)
+            
+            # Si hay mensaje o el sweep no está en progreso, actualizar normalmente
             return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, str(progress_value), status_text, status_text, stored_data, sweep_completed_trigger, interval_disabled, modal_close_interval_disabled, streaming_interval_disabled)
 
         except (BrokenPipeError, IOError):
@@ -2737,10 +2710,12 @@ def register_callbacks(app):
         # Verificar si hay sweep en progreso
         if not device_state.is_sweep_in_progress():
             # No hay sweep, desactivar interval y resetear contadores
-            print(f"[Sweep Poll] Sweep no en progreso - desactivando interval")
+            print(f"[Sweep Poll] Sweep no en progreso - desactivando interval y limpiando buffer")
             last_sweep_point_count = 0
             intervals_without_new_points = 0
-            return bode_fig, nyquist_fig, dash.no_update, dash.no_update, dash.no_update, dash.no_update, True
+            # Limpiar current_data para el próximo sweep
+            current_data = {'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}
+            return bode_fig, nyquist_fig, current_data, dash.no_update, dash.no_update, dash.no_update, True
         
         # Detectar sweeps "abandonados" (sin nuevos puntos por tiempo prolongado)
         if current_point_count == last_sweep_point_count:

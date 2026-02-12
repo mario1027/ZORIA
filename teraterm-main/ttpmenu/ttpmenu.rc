@@ -1,0 +1,246 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include <winresrc.h>
+#define IDC_STATIC -1
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// 英語 (米国) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include <winresrc.h>\r\n"
+    "#define IDC_STATIC -1\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+TTERM_ICON              ICON                    "teraterm.ico"
+
+ICON_LEFT               ICON                    "left.ico"
+
+ICON_RIGHT              ICON                    "right.ico"
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+TTERM_MENU MENU
+BEGIN
+    POPUP "MENU"
+    BEGIN
+        MENUITEM "List Configuration",          ID_TMENU_ADD
+        POPUP "Setting"
+        BEGIN
+            MENUITEM "showing large icon",          ID_ICON
+            MENUITEM "specifying font",             ID_FONT
+            MENUITEM "showing list by left-click",  ID_LEFTPOPUP
+            MENUITEM "showing list hotkey(Ctl+Alt+M)", ID_HOTKEY
+        END
+        MENUITEM "Version ",                    ID_VERSION
+        MENUITEM SEPARATOR
+        MENUITEM "Execute",                     ID_EXEC
+        MENUITEM SEPARATOR
+        MENUITEM "Quit",                        ID_TMENU_CLOSE
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+DIALOG_CONFIG DIALOGEX 0, 0, 299, 273
+STYLE DS_SETFONT | DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "List Configuration"
+FONT 8, "Tahoma", 0, 0, 0x0
+BEGIN
+    LTEXT           "List Item",LBL_LIST,7,4,116,12,SS_CENTERIMAGE | SS_SUNKEN
+    LISTBOX         LIST_HOST,7,18,116,248,LBS_OWNERDRAWVARIABLE | LBS_HASSTRINGS | LBS_NOINTEGRALHEIGHT | LBS_DISABLENOSCROLL | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "",BUTTON_SET,130,64,20,20,BS_ICON
+    PUSHBUTTON      "",BUTTON_DELETE,130,144,20,20,BS_ICON
+    GROUPBOX        "Configuration",GRP_CONFIG,155,1,137,266
+    CTEXT           "Name",LBL_ENTRY,162,16,32,12,SS_CENTERIMAGE | SS_SUNKEN
+    EDITTEXT        EDIT_ENTRY,198,16,89,12,ES_AUTOHSCROLL
+    GROUPBOX        "Launch Pattern",GRP_LAUNCH,161,36,126,204
+    CONTROL         "autologin",RADIO_LOGIN,"Button",BS_AUTORADIOBUTTON | BS_LEFT | BS_VCENTER | WS_GROUP,166,46,106,16
+    CTEXT           "Host Name",LBL_HOST,174,62,40,12,SS_CENTERIMAGE | SS_SUNKEN | NOT WS_GROUP
+    EDITTEXT        EDIT_HOST,218,62,64,12,ES_AUTOHSCROLL
+    CONTROL         "User Name",CHECK_USER,"Button",BS_AUTOCHECKBOX | BS_CENTER | BS_VCENTER | BS_PUSHLIKE | WS_TABSTOP,174,78,40,12
+    EDITTEXT        EDIT_USER,218,78,64,12,ES_AUTOHSCROLL
+    CONTROL         "Password",CHECK_PASSWORD,"Button",BS_AUTOCHECKBOX | BS_CENTER | BS_VCENTER | BS_PUSHLIKE | WS_TABSTOP,174,94,40,12
+    EDITTEXT        EDIT_PASSWORD,218,94,64,12,ES_PASSWORD | ES_AUTOHSCROLL
+    CONTROL         "use LockBox",CHECK_LOCKBOX,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,174,111,66,10
+    PUSHBUTTON      "LockBox",BUTTON_LOCKBOX,241,109,41,14
+    CONTROL         "use SSH",CHECK_TTSSH,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,174,123,65,10
+    LTEXT           "Keyfile",IDC_KEYFILE_LABEL,174,137,37,8
+    EDITTEXT        IDC_KEYFILE_PATH,174,147,92,14,ES_AUTOHSCROLL | WS_DISABLED
+    CONTROL         "use Challenge",IDC_CHALLENGE_CHECK,"Button",BS_AUTOCHECKBOX | WS_DISABLED | WS_TABSTOP,174,164,101,10
+    PUSHBUTTON      "....",IDC_KEYFILE_BUTTON,270,147,12,14,WS_DISABLED
+    CONTROL         "use Pageant",IDC_PAGEANT_CHECK,"Button",BS_AUTOCHECKBOX | WS_DISABLED | WS_TABSTOP,174,176,103,10
+    CONTROL         "specified macro file",RADIO_MACRO,"Button",BS_AUTORADIOBUTTON | BS_LEFT | BS_VCENTER,166,194,140,12
+    EDITTEXT        EDIT_MACRO,174,207,92,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "....",BUTTON_MACRO,270,207,12,12
+    CONTROL         "launch only",RADIO_DIRECT,"Button",BS_AUTORADIOBUTTON | BS_LEFT | BS_VCENTER,166,225,106,12
+    PUSHBUTTON      "details",BUTTON_ETC,165,245,44,16
+    CONTROL         "kick at starting",CHECK_STARTUP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,220,248,64,10
+END
+
+DIALOG_ETC DIALOGEX 0, 0, 214, 177
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Configuration Details"
+FONT 8, "Tahoma", 0, 0, 0x0
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,75,156,42,14
+    PUSHBUTTON      "Cancel",IDCANCEL,165,156,42,14
+    CTEXT           "Application",LBL_TTMPATH,8,8,44,12,SS_CENTERIMAGE | SS_SUNKEN
+    EDITTEXT        EDIT_TTMPATH,56,8,132,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "....",BUTTON_TTMPATH,192,8,12,12
+    EDITTEXT        EDIT_INITFILE,12,56,172,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "....",BUTTON_INITFILE,188,56,12,12
+    CTEXT           "User Name",LBL_PROMPT_USER,16,124,40,12,SS_CENTERIMAGE | SS_SUNKEN
+    CTEXT           "Password",LBL_PROMPT_PASS,108,124,40,12,SS_CENTERIMAGE | SS_SUNKEN
+    EDITTEXT        EDIT_PROMPT_USER,60,124,44,12,ES_AUTOHSCROLL
+    EDITTEXT        EDIT_PROMPT_PASS,152,124,44,12,ES_AUTOHSCROLL
+    CTEXT           "Option",LBL_OPTION,8,24,44,12,SS_CENTERIMAGE | SS_SUNKEN
+    EDITTEXT        EDIT_OPTION,56,24,148,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "Default",BUTTON_DEFAULT,120,156,42,14
+    GROUPBOX        "Configuration for auto-login",GRP_AUTOLOGIN,8,84,199,68
+    GROUPBOX        "TeraTerm Configuration File(except launching)",GRP_INITFILE,8,44,196,32
+    EDITTEXT        EDIT_LOG,60,96,124,12,ES_AUTOHSCROLL
+    CTEXT           "log file",LBL_LOG,12,96,44,12,SS_CENTERIMAGE | SS_SUNKEN
+    PUSHBUTTON      "....",BUTTON_LOG,188,96,12,12
+    GROUPBOX        "Prompt",GRP_PROMPT,12,112,188,32
+END
+
+DIALOG_VERSION DIALOGEX 0, 0, 169, 120
+STYLE DS_SETFONT | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+CAPTION "Version Information"
+FONT 8, "Tahoma", 0, 0, 0x0
+BEGIN
+    CTEXT           "Tera Term launch tool\nTeraTerm Menu",IDC_APP_NAME,7,7,156,18
+    CTEXT           "Version %d.%02d",IDC_VERSION,7,27,156,10
+    LTEXT           "Copyright(C) 1997-2003 S.Hayakawa\r\n(C) 2004-2025 TeraTerm Project",IDC_COPYRIGHT,26,42,137,18
+    ICON            "",IDC_TTPMENU_ICON,4,8,20,20
+    DEFPUSHBUTTON   "OK",IDOK,61,99,44,14
+    EDITTEXT        IDC_SETTINGS,22,61,126,36,ES_MULTILINE | ES_AUTOHSCROLL | ES_READONLY
+END
+
+DIALOG_LOCKBOX DIALOGEX 0, 0, 226, 59
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "TeraTerm Menu"
+FONT 8, "Tahoma", 0, 0, 0x0
+BEGIN
+    LTEXT           "Enter your LockBox password:",IDC_LOCKBOX_LABEL,7,7,219,12,SS_NOPREFIX
+    EDITTEXT        IDC_LOCKBOX_EDIT,7,20,126,14,ES_PASSWORD | ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,137,20,40,14
+    PUSHBUTTON      "Cancel",IDCANCEL,179,20,40,14
+    CTEXT           "",IDC_LOCKBOX_MESSAGE,3,40,220,12,SS_NOPREFIX
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO
+BEGIN
+    DIALOG_CONFIG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 292
+        TOPMARGIN, 1
+        BOTTOMMARGIN, 266
+    END
+
+    DIALOG_ETC, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 207
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 170
+    END
+
+    DIALOG_VERSION, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 163
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 116
+    END
+
+    DIALOG_LOCKBOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 219
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 52
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// RT_MANIFEST
+//
+
+1                       RT_MANIFEST             "ttpmenu.manifest"
+
+#endif    // 英語 (米国) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

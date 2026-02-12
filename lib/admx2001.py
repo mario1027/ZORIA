@@ -299,30 +299,77 @@ class ADMX2001:
                 stopbits=serial.STOPBITS_ONE
             )
             
-            # Limpiar buffers
+            # Paso 1: Detener AGRESIVAMENTE cualquier operación en curso
+            # El comando correcto es 'stop', no Ctrl-C
+            logger.info("Enviando comandos 'stop' para detener operaciones...")
+            for i in range(5):
+                self.serial.write(b'stop\n')  # Comando stop
+                self.serial.flush()
+                time.sleep(0.2)
+            time.sleep(0.5)
+            
+            # Paso 2: Drenar COMPLETAMENTE el buffer (puede haber muchas mediciones)
+            logger.info("Drenando buffer de mediciones...")
+            discarded_bytes = 0
+            drain_attempts = 0
+            max_drain_attempts = 20  # Máximo 2 segundos drenando
+            
+            while drain_attempts < max_drain_attempts:
+                if self.serial.in_waiting > 0:
+                    chunk = self.serial.read(self.serial.in_waiting)
+                    discarded_bytes += len(chunk)
+                    drain_attempts = 0  # Reset si seguimos recibiendo datos
+                else:
+                    drain_attempts += 1
+                time.sleep(0.1)
+            
+            if discarded_bytes > 0:
+                logger.info(f"Buffer drenado: {discarded_bytes} bytes descartados")
+            
+            # Paso 3: Resetear buffers
             self.serial.reset_input_buffer()
             self.serial.reset_output_buffer()
+            time.sleep(0.3)
             
-            # Enviar enter para obtener prompt
-            self.serial.write(b'\n')
-            time.sleep(0.2)
-            prompt_response = self.serial.read(1024).decode('utf-8', errors='ignore')
+            # Paso 4: Enviar múltiples enters para obtener prompt
+            logger.info("Enviando enters para obtener prompt...")
+            prompt_response = ""
+            
+            for attempt in range(3):
+                self.serial.write(b'\n')
+                self.serial.flush()
+                time.sleep(0.5)
+                
+                # Leer respuesta
+                if self.serial.in_waiting > 0:
+                    response = self.serial.read(self.serial.in_waiting).decode('utf-8', errors='ignore')
+                    prompt_response += response
+                    logger.info(f"Intento {attempt+1}: {repr(response[:100])}")
+                    
+                    # Si encontramos prompt, listo!
+                    if 'ADMX2001>' in prompt_response:
+                        logger.info("Prompt detectado en respuesta")
+                        break
             
             # Si no hay prompt, intentar comando *idn
             if 'ADMX2001>' not in prompt_response:
-                logger.info("No se recibió prompt inicial, intentando comando *idn...")
+                logger.info("No se recibió prompt, intentando *idn...")
                 self.serial.write(b'*idn\n')
-                time.sleep(0.2)
-                idn_response = self.serial.read(1024).decode('utf-8', errors='ignore')
-                prompt_response += idn_response
+                self.serial.flush()
+                time.sleep(0.8)
+                
+                if self.serial.in_waiting > 0:
+                    idn_response = self.serial.read(self.serial.in_waiting).decode('utf-8', errors='ignore')
+                    prompt_response += idn_response
+                    logger.info(f"Respuesta *idn: {repr(idn_response[:100])}")
             
             # Verificar si hay prompt ADMX2001> o respuesta a *idn
             if 'ADMX2001>' in prompt_response or 'Analog Devices' in prompt_response:
                 self.is_connected = True
-                logger.info(f"Conectado exitosamente a EVAL-ADMX2001 @ {baudrate} baud")
+                logger.info(f"✅ Conectado exitosamente @ {baudrate} baud")
                 return
             else:
-                raise ConnectionError(f"No se recibió respuesta del dispositivo. Respuesta: {repr(prompt_response)}")
+                raise ConnectionError(f"No se recibió respuesta del dispositivo. Respuesta: {repr(prompt_response[:200])}")
                 
         except serial.SerialException as e:
             raise ConnectionError(f"Error abriendo puerto serie: {e}")
@@ -386,16 +433,60 @@ class ADMX2001:
             try:
                 # Limpiar comando
                 command = command.strip()
+
+                # Preflight: si hay datos entrando, intentar detener streaming residual
+                if command.lower() != 'stop':
+                    try:
+                        had_data = False
+                        drain_start = time.time()
+                        while time.time() - drain_start < 0.3:
+                            if self.serial.in_waiting > 0:
+                                self.serial.read(self.serial.in_waiting)
+                                had_data = True
+                            time.sleep(0.05)
+
+                        if had_data and self.serial.in_waiting > 0:
+                            logger.info("Streaming residual detectado, enviando abort/stop")
+                            try:
+                                self.serial.write(b'abort\n')
+                                self.serial.flush()
+                                time.sleep(0.05)
+                            except Exception as e:
+                                logger.debug(f"Preflight abort falló: {e}")
+                            for _ in range(5):
+                                self.serial.write(b'stop\n')
+                                self.serial.flush()
+                                time.sleep(0.05)
+
+                            # Drenar breve despues de stop
+                            stop_drain_start = time.time()
+                            while time.time() - stop_drain_start < 0.5:
+                                if self.serial.in_waiting > 0:
+                                    self.serial.read(self.serial.in_waiting)
+                                time.sleep(0.05)
+                    except Exception as e:
+                        logger.debug(f"Preflight stop falló: {e}")
                 
-                # Limpiar buffers antes de enviar (solo en reintentos)
+                # MEJORA TERATERM: Limpiar buffers SIEMPRE antes de enviar
+                # Esto previene contaminar comando actual con respuestas de comandos previos
+                try:
+                    # Leer y descartar datos residuales
+                    if self.serial.in_waiting > 0:
+                        stale_data = self.serial.read(self.serial.in_waiting)
+                        logger.warning(f"⚠️ Buffer contenía {len(stale_data)} bytes residuales (descartados)")
+                        logger.debug(f"   Datos descartados: {repr(stale_data[:100])}")
+                    
+                    # Reset buffers
+                    self.serial.reset_input_buffer()
+                    self.serial.reset_output_buffer()
+                    time.sleep(0.05)  # Breve pausa para estabilizar
+                except Exception as e:
+                    logger.debug(f"Limpieza de buffer falló (no crítico): {e}")
+                
+                # Limpiar buffers adicional en reintentos
                 if attempt > 0:
                     logger.debug(f"Reintento {attempt}/{retries} para comando: {command}")
                     time.sleep(0.2)
-                    try:
-                        self.serial.reset_input_buffer()
-                        self.serial.reset_output_buffer()
-                    except:
-                        pass
                 
                 # Enviar comando
                 cmd_bytes = (command + '\n').encode('utf-8')
@@ -404,6 +495,10 @@ class ADMX2001:
                 
                 logger.debug(f"Comando enviado: {command}")
                 
+                # Log especial para comandos lentos
+                if any(slow_cmd in command.lower() for slow_cmd in ['calibrate', 'sweep', '*idn']):
+                    logger.info(f"⏳ Comando lento detectado: '{command}' - esperando respuesta completa...")
+                
                 # Leer respuesta
                 original_timeout = self.serial.timeout
                 if timeout:
@@ -411,7 +506,14 @@ class ADMX2001:
                 
                 response_lines = []
                 start_time = time.time()
-                max_time = timeout or COMMAND_TIMEOUT
+                is_list_command = command.lower().startswith('calibrate list')
+                is_display_command = command.lower().startswith('display')
+                if is_list_command and not timeout:
+                    max_time = max(COMMAND_TIMEOUT, 30.0)
+                else:
+                    max_time = timeout or COMMAND_TIMEOUT
+                if is_display_command and not timeout:
+                    max_time = min(max_time, 5.0)
                 
                 # Buffer para acumular datos fragmentados
                 response_buffer = ""
@@ -419,44 +521,183 @@ class ADMX2001:
                 # Esperar un momento para que el dispositivo procese el comando
                 time.sleep(0.1)
                 
+                # MEJORA: Detectar tipo de comando para estrategia de timeout
+                is_slow_command = any(slow_cmd in command.lower() for slow_cmd in ['calibrate', 'sweep', 'z'])
+                is_very_slow_command = any(cmd in command.lower() for cmd in ['calibrate list', 'calibrate commit'])
+                
+                # MEJORA TERATERM: Timeout más inteligente (300ms sin datos en lugar de 2-8s)
+                if is_very_slow_command:
+                    no_data_timeout = 1.0  # Flash accessReducido de 8.0s a 1.0s
+                elif is_slow_command:
+                    no_data_timeout = 0.5  # Comandos lentos - Reducido de 3.0s a 0.5s
+                else:
+                    no_data_timeout = 0.3  # Comandos rápidos - Reducido de 0.5s a 0.3s
+                
+                last_data_time = time.time()
+                consecutive_empty_reads = 0
+                prompt_detected = False  # Flag para optimizar timeout después de ver prompt
+                
+                # MEJORA: Usar bytearray para mejor manejo de datos binarios
+                response_buffer_bytes = bytearray()
+                # MEJORA: Usar bytearray para mejor manejo de datos binarios
+                response_buffer_bytes = bytearray()
+                
                 while True:
                     if time.time() - start_time > max_time:
+                        if (is_list_command or is_display_command) and response_buffer_bytes:
+                            logger.warning(f"Timeout en '{command}', retornando respuesta parcial")
+                            if is_display_command:
+                                try:
+                                    self.serial.write(b'stop\n')
+                                    self.serial.flush()
+                                except Exception as e:
+                                    logger.warning(f"No se pudo enviar stop: {e}")
+                            break
                         raise TimeoutError(f"Timeout esperando respuesta para: {command}")
                     
                     # Verificar si hay datos disponibles antes de leer
-                    if self.serial.in_waiting > 0:
+                    in_waiting = self.serial.in_waiting
+                    if in_waiting > 0:
                         try:
-                            # Leer TODO lo disponible (estrategia robusta)
-                            chunk = self.serial.read(self.serial.in_waiting).decode('utf-8', errors='ignore')
-                            response_buffer += chunk
-                            logger.debug(f"Recibido chunk: {repr(chunk[:100])}")
+                            # MEJORA: Leer como bytes directamente
+                            chunk = self.serial.read(in_waiting)
+                            
+                            if chunk:
+                                # Datos recibidos correctamente
+                                response_buffer_bytes.extend(chunk)
+                                last_data_time = time.time()
+                                consecutive_empty_reads = 0
+                                logger.debug(f"Recibido chunk ({len(chunk)} bytes)")
+
+                                # MEJORA TERATERM: Detectar prompt EN BYTES pero NO terminar inmediatamente
+                                # Solo marcar que lo vimos para el chequeo de timeout
+                                prompt_detected = b'ADMX2001>' in response_buffer_bytes
+
+                                # Protección contra loops infinitos (solo si NO hay prompt)
+                                if not prompt_detected:
+                                    line_count = response_buffer_bytes.count(b'\\n')
+                                    if is_display_command and line_count >= 50:
+                                        try:
+                                            logger.warning("Display con demasiadas líneas, enviando abort/stop")
+                                            self.serial.write(b'abort\\n')
+                                            self.serial.flush()
+                                            time.sleep(0.05)
+                                            self.serial.write(b'stop\\n')
+                                            self.serial.flush()
+                                        except Exception as e:
+                                            logger.warning(f"No se pudo enviar stop: {e}")
+                                        break
+                                    if line_count >= 200:
+                                        try:
+                                            logger.warning("Demasiadas líneas sin prompt, enviando abort/stop")
+                                            self.serial.write(b'abort\\n')
+                                            self.serial.flush()
+                                            time.sleep(0.05)
+                                            self.serial.write(b'stop\\n')
+                                            self.serial.flush()
+                                        except Exception as e:
+                                            logger.warning(f"No se pudo enviar stop: {e}")
+                                        break
+                            else:
+                                # in_waiting reportó datos pero read() retornó vacío
+                                consecutive_empty_reads += 1
+                                logger.warning(f"⚠️ in_waiting={in_waiting} pero read() retornó vacío (intento {consecutive_empty_reads})")
+                                
+                                if consecutive_empty_reads > 5:
+                                    logger.error("Demasiadas lecturas vacías, posible problema de puerto")
+                                    raise serial.SerialException("device reports readiness but returns no data")
+                                
+                                time.sleep(0.1)
+                                
                         except serial.SerialException as e:
-                            # Si hay error leyendo, marcar como desconectado y relanzar
                             logger.error(f"Error de lectura serial: {e}")
                             self.is_connected = False
                             raise
-                        
-                        # Verificar si encontramos el prompt (indica fin de respuesta)
-                        if expect_prompt and 'ADMX2001>' in response_buffer:
-                            break
                     else:
-                        # No hay datos disponibles, esperar un poco
+                        # MEJORA TERATERM: Timeout más corto y más inteligente
                         time.sleep(0.05)
                         
-                        # Si tenemos datos en el buffer y no hay más datos entrantes, salir
-                        if response_buffer and self.serial.in_waiting == 0:
-                            time.sleep(0.05)  # Espera adicional
-                            if self.serial.in_waiting == 0:
-                                # Doble check para asegurar que realmente no hay más datos
-                                break
+                        if response_buffer_bytes:
+                            time_without_data = time.time() - last_data_time
+                            
+                            # Log periódico solo para comandos lentos
+                            if is_slow_command and time_without_data > 1.0 and int(time_without_data * 2) % 2 == 0:
+                                logger.debug(f"⏳ Esperando más datos... ({time_without_data:.1f}s sin datos)")
+                            
+                            # MEJORA: Si detectamos prompt, terminar rápido si no hay datos
+                            if prompt_detected and self.serial.in_waiting == 0:
+                                # Prompt detectado y no hay datos esperando
+                                # Una última verificación breve (50ms)
+                                if time_without_data > 0.05:
+                                    logger.info(f"Prompt detectado y sin datos por {time_without_data:.3f}s, finalizando")
+                                    break
+                            
+                            # Si NO hay prompt, usar timeout según tipo de comando
+                            if not prompt_detected and time_without_data > no_data_timeout:
+                                logger.info(f"Sin datos por {time_without_data:.1f}s (sin prompt), finalizando lectura")
+                                # Dar una última oportunidad
+                                time.sleep(0.1)
+                                if self.serial.in_waiting == 0:
+                                    break
+
+                
+                # MEJORA TERATERM: Decodificar UNA SOLA VEZ al final
+                try:
+                    response_buffer = response_buffer_bytes.decode('utf-8', errors='replace')
+                except:
+                    response_buffer = response_buffer_bytes.decode('latin-1', errors='replace')
                 
                 # Procesar el buffer completo por líneas
                 if response_buffer:
-                    for line in response_buffer.split('\n'):
+                    logger.info(f"Buffer completo ({len(response_buffer)} chars, {len(response_buffer_bytes)} bytes)")
+                    logger.info(f"Buffer (primeros 500): {repr(response_buffer[:500])}")
+                    
+                    newline_count = response_buffer.count('\\n')
+                    carriage_count = response_buffer.count('\\r')
+                    logger.info(f"Contadores: \\n={newline_count}, \\r={carriage_count}")
+                    
+                    # MEJORA: Filtrar eco SOLO en primera línea
+                    lines = response_buffer.split('\\n')
+                    cmd_lower = command.lower().strip()
+                    
+                    for idx, line in enumerate(lines):
+                        line_raw = line
                         line = clean_response_line(line)
+                        
+                        # MEJORA: Filtro de eco más inteligente (solo primera línea)
+                        if idx == 0:
+                            # Caso 1: Línea entera es el eco
+                            if line.lower() == cmd_lower:
+                                logger.info(f"Línea [0] ECO exacto detectado y filtrado: '{line}'")
+                                continue
+                            # Caso 2: Línea EMPIEZA con el eco (eco + respuesta en misma línea)
+                            elif line.lower().startswith(cmd_lower):
+                                original_line = line
+                                line = line[len(cmd_lower):].strip()
+                                logger.info(f"Línea [0] ECO removido del inicio: '{original_line}' → '{line}'")
+                                # Si después de remover eco queda vacío, continuar
+                                if not line:
+                                    continue
+                        
+                        # MEJORA: Última línea puede ser solo el prompt
+                        if idx == len(lines) - 1 and line == '':
+                            continue
+                        
+                        logger.debug(f"Línea [{idx}] RAW: {repr(line_raw[:150])}")
+                        logger.debug(f"Línea [{idx}] CLEAN: '{line}' (len={len(line)})")
+                        
                         if line:
                             response_lines.append(line)
-                            logger.debug(f"Línea procesada: {line}")
+                            logger.debug(f"Línea [{idx}] ✓ AGREGADA")
+                        else:
+                            logger.debug(f"Línea [{idx}] ✗ DESCARTADA (vacía)")
+                
+                if response_lines:
+                    logger.info(f"✅ Total líneas en respuesta: {len(response_lines)}")
+                    for idx, line in enumerate(response_lines[:10]):
+                        logger.info(f"   [{idx}] '{line[:100]}'")
+                else:
+                    logger.warning(f"⚠️ RESPUESTA VACÍA después de procesar buffer de {len(response_buffer)} chars")
                 
                 # Restaurar timeout
                 self.serial.timeout = original_timeout

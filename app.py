@@ -684,7 +684,8 @@ def register_global_terminal_callbacks(app):
          Output('command-input', 'value', allow_duplicate=True),
          Output('command-history-store', 'data', allow_duplicate=True),
          Output('terminal-streaming-state', 'data', allow_duplicate=True),
-         Output('terminal-streaming-interval', 'disabled', allow_duplicate=True)],
+         Output('terminal-streaming-interval', 'disabled', allow_duplicate=True),
+         Output('terminal-password-state', 'data', allow_duplicate=True)],
         [Input('command-input', 'n_submit'),
          Input('quick-measure-btn', 'n_clicks'),
          Input('quick-help-btn', 'n_clicks'),
@@ -693,12 +694,13 @@ def register_global_terminal_callbacks(app):
          Input('clear-terminal-btn', 'n_clicks')],
         [State('command-input', 'value'),
          State('command-output', 'children'),
-         State('command-history-store', 'data')],
+         State('command-history-store', 'data'),
+         State('terminal-password-state', 'data')],
         prevent_initial_call=True
     )
     def handle_terminal_command_global(
         n_submit, measure_clicks, help_clicks, status_clicks, version_clicks,
-        clear_clicks, command_text, current_output, history_store
+        clear_clicks, command_text, current_output, history_store, password_state
     ):
         """
         Maneja todos los comandos del terminal CLI globalmente.
@@ -711,8 +713,12 @@ def register_global_terminal_callbacks(app):
         if history_store is None:
             history_store = {'commands': [], 'index': -1}
         
+        # Inicializar password_state
+        if password_state is None:
+            password_state = {'waiting': False, 'original_command': ''}
+        
         if not ctx.triggered:
-            return current_output or [], "", history_store, {'active': False, 'command': ''}, True
+            return current_output or [], "", history_store, {'active': False, 'command': ''}, True, password_state
         
         triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
         
@@ -733,7 +739,7 @@ def register_global_terminal_callbacks(app):
                     html.Span("→ Terminal limpiada", className="text-muted")
                 ], className="terminal-line mb-2")
             ])
-            return [welcome], "", history_store, {'active': False, 'command': ''}, True
+            return [welcome], "", history_store, {'active': False, 'command': ''}, True, password_state
         
         # ===== DETERMINAR COMANDO =====
         quick_commands = {
@@ -748,11 +754,116 @@ def register_global_terminal_callbacks(app):
         elif triggered_id == 'command-input' and n_submit and n_submit > 0:
             command = (command_text or "").strip()
             if not command:
-                return current_output, "", history_store, {'active': False, 'command': ''}, True
+                return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
             # Log para debug
             logger.info(f"[Terminal] Comando recibido: '{command}'")
         else:
-            return current_output, "", history_store, {'active': False, 'command': ''}, True
+            return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
+
+        # ===== AUTO-STOP STREAMING SI HAY COMANDO NUEVO =====
+        if not password_state.get('waiting', False):
+            try:
+                if device_state.is_streaming_in_progress() and command.lower() != 'stop':
+                    current_output.append(
+                        html.Div([
+                            html.Span("⏹ ", className="text-warning"),
+                            html.Span("Deteniendo streaming activo...", className="text-muted fst-italic")
+                        ], className="terminal-line")
+                    )
+                    device_state.stop_streaming_command(wait_timeout=3.0)
+            except Exception as e:
+                logger.warning(f"[Terminal] No se pudo detener streaming automáticamente: {e}")
+        
+        # ===== MANEJO DE PASSWORD: Si estamos esperando una contraseña =====
+        if password_state.get('waiting', False):
+            logger.info(f"[Terminal] 🔐 PASSWORD MODE: Enviando '{command}' como contraseña")
+            
+            # El comando actual es la contraseña
+            password = command
+            original_command = password_state.get('original_command', 'calibrate commit')
+            
+            # Mostrar en terminal que se envió la contraseña (oculta)
+            current_output.append(
+                html.Div([
+                    html.Span(f"[{timestamp}] ➜ ", className="terminal-prompt"),
+                    html.Span("*" * len(password), className="text-muted"),  # Ocultar contraseña
+                    html.Span(" (password)", className="text-muted fst-italic ms-2")
+                ], className="terminal-line")
+            )
+            
+            # Obtener dispositivo
+            device = device_state.device
+            is_device_connected = device_state.is_connected
+            
+            if is_device_connected and device is not None:
+                try:
+                    # Enviar contraseña directamente al serial
+                    device.serial.write((password + '\n').encode('utf-8'))
+                    device.serial.flush()
+                    logger.info(f"[Terminal] 📤 Contraseña enviada")
+                    
+                    # Leer respuesta
+                    import time
+                    time.sleep(1.0)
+                    response_buffer = ""
+                    if device.serial.in_waiting > 0:
+                        response_buffer = device.serial.read(device.serial.in_waiting).decode('utf-8', errors='ignore')
+                    
+                    logger.info(f"[Terminal] 📥 Respuesta: {repr(response_buffer[:200])}")
+                    
+                    # Procesar respuesta
+                    lines = [l.strip() for l in response_buffer.split('\n') if l.strip() and 'ADMX2001>' not in l]
+                    
+                    if lines:
+                        for line in lines:
+                            # Determinar clase CSS
+                            line_lower = line.lower()
+                            if 'success' in line_lower or 'done' in line_lower:
+                                css_class = "terminal-response-success"
+                                prefix = html.Span("✓ ", className="terminal-success-icon")
+                            elif 'error' in line_lower or 'fail' in line_lower:
+                                css_class = "terminal-response-error"
+                                prefix = html.Span("✗ ", className="terminal-error-icon")
+                            else:
+                                css_class = "terminal-response-line"
+                                prefix = html.Span("  ", className="terminal-indent")
+                            
+                            current_output.append(
+                                html.Div([prefix, html.Span(line, className=css_class)], className="terminal-line")
+                            )
+                    else:
+                        current_output.append(
+                            html.Div([
+                                html.Span("⚠ ", className="text-warning"),
+                                html.Span("Sin respuesta del dispositivo", className="text-muted")
+                            ], className="terminal-line")
+                        )
+                    
+                except Exception as e:
+                    logger.error(f"[Terminal] ❌ Error enviando contraseña: {e}")
+                    current_output.append(
+                        html.Div([
+                            html.Span("✗ ", className="terminal-error-icon"),
+                            html.Span(f"Error: {str(e)}", className="terminal-response-error")
+                        ], className="terminal-line")
+                    )
+            else:
+                current_output.append(
+                    html.Div([
+                        html.Span("✗ ", className="terminal-error-icon"),
+                        html.Span("Error: Dispositivo no conectado", className="terminal-response-error")
+                    ], className="terminal-line")
+                )
+            
+            # Limpiar estado de password
+            password_state = {'waiting': False, 'original_command': ''}
+            
+            # Agregar separador
+            current_output.append(html.Div(className="terminal-separator"))
+            if len(current_output) > 80:
+                current_output = current_output[-80:]
+            
+            return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
         
         # ===== AGREGAR AL HISTORIAL =====
         if triggered_id == 'command-input':
@@ -800,9 +911,47 @@ def register_global_terminal_callbacks(app):
             current_output.append(html.Div(className="terminal-separator"))
             if len(current_output) > 80:
                 current_output = current_output[-80:]
-            return current_output, "", history_store, {'active': False, 'command': ''}, True
+            return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
         
         # ===== COMANDOS LOCALES (funcionan siempre, con o sin hardware) =====
+        
+        # Comando debug: cambiar nivel de logging en tiempo de ejecución
+        if cmd_lower in ['debug on', 'debug off', 'debug info']:
+            if cmd_lower == 'debug on':
+                logging.getLogger().setLevel(logging.DEBUG)
+                logging.getLogger('lib.admx2001').setLevel(logging.DEBUG)
+                logging.getLogger('lib.device_state').setLevel(logging.DEBUG)
+                msg = "✓ Logging detallado ACTIVADO (DEBUG)"
+                css_class = "terminal-response-success"
+            elif cmd_lower == 'debug off':
+                logging.getLogger().setLevel(logging.WARNING)
+                logging.getLogger('lib.admx2001').setLevel(logging.WARNING)
+                logging.getLogger('lib.device_state').setLevel(logging.WARNING)
+                msg = "✓ Logging detallado DESACTIVADO (WARNING)"
+                css_class = "terminal-response-warning"
+            elif cmd_lower == 'debug info':
+                logging.getLogger().setLevel(logging.INFO)
+                logging.getLogger('lib.admx2001').setLevel(logging.INFO)
+                logging.getLogger('lib.device_state').setLevel(logging.INFO)
+                msg = "✓ Logging nivel INFO (normal)"
+                css_class = "terminal-response-line"
+            
+            current_output.append(
+                html.Div([
+                    html.Span("  ", className="terminal-indent"),
+                    html.Span(msg, className=css_class)
+                ], className="terminal-line")
+            )
+            current_output.append(
+                html.Div([
+                    html.Span("💡 ", className="text-info"),
+                    html.Span("Los logs se muestran en la consola donde se ejecutó app.py", className="text-muted small")
+                ], className="terminal-line")
+            )
+            current_output.append(html.Div(className="terminal-separator"))
+            if len(current_output) > 80:
+                current_output = current_output[-80:]
+            return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
         
         if cmd_lower == 'version':
             # Comando version: mostrar información local y del hardware
@@ -886,15 +1035,54 @@ def register_global_terminal_callbacks(app):
             current_output.append(html.Div(className="terminal-separator"))
             if len(current_output) > 80:
                 current_output = current_output[-80:]
-            return current_output, "", history_store, {'active': False, 'command': ''}, True
+            return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
         
         # Verificar si hay dispositivo conectado
         if is_device_connected and device is not None:
             # ===== MODO REAL: Usar dispositivo ADMX2001 =====
+
+            # ===== COMANDOS LOCALES EN MODO REAL =====
+            if cmd_lower == 'status':
+                status_lines = [
+                    f"Conexión: {'Conectado' if device_state.is_connected else 'Desconectado'}",
+                    f"Puerto: {device_state.port_info or 'N/A'}",
+                    f"Streaming activo: {'Sí' if device_state.is_streaming_in_progress() else 'No'}"
+                ]
+                response_lines = status_lines
+                response_children = []
+                for line in response_lines:
+                    response_children.append(
+                        html.Div([
+                            html.Span("  ", className="terminal-indent"),
+                            html.Span(line, className="terminal-response-line")
+                        ], className="terminal-line")
+                    )
+                current_output.append(html.Div(response_children))
+                current_output.append(html.Div(className="terminal-separator"))
+                if len(current_output) > 80:
+                    current_output = current_output[-80:]
+                return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
+
+            if cmd_lower == 'stop':
+                try:
+                    device_state.stop_streaming_command(wait_timeout=3.0)
+                except Exception as e:
+                    logger.warning(f"[Terminal] Error en stop: {e}")
+
+                current_output.append(
+                    html.Div([
+                        html.Span("✓ ", className="terminal-success-icon"),
+                        html.Span("Streaming detenido", className="terminal-response-success")
+                    ], className="terminal-line")
+                )
+                current_output.append(html.Div(className="terminal-separator"))
+                if len(current_output) > 80:
+                    current_output = current_output[-80:]
+                return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
             
             # Detectar comandos que deben usar STREAMING (respuestas en tiempo real)
             cmd_lower_check = cmd_lower if 'cmd_lower' in locals() else command.lower()
-            use_streaming = cmd_lower_check in ['z', 'sweep']  # Comandos que envían múltiples líneas
+            use_streaming = cmd_lower_check == 'sweep'  # Solo sweep usa streaming
             
             if use_streaming:
                 # ===== MODO STREAMING: Mostrar datos en tiempo real =====
@@ -919,26 +1107,204 @@ def register_global_terminal_callbacks(app):
             try:
                 logger.info(f"[Terminal] ▶ Enviando: '{command}'")
                 
+                # ===== MANEJO ESPECIAL: calibrate commit (requiere contraseña) =====
+                if cmd_lower_check.startswith('calibrate commit'):
+                    # Parsear argumentos: calibrate commit [password] [timestamp]
+                    parts = command.split()
+                    password = None
+                    timestamp = None
+                    
+                    if len(parts) >= 3:  # calibrate commit <password>
+                        password = parts[2]
+                    if len(parts) >= 4:  # calibrate commit <password> <timestamp>
+                        timestamp = parts[3]
+                    
+                    if password:
+                        # Usuario proporcionó contraseña - enviar todo el flujo
+                        logger.info(f"[Terminal] 🔐 Calibrate commit con contraseña proporcionada: '{password}'")
+                        
+                        # Construir comando commit
+                        import time
+                        if timestamp:
+                            commit_cmd = f"calibrate commit {timestamp}"
+                        else:
+                            commit_cmd = f"calibrate commit {int(time.time())}"
+                        
+                        logger.info(f"[Terminal] 📤 Enviando: {commit_cmd}")
+                        
+                        try:
+                            device = device_state.device
+                            
+                            # Enviar comando commit
+                            device.serial.write((commit_cmd + '\n').encode('utf-8'))
+                            device.serial.flush()
+                            
+                            # Esperar y leer respuesta con PASSWORD>
+                            time.sleep(1.0)
+                            response_buffer = ""
+                            if device.serial.in_waiting > 0:
+                                response_buffer = device.serial.read(device.serial.in_waiting).decode('utf-8', errors='ignore')
+                            
+                            logger.info(f"[Terminal] 📥 Respuesta después de commit: {repr(response_buffer)}")
+                            
+                            # Verificar que recibimos PASSWORD>
+                            if 'PASSWORD>' not in response_buffer:
+                                logger.warning(f"[Terminal] ⚠️ No se recibió PASSWORD>, respuesta: {response_buffer}")
+                            
+                            # Enviar contraseña
+                            logger.info(f"[Terminal] 🔐 Enviando contraseña...")
+                            device.serial.write((password + '\n').encode('utf-8'))
+                            device.serial.flush()
+                            
+                            # Esperar respuesta del commit (puede tardar unos segundos)
+                            time.sleep(2.0)
+                            
+                            # Leer respuesta final
+                            commit_response = ""
+                            retries = 5
+                            for i in range(retries):
+                                if device.serial.in_waiting > 0:
+                                    chunk = device.serial.read(device.serial.in_waiting).decode('utf-8', errors='ignore')
+                                    commit_response += chunk
+                                    logger.info(f"[Terminal] 📥 Chunk {i+1}: {repr(chunk)}")
+                                    
+                                    # Si vemos el prompt o success/invalid, ya podemos procesar
+                                    if 'ADMX2001>' in commit_response or 'success' in commit_response.lower() or 'invalid' in commit_response.lower():
+                                        break
+                                
+                                time.sleep(0.5)  # Esperar más datos
+                            
+                            logger.info(f"[Terminal] 📥 Respuesta completa del commit: {repr(commit_response)}")
+                            
+                            # Procesar respuesta
+                            from lib.utils import clean_response_line
+                            response = []
+                            for line in (response_buffer + commit_response).split('\n'):
+                                clean_line = clean_response_line(line)
+                                if clean_line:
+                                    # Filtrar eco del comando y timestamp
+                                    if clean_line.lower() != commit_cmd.lower() and not clean_line.isdigit():
+                                        response.append(clean_line)
+                            
+                            logger.info(f"[Terminal] ✅ Respuesta procesada: {response}")
+                            
+                        except Exception as e:
+                            logger.error(f"[Terminal] ❌ Error en commit: {e}")
+                            import traceback
+                            traceback.print_exc()
+                            response = [f"Error: {e}"]
+                    else:
+                        # Sin contraseña - flujo interactivo: generar timestamp y enviar
+                        logger.info(f"[Terminal] 🔐 calibrate commit sin contraseña - modo interactivo")
+                        
+                        import time
+                        timestamp = int(time.time())
+                        commit_cmd = f"calibrate commit {timestamp}"
+                        
+                        logger.info(f"[Terminal] 📤 Enviando comando con timestamp Unix: {commit_cmd}")
+                        
+                        try:
+                            device = device_state.device
+                            
+                            # Enviar comando commit
+                            device.serial.write((commit_cmd + '\n').encode('utf-8'))
+                            device.serial.flush()
+                            
+                            # Esperar respuesta (debería incluir PASSWORD>)
+                            time.sleep(0.5)
+                            response_buffer = ""
+                            start_time = time.time()
+                            
+                            while (time.time() - start_time) < 3.0:
+                                if device.serial.in_waiting:
+                                    chunk = device.serial.read(device.serial.in_waiting).decode('utf-8', errors='ignore')
+                                    response_buffer += chunk
+                                    
+                                    # Detectar PASSWORD> para terminar lectura
+                                    if 'PASSWORD>' in response_buffer:
+                                        logger.info(f"[Terminal] 🔐 PASSWORD> detectado")
+                                        break
+                                else:
+                                    time.sleep(0.1)
+                            
+                            # Separar en líneas
+                            response = [line.strip() for line in response_buffer.split('\n') if line.strip()]
+                            logger.info(f"[Terminal] ✅ Respuesta recibida: {len(response)} líneas")
+                            
+                        except Exception as e:
+                            logger.error(f"[Terminal] ❌ Error en commit interactivo: {e}")
+                            import traceback
+                            traceback.print_exc()
+                            response = [f"Error: {e}"]
+                
                 # Determinar timeout según el comando
-                if cmd_lower_check.startswith('calibrate') or cmd_lower_check == '*idn':
+                elif cmd_lower_check.startswith('calibrate') or cmd_lower_check == '*idn' or cmd_lower_check == 'z':
                     timeout = 30.0
                     logger.info(f"[Terminal] ⏱️ Usando timeout extendido: {timeout}s")
-                    response = device_state.send_command(command, timeout=timeout)
+                    response = device_state.send_command(command, timeout=timeout, lock_timeout=5.0)
                 else:
                     # Comandos rápidos, usar timeout default
-                    response = device_state.send_command(command)
+                    response = device_state.send_command(command, lock_timeout=5.0)
                 
                 logger.info(f"[Terminal] ◀ Recibido: {len(response) if response else 0} líneas")
+                
+                # Log completo de la respuesta para comandos de calibración
+                if cmd_lower_check.startswith('calibrate'):
+                    logger.info(f"[Terminal] 🔍 DEBUG CALIBRATE - Command: '{command}'")
+                    logger.info(f"[Terminal] 🔍 DEBUG CALIBRATE - Response type: {type(response)}")
+                    logger.info(f"[Terminal] 🔍 DEBUG CALIBRATE - Response is None: {response is None}")
+                    if response:
+                        logger.info(f"[Terminal] 🔍 DEBUG CALIBRATE - Response length: {len(response)}")
+                        logger.info(f"[Terminal] 🔍 DEBUG CALIBRATE - Todas las líneas:")
+                        for idx, line in enumerate(response):
+                            logger.info(f"[Terminal] 🔍    [{idx}] {repr(line)}")
+                    else:
+                        logger.error(f"[Terminal] ❌ DEBUG CALIBRATE - Respuesta es None o vacía!")
+                        logger.error(f"[Terminal] ❌ DEBUG - Probablemente el dispositivo tardó mucho en responder")
                 
                 # Log de respuesta cruda para debug (primeras 10 líneas)
                 if response:
                     for idx, line in enumerate(response[:10]):
-                        logger.debug(f"[Terminal] RAW[{idx}]: '{line}'")
+                        logger.info(f"[Terminal] RAW[{idx}]: '{line}'")
                     if len(response) > 10:
-                        logger.debug(f"[Terminal] ... y {len(response)-10} líneas más")
+                        logger.info(f"[Terminal] ... y {len(response)-10} líneas más")
                 
                 if response:
                     # Procesar líneas de respuesta de forma optimizada
+                    # Para comandos de calibración, usar filtrado menos agresivo
+                    is_calibrate_cmd = cmd_lower_check.startswith('calibrate')
+                    
+                    # Detectar si hay prompt de PASSWORD (indica que necesita contraseña)
+                    has_password_prompt = any('PASSWORD>' in line or 'password>' in line.lower() for line in response)
+                    
+                    if has_password_prompt:
+                        logger.warning(f"[Terminal] 🔐 PASSWORD> detectado - esperando contraseña del usuario")
+                        
+                        # Establecer estado: esperando contraseña
+                        password_state = {'waiting': True, 'original_command': command}
+                        
+                        # Mostrar prompt de contraseña al usuario
+                        current_output.append(
+                            html.Div([
+                                html.Span("🔐 ", className="text-warning"),
+                                html.Span("PASSWORD> ", className="terminal-response-warning fw-bold"),
+                                html.Span("Ingrese la contraseña:", className="text-muted fst-italic")
+                            ], className="terminal-line")
+                        )
+                        current_output.append(
+                            html.Div([
+                                html.Span("💡 ", className="text-info"),
+                                html.Span("Contraseña predeterminada: ", className="text-muted"),
+                                html.Code("Analog123", className="terminal-code text-success")
+                            ], className="terminal-line")
+                        )
+                        current_output.append( html.Div(className="terminal-separator"))
+                        if len(current_output) > 80:
+                            current_output = current_output[-80:]
+                        
+                        # NO limpiar el input, retornar con password_state activo
+                        return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
+                    
                     # Filtrar eco del comando que puede aparecer al inicio O al final
                     cleaned_lines = []
                     
@@ -948,23 +1314,50 @@ def register_global_terminal_callbacks(app):
                         # Saltar líneas completamente vacías
                         if not line_stripped:
                             # Para comandos de calibración, mantener como separadores si ya hay contenido
-                            if cmd_lower_check.startswith('calibrate') and cleaned_lines:
+                            if is_calibrate_cmd and cleaned_lines:
                                 cleaned_lines.append("")
                             continue
                         
-                        # Filtrar eco: puede estar al inicio (líneas 0-1) o al final (última línea)
-                        is_first_lines = idx < 2
+                        # Filtrar eco: SOLO si es exactamente igual al comando
+                        # Para comandos de calibración, ser muy estricto ya que la salida es importante
+                        is_first_line = idx == 0
                         is_last_line = idx == len(response) - 1
                         
-                        if line_stripped.lower() == command.lower():
-                            if is_first_lines or is_last_line:
-                                logger.info(f"[Terminal] 🔇 Filtrando eco en línea {idx}: '{line_stripped}'")
-                                continue
+                        # Filtrar eco solo si es la primera o última línea Y es exactamente igual (case-insensitive)
+                        is_echo = line_stripped.lower() == command.lower()
+                        if is_echo and (is_first_line or is_last_line):
+                            logger.info(f"[Terminal] 🔇 Filtrando eco en línea {idx}: '{line_stripped}'")
+                            continue
                         
-                        # Agregar línea con contenido
-                        cleaned_lines.append(line_stripped)
+                        # Para calibración, ser más permisivo - agregar casi todo
+                        if is_calibrate_cmd:
+                            logger.info(f"[Terminal] ✅ [CALIBRATE] Agregando línea {idx}: '{line_stripped}'")
+                            cleaned_lines.append(line_stripped)
+                        else:
+                            # Para otros comandos, filtrado normal
+                            logger.info(f"[Terminal] ✅ Agregando línea {idx}: '{line_stripped}'")
+                            cleaned_lines.append(line_stripped)
                     
                     logger.info(f"[Terminal] 📝 Líneas procesadas: {len(cleaned_lines)} (de {len(response)} originales)")
+                    
+                    # FILTRADO ESPECIAL: Para comando 'z', mostrar solo la última línea de medición
+                    if cmd_lower_check == 'z' and len(cleaned_lines) > 0:
+                        # Buscar la última línea que parece una medición (empieza con número)
+                        measurement_lines = [line for line in cleaned_lines if line and line[0].isdigit()]
+                        if measurement_lines:
+                            logger.info(f"[Terminal] 🎯 Comando 'z': Filtrando {len(measurement_lines)} mediciones, mostrando solo la última")
+                            # Mantener la última medición y cualquier mensaje/advertencia
+                            last_measurement = measurement_lines[-1]
+                            warnings = [line for line in cleaned_lines if not (line and line[0].isdigit())]
+                            cleaned_lines = [last_measurement] + warnings
+                    
+                    # FILTRADO ESPECIAL: Para comando 'display', no debería haber mediciones
+                    if cmd_lower_check.startswith('display') and len(cleaned_lines) > 0:
+                        # Filtrar líneas que parecen mediciones (empiezan con número)
+                        non_measurement_lines = [line for line in cleaned_lines if not (line and line[0].isdigit())]
+                        if len(non_measurement_lines) < len(cleaned_lines):
+                            logger.warning(f"[Terminal] 🧹 Comando 'display': Filtrando {len(cleaned_lines) - len(non_measurement_lines)} líneas de medición no deseadas")
+                            cleaned_lines = non_measurement_lines if non_measurement_lines else cleaned_lines[:1]
                     
                     if cleaned_lines:
                         response_children = []
@@ -1002,13 +1395,45 @@ def register_global_terminal_callbacks(app):
                         # No hay líneas después del filtrado - mostrar info de debug
                         logger.warning(f"[Terminal] ⚠️ Sin líneas después de filtrar - respuesta original tenía {len(response)} líneas")
                         
-                        # Mostrar mensaje principal
-                        current_output.append(
-                            html.Div([
-                                html.Span("  ", className="terminal-indent"),
-                                html.Span("(sin salida del comando)", className="terminal-empty-response text-muted")
-                            ], className="terminal-line")
-                        )
+                        # Para comandos de calibración, mostrar las líneas sin filtrar directamente
+                        if cmd_lower_check.startswith('calibrate'):
+                            logger.info(f"[Terminal] 📋 Comando de calibración - mostrando respuesta sin filtrar")
+                            current_output.append(
+                                html.Div([
+                                    html.Span("⚠ ", className="text-warning"),
+                                    html.Span("Respuesta sin formato (debug):", className="text-warning fst-italic")
+                                ], className="terminal-line")
+                            )
+                            
+                            response_children = []
+                            for idx, line in enumerate(response):
+                                line_stripped = line.strip()
+                                if line_stripped:
+                                    # Mostrar todas las líneas sin filtrar para calibración
+                                    response_children.append(
+                                        html.Div([
+                                            html.Span(f"[{idx}] ", className="text-muted small"),
+                                            html.Span(line_stripped, className="terminal-response-line")
+                                        ], className="terminal-line")
+                                    )
+                            
+                            if response_children:
+                                current_output.append(html.Div(response_children))
+                            else:
+                                current_output.append(
+                                    html.Div([
+                                        html.Span("  ", className="terminal-indent"),
+                                        html.Span("(todas las líneas están vacías)", className="terminal-empty-response text-muted")
+                                    ], className="terminal-line")
+                                )
+                        else:
+                            # Para otros comandos, mostrar mensaje estándar
+                            current_output.append(
+                                html.Div([
+                                    html.Span("  ", className="terminal-indent"),
+                                    html.Span("(sin salida del comando)", className="terminal-empty-response text-muted")
+                                ], className="terminal-line")
+                            )
                         
                         # Mostrar detalles de debug expandibles con las líneas originales
                         raw_lines_preview = []
@@ -1061,7 +1486,7 @@ def register_global_terminal_callbacks(app):
                 if len(current_output) > 80:
                     current_output = current_output[-80:]
                 
-                return current_output, "", history_store, {'active': False, 'command': ''}, True
+                return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
                     
             except Exception as e:
                 error_msg = str(e)
@@ -1082,7 +1507,7 @@ def register_global_terminal_callbacks(app):
                 if len(current_output) > 80:
                     current_output = current_output[-80:]
                 
-                return current_output, "", history_store, {'active': False, 'command': ''}, True
+                return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
         
         # ===== MODO SIMULACIÓN: Respuestas simuladas =====
         cmd_lower = command.lower()
@@ -1121,7 +1546,9 @@ def register_global_terminal_callbacks(app):
                 "  calibrate open         Medición open",
                 "  calibrate short        Medición short", 
                 "  calibrate rt <R> xt <X>  Medición load",
-                "  calibrate commit <ts>  Guardar calibración",
+                "  calibrate commit <pass> [ts]  Guardar calibración",
+                "                         <pass> = contraseña (ej: Analog123)",
+                "                         [ts] = timestamp opcional",
                 "  calibrate list         Listar calibraciones",
                 "",
                 "SISTEMA:",
@@ -1130,6 +1557,7 @@ def register_global_terminal_callbacks(app):
                 "  help                   Esta ayuda",
                 "  status                 Estado del sistema",
                 "  reset                  Reset del sistema",
+                "  debug on|off|info      Activar/desactivar logging detallado",
                 "",
                 "═══════════════════════════════════════════════════",
                 "Modo: SIMULACIÓN - Conecte el dispositivo en Dashboard",
@@ -1226,7 +1654,7 @@ def register_global_terminal_callbacks(app):
         if len(current_output) > 80:
             current_output = current_output[-80:]
         
-        return current_output, "", history_store, {'active': False, 'command': ''}, True
+        return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
 
 
 def set_global_device(device, is_connected=False):

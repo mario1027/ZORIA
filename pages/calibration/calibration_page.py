@@ -858,8 +858,8 @@ def register_calibration_callbacks(app):
     def refresh_calibrations_table(n_clicks):
         """Actualiza la tabla de calibraciones almacenadas desde el dispositivo"""
         
-        import re
         from lib.device_state import device_state
+        from lib.calibration_parser import parse_calibrate_list_lines
         
         try:
             # Obtener dispositivo desde device_state global
@@ -878,13 +878,16 @@ def register_calibration_callbacks(app):
             # Obtener calibraciones del dispositivo
             calibrations_raw = device.calibration.list_calibrations()
             
-            # Log debug para ver qué se recibe
+            # Log debug MUY DETALLADO para ver qué se recibe
+            logger.info(f"[Cal] '==== DEBUG calibrate list ===='")
             logger.info(f"[Cal] Recibido {len(calibrations_raw) if calibrations_raw else 0} líneas de 'calibrate list'")
+            logger.info(f"[Cal] Tipo: {type(calibrations_raw)}")
+            
             if calibrations_raw:
-                for idx, line in enumerate(calibrations_raw[:5]):
-                    logger.debug(f"[Cal] Línea {idx}: '{line}'")
-                if len(calibrations_raw) > 5:
-                    logger.debug(f"[Cal] ... y {len(calibrations_raw)-5} líneas más")
+                logger.info(f"[Cal] '==== TODAS LAS LÍNEAS CRUDAS ===='")
+                for idx, line in enumerate(calibrations_raw):
+                    logger.info(f"[Cal] RAW[{idx:2d}]: {repr(line)}")
+                logger.info(f"[Cal] '==== FIN LÍNEAS CRUDAS ===='")
             
             # Verificar si hay errores en la respuesta
             if calibrations_raw:
@@ -923,113 +926,20 @@ def register_calibration_callbacks(app):
             
             # Parsear y crear filas de tabla con parseo robusto
             rows = []
-            frequencies_with_configs = {}  # Agrupar por frecuencia
+            frequencies_with_configs = parse_calibrate_list_lines(calibrations_raw)
             
-            # Palabras clave que indican que NO es una línea de calibración
-            invalid_keywords = ['idn', 'admx', 'firmware', 'hardware', 'error', 'command', 
-                              'unknown', 'invalid', 'not found', 'failed']
-            
-            for idx, cal_line in enumerate(calibrations_raw, 1):
-                try:
-                    # Limpiar y preparar línea
-                    line = cal_line.strip()
-                    if not line or line.startswith('#'):
-                        continue
-                    
-                    # Filtrar líneas que claramente no son calibraciones
-                    line_lower = line.lower()
-                    if any(keyword in line_lower for keyword in invalid_keywords):
-                        logger.debug(f"[Cal] Ignorando línea no válida: {line}")
-                        continue
-                    
-                    # DETECCIÓN DE FORMATO
-                    # Formato 1-3: Solo frecuencias (1000, "1000 Hz", "Freq: 1000 Hz")
-                    # Formato 4: Configuraciones de ganancia ("CH0=0 CH1=0")
-                    # Formato 5: Completo ("FREQ=1000 CH0=0 CH1=0")
-                    
-                    parsed_data = {}
-                    has_equals = '=' in line
-                    
-                    if has_equals:
-                        # Formato con clave=valor
-                        parts = line.split()
-                        for part in parts:
-                            if '=' in part:
-                                key, value = part.split('=', 1)
-                                parsed_data[key.upper()] = value
-                        
-                        freq = parsed_data.get('FREQ', parsed_data.get('FREQUENCY', None))
-                        ch0 = parsed_data.get('CH0', '?')
-                        ch1 = parsed_data.get('CH1', '?')
-                        res = parsed_data.get('RES', parsed_data.get('RESISTANCE', '?'))
-                        
-                        # Validar frecuencia
-                        if freq:
-                            try:
-                                freq_value = float(freq)
-                                # Validar rango ADMX2001: 0.2 Hz - 10 MHz
-                                if freq_value < 0.2 or freq_value > 10000000:
-                                    logger.debug(f"[Cal] Frecuencia fuera de rango: {freq_value} Hz")
-                                    continue
-                            except ValueError:
-                                logger.debug(f"[Cal] Frecuencia no numérica: {freq}")
-                                continue
-                        
-                        # Agrupar por frecuencia
-                        if freq:
-                            if freq not in frequencies_with_configs:
-                                frequencies_with_configs[freq] = []
-                            frequencies_with_configs[freq].append({
-                                'ch0': ch0,
-                                'ch1': ch1,
-                                'res': res,
-                                'raw': line
-                            })
-                        else:
-                            # Solo configuraciones, sin frecuencia
-                            # Asignar a frecuencia "desconocida"
-                            if '?' not in frequencies_with_configs:
-                                frequencies_with_configs['?'] = []
-                            frequencies_with_configs['?'].append({
-                                'ch0': ch0,
-                                'ch1': ch1,
-                                'res': res,
-                                'raw': line
-                            })
+            # Log detallado del resultado del parseo
+            logger.info(f"[Cal] '==== RESULTADO DEL PARSEO ===='")
+            logger.info(f"[Cal] Frecuencias parseadas: {len(frequencies_with_configs)}")
+            for freq_key in sorted(frequencies_with_configs.keys(), key=lambda x: float(x) if x.isdigit() else 0):
+                configs = frequencies_with_configs[freq_key]
+                logger.info(f"[Cal] FREQ={freq_key} Hz: {len(configs)} configs")
+                for idx, cfg in enumerate(configs):
+                    if cfg.get('placeholder'):
+                        logger.info(f"[Cal]   [{idx}] PLACEHOLDER")
                     else:
-                        # Formato simple: solo frecuencia
-                        # Intentar extraer número de frecuencia
-                        # Ser más estricto: debe ser solo números (opcionalmente con unidad)
-                        freq_match = re.search(r'^(\d+\.?\d*)\s*(Hz|kHz|MHz)?$', line, re.IGNORECASE)
-                        if freq_match:
-                            freq_value = float(freq_match.group(1))
-                            unit = freq_match.group(2) if freq_match.group(2) else 'Hz'
-                            
-                            # Convertir a Hz
-                            if unit.lower() == 'khz':
-                                freq_value *= 1000
-                            elif unit.lower() == 'mhz':
-                                freq_value *= 1000000
-                            
-                            # Validar rango ADMX2001: 0.2 Hz - 10 MHz
-                            if freq_value < 0.2 or freq_value > 10000000:
-                                logger.debug(f"[Cal] Frecuencia fuera de rango: {freq_value} Hz")
-                                continue
-                            
-                            freq_str = str(int(freq_value))
-                            if freq_str not in frequencies_with_configs:
-                                frequencies_with_configs[freq_str] = []
-                            # Marcar como frecuencia sin configuraciones cargadas aún
-                            if not frequencies_with_configs[freq_str]:
-                                frequencies_with_configs[freq_str] = [{'placeholder': True}]
-                        else:
-                            # No se pudo parsear - ignorar silenciosamente
-                            logger.debug(f"[Cal] No se pudo parsear: {line}")
-                            continue
-                
-                except Exception as e:
-                    # Solo registrar el error, no mostrar fila errónea
-                    logger.warning(f"[Cal] Error parseando línea '{cal_line}': {e}")
+                        logger.info(f"[Cal]   [{idx}] CH0={cfg.get('ch0')}, CH1={cfg.get('ch1')}, RES={cfg.get('res')}")
+            logger.info(f"[Cal] '==== FIN PARSEO ===='")
             
             # Crear filas organizadas por frecuencia
             row_num = 1
@@ -1095,6 +1005,10 @@ def register_calibration_callbacks(app):
             # Verificar si encontramos calibraciones válidas
             if not rows:
                 logger.info(f"[Cal] No se encontraron calibraciones válidas después del filtrado. Total líneas recibidas: {len(calibrations_raw)}")
+            else:
+                logger.info(f"[Cal] '==== RETORNANDO {len(rows)} FILAS A LA TABLA ===='")
+                for idx, row in enumerate(rows[:3]):  # solo primeras 3
+                    logger.info(f"[Cal] Fila {idx}: {type(row)}")
             
             return rows if rows else [
                 html.Tr([

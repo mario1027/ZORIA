@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+  "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <title>Additional settings / "Font" tab ([Setup] menu)</title>
+    <META http-equiv="Content-Style-Type" content="text/css">
+    <link rel="stylesheet" href="../style.css" type="text/css">
+  </head>
+
+  <body>
+    <h1><a href="setup-additional.html">Additional settings</a> / "Font" tab ([Setup] menu)</h1>
+
+    <dl>
+      <dt id="VTFont">VTWindow Font</dt>
+      <dd>
+        Specify VTWin font.
+        <dl>
+
+          <dt>Select Button</dt>
+          <dd>
+            Opens font dialog to select font to use.<br>
+            Fonts displayed in the font dialog list can be modified using the checkboxes below.
+          </dd>
+
+          <dt>List proportional fonts in font dialog</dt>
+          <dd>
+            Proportional fonts are displayed in font list in font dialog.
+            If the currently font is a proportional font, this checkbox is automatically checked and cannot be changed.<br>
+            This checkbox changes behavior of font dialog and is not saved in settings file.
+          </dd>
+
+          <dt id="ListHiddenFonts">List hidden fonts in font dialog</dt>
+          <dd>
+            Displays fonts set as hidden by the OS in font list in font dialog.<br>
+            If the currently font is a hidden font, this checkbox is automatically checked and cannot be changed.<br>
+            This checkbox changes behavior of font dialog and is not saved in settings file.
+            <p>
+              This feature to hide certain fonts in font dialog is available on Windows 7 and later.
+            </p>
+          </dd>
+
+          <dt id="Windows_Fonts">Use the link below to open the Fonts folder and view font visibility</dt>
+          <dd>
+            Click Font Folder link to open font folder where you can preview fonts and show/hide settings.
+          </dd>
+        </dl>
+      </dd>
+
+      <dt id="ResizedFont">Drawing resized font to fit cell width</dt>
+      <dd>
+        Character width to be displayed, such as "&copy;"(U+00A9),
+        can be either 1 or 2cell, and depending on the font design (font file),
+        the font width can also be either 1 or 2cell.<br>
+        Depending on the language and font, font width may not match width to display.<br>
+        When the text is drawn to fit the cell width, looks natural,
+        but drawing may be slower and the font design may differ from the font developer's intent.<br>
+        And refer to
+        <a href="setup-additional-coding.html#AmbiguousCharactersWidth">Ambiguous Characters width</a>,
+        <a href="setup-additional-coding.html#EastAsianWidth">East_Asian_Width and width (cells)</a>
+        for character width assumed by Tera Term connecting destination.
+        <dl>
+          <dt>ON</dt>
+          <dd>
+            When the width to be displayed and the width of the font to be drawn are different,
+            text is drawn with resizing font to the cell width.
+          </dd>
+
+          <dt>OFF</dt>
+          <dd>
+            Displays the design of the font file as it is.
+            <ul>
+              <li>When Tera Term displays as 2Cell and the font design is 1Cell,
+                1Cell character and 1Cell space are drawn.
+              <li>When Tera Term displays as 1Cell and the font design is 2Cell,
+                The left half of 2Cell is drawn.
+            </ul>
+          </dd>
+        </dl>
+      </dd>
+
+      <dt id="DrawAPI">API for drawing</dt>
+      <dd>
+        <dl>
+          <dt>Auto</dt>
+          <dd>
+            Automatically select Unicode/ANSI based on Windows version.<br>
+            Only ANSI is available on Windows 9x.
+          </dd>
+
+          <dt>Unicode API</dt>
+          <dd>
+            Use Unicode Draw API.<br>
+            Normally used.
+          </dd>
+
+          <dt>ANSI API</dt>
+          <dd>
+            Use ANSI(not Unicode) Draw API.<br>
+            Codepage needs to convert Unicode to ANSI character.
+            Some fonts need to use ANSI Draw API.<br>
+            Normally not used.
+          </dd>
+        </dl>
+      </dd>
+
+      <dt id="CharSpace">character space</dt>
+      <dd>
+        <p>
+          When charactor space is 0, font outline and <a href="../about/glossary.html#Cell">cell</a> outline are identical.<br>
+          Setting character spacing allows to add (or remove) space around font outline.<br>
+          <a href="char_space.png"><img width=30% src="char_space.png"></a>
+        </p>
+
+        <p>
+          see <a href="../setup/teraterm-win.html#space">Space between characters (lines)</a>.
+        </p>
+      </dd>
+
+    </dl>
+
+    <h3>Note:</h3>
+    <ul>
+      <li>
+	"Tera Special" font, which is included in the distribution package,
+	is used for displaying <a href="../about/emulations_dec_special.html">DEC Special Graphics</a>.
+	It can not be selected in this dialog box.
+      </li>
+      <li>
+	The font quality can be selected by using the <a href="setup-additional-visual.html#FontQuality">Font quality</a> on the Visual tab of Additional settings dialog.
+      </li>
+    </ul>
+
+  </body>
+</html>

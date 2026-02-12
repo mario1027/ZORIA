@@ -152,7 +152,7 @@ RECOMMENDED_MIN_TDELAY = 0.0  # Para optimización de velocidad
 RECOMMENDED_MIN_MDELAY = 0.0  # Solo a frecuencias > 10kHz
 
 # Baudrate y timeout
-DEFAULT_BAUDRATE = 115200
+DEFAULT_BAUDRATE = 115200  # IMPORTANTE: El ADMX2001 usa 115200 baud (NO 230400)
 DEFAULT_TIMEOUT = 5.0  # Aumentado para dispositivos lentos
 COMMAND_TIMEOUT = 10.0
 SWEEP_TIMEOUT = 600.0  # 10 minutos - para sweeps muy largos (era 60s)
