@@ -524,10 +524,13 @@ class ADMX2001:
                 # MEJORA: Detectar tipo de comando para estrategia de timeout
                 is_slow_command = any(slow_cmd in command.lower() for slow_cmd in ['calibrate', 'sweep', 'z'])
                 is_very_slow_command = any(cmd in command.lower() for cmd in ['calibrate list', 'calibrate commit'])
+                is_calibration_measurement = any(cmd in command.lower() for cmd in ['calibrate open', 'calibrate short', 'calibrate rt'])
                 
                 # MEJORA TERATERM: Timeout más inteligente (300ms sin datos en lugar de 2-8s)
                 if is_very_slow_command:
                     no_data_timeout = 1.0  # Flash accessReducido de 8.0s a 1.0s
+                elif is_calibration_measurement:
+                    no_data_timeout = 3.0  # Calibraciones pueden tardar en responder la primera vez
                 elif is_slow_command:
                     no_data_timeout = 0.5  # Comandos lentos - Reducido de 3.0s a 0.5s
                 else:

@@ -728,6 +728,9 @@ def register_global_terminal_callbacks(app):
         elif not isinstance(current_output, list):
             current_output = [current_output]
         
+        # Timestamp para todas las operaciones del terminal
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        
         # ===== LIMPIAR TERMINAL =====
         if triggered_id == 'clear-terminal-btn':
             welcome = html.Div([
@@ -776,11 +779,14 @@ def register_global_terminal_callbacks(app):
         
         # ===== MANEJO DE PASSWORD: Si estamos esperando una contraseña =====
         if password_state.get('waiting', False):
-            logger.info(f"[Terminal] 🔐 PASSWORD MODE: Enviando '{command}' como contraseña")
+            logger.info(f"[Terminal] 🔐 PASSWORD MODE: Enviando '{command}' como contraseña (TeraTerm style)")
             
             # El comando actual es la contraseña
             password = command
+            if password.lower() == 'analog123':
+                password = 'Analog123'
             original_command = password_state.get('original_command', 'calibrate commit')
+            keep_password_mode = False
             
             # Mostrar en terminal que se envió la contraseña (oculta)
             current_output.append(
@@ -797,30 +803,138 @@ def register_global_terminal_callbacks(app):
             
             if is_device_connected and device is not None:
                 try:
-                    # Enviar contraseña directamente al serial
+                    # Enviar contraseña directamente al serial (SIN esperar prompt ADMX2001>)
                     device.serial.write((password + '\n').encode('utf-8'))
                     device.serial.flush()
                     logger.info(f"[Terminal] 📤 Contraseña enviada")
                     
-                    # Leer respuesta
+                    # DETECCIÓN ACTIVA de respuesta (TeraTerm style)
                     import time
-                    time.sleep(1.0)
-                    response_buffer = ""
-                    if device.serial.in_waiting > 0:
-                        response_buffer = device.serial.read(device.serial.in_waiting).decode('utf-8', errors='ignore')
+                    response_buffer = bytearray()
+                    timeout = 5.0
+                    start_time = time.time()
+                    success_detected = False
                     
-                    logger.info(f"[Terminal] 📥 Respuesta: {repr(response_buffer[:200])}")
+                    while (time.time() - start_time) < timeout:
+                        if device.serial.in_waiting:
+                            chunk = device.serial.read(device.serial.in_waiting)
+                            response_buffer.extend(chunk)
+                            
+                            # Buscar confirmación de éxito o prompt
+                            buffer_str = response_buffer.decode('utf-8', errors='ignore')
+                            if 'success' in buffer_str.lower() or 'ADMX2001>' in buffer_str:
+                                success_detected = True
+                                logger.info(f"[Terminal] ✓ Respuesta recibida (success o prompt detectado)")
+                                # Pequeña pausa para datos finales
+                                time.sleep(0.05)
+                                if device.serial.in_waiting:
+                                    response_buffer.extend(device.serial.read(device.serial.in_waiting))
+                                break
+                        else:
+                            # No hay datos, breve pausa
+                            time.sleep(0.05)
                     
-                    # Procesar respuesta
-                    lines = [l.strip() for l in response_buffer.split('\n') if l.strip() and 'ADMX2001>' not in l]
+                    # Decodificar buffer
+                    response_text = response_buffer.decode('utf-8', errors='ignore')
+                    logger.info(f"[Terminal] 📥 Respuesta completa: {repr(response_text[:200])}")
                     
-                    if lines:
-                        for line in lines:
+                    # Procesar respuesta con limpieza robusta (ANSI/VT100)
+                    from lib.utils import clean_response_line
+                    cleaned_lines = []
+                    password_as_command_detected = False
+                    for raw_line in response_text.split('\n'):
+                        line = clean_response_line(raw_line)
+                        if not line:
+                            continue
+                        if line == password:
+                            continue
+                        if line.lower().startswith("password>"):
+                            keep_password_mode = True
+                            continue
+                        if "command" in line.lower() and "not found" in line.lower() and password.lower() in line.lower():
+                            password_as_command_detected = True
+                        cleaned_lines.append(line)
+
+                    # Fallback: si la contraseña se interpretó como comando, reintentar flujo completo automáticamente
+                    if password_as_command_detected and original_command.lower().startswith('calibrate '):
+                        logger.warning(f"[Terminal] Password interpretada como comando. Reintentando flujo: {original_command}")
+                        try:
+                            # 1) Re-enviar comando original
+                            device.serial.reset_input_buffer()
+                            device.serial.reset_output_buffer()
+                            device.serial.write((original_command + '\n').encode('utf-8'))
+                            device.serial.flush()
+
+                            # 2) Esperar prompt PASSWORD>
+                            retry_buffer = bytearray()
+                            retry_start = time.time()
+                            retry_timeout = 3.0
+                            got_password_prompt = False
+
+                            while (time.time() - retry_start) < retry_timeout:
+                                if device.serial.in_waiting:
+                                    retry_buffer.extend(device.serial.read(device.serial.in_waiting))
+                                    retry_text = retry_buffer.decode('utf-8', errors='ignore')
+                                    if 'PASSWORD>' in retry_text.upper():
+                                        got_password_prompt = True
+                                        break
+                                else:
+                                    time.sleep(0.05)
+
+                            if got_password_prompt:
+                                # 3) Enviar contraseña inmediatamente
+                                device.serial.write((password + '\n').encode('utf-8'))
+                                device.serial.flush()
+
+                                # 4) Leer respuesta final
+                                final_buffer = bytearray()
+                                final_start = time.time()
+                                final_timeout = 6.0
+                                while (time.time() - final_start) < final_timeout:
+                                    if device.serial.in_waiting:
+                                        final_buffer.extend(device.serial.read(device.serial.in_waiting))
+                                        final_text = final_buffer.decode('utf-8', errors='ignore')
+                                        if 'success' in final_text.lower() or 'done' in final_text.lower() or 'ADMX2001>' in final_text:
+                                            time.sleep(0.05)
+                                            if device.serial.in_waiting:
+                                                final_buffer.extend(device.serial.read(device.serial.in_waiting))
+                                            break
+                                    else:
+                                        time.sleep(0.05)
+
+                                # Re-procesar líneas con resultado final
+                                cleaned_lines = []
+                                keep_password_mode = False
+                                for raw_line in final_buffer.decode('utf-8', errors='ignore').split('\n'):
+                                    line = clean_response_line(raw_line)
+                                    if not line:
+                                        continue
+                                    if line == password:
+                                        continue
+                                    if line.lower().startswith("password>"):
+                                        keep_password_mode = True
+                                        continue
+                                    cleaned_lines.append(line)
+                            else:
+                                keep_password_mode = True
+                                cleaned_lines = ["No se pudo reabrir prompt PASSWORD>. Intente nuevamente."]
+                        except Exception as retry_error:
+                            logger.warning(f"[Terminal] Reintento automático de password falló: {retry_error}")
+                            keep_password_mode = True
+                            cleaned_lines = ["No se pudo completar reintento automático. Reingrese la contraseña."]
+                    
+                    if cleaned_lines:
+                        for line in cleaned_lines:
                             # Determinar clase CSS
                             line_lower = line.lower()
                             if 'success' in line_lower or 'done' in line_lower:
                                 css_class = "terminal-response-success"
                                 prefix = html.Span("✓ ", className="terminal-success-icon")
+                            elif "command" in line_lower and "not found" in line_lower and password.lower() in line_lower:
+                                css_class = "terminal-response-warning"
+                                prefix = html.Span("⚠ ", className="terminal-warning-icon")
+                                line = "Contraseña incorrecta o prompt expirado. Intente nuevamente."
+                                keep_password_mode = True
                             elif 'error' in line_lower or 'fail' in line_lower:
                                 css_class = "terminal-response-error"
                                 prefix = html.Span("✗ ", className="terminal-error-icon")
@@ -855,8 +969,18 @@ def register_global_terminal_callbacks(app):
                     ], className="terminal-line")
                 )
             
-            # Limpiar estado de password
-            password_state = {'waiting': False, 'original_command': ''}
+            # Mantener modo password si el dispositivo aún lo requiere
+            if keep_password_mode:
+                password_state = {'waiting': True, 'original_command': original_command}
+                current_output.append(
+                    html.Div([
+                        html.Span("🔐 ", className="text-warning"),
+                        html.Span("PASSWORD> ", className="terminal-response-warning fw-bold"),
+                        html.Span("Reingrese la contraseña.", className="text-muted fst-italic")
+                    ], className="terminal-line")
+                )
+            else:
+                password_state = {'waiting': False, 'original_command': ''}
             
             # Agregar separador
             current_output.append(html.Div(className="terminal-separator"))
@@ -872,8 +996,6 @@ def register_global_terminal_callbacks(app):
                 if len(history_store['commands']) > 100:
                     history_store['commands'] = history_store['commands'][-100:]
             history_store['index'] = len(history_store['commands'])
-        
-        timestamp = datetime.now().strftime("%H:%M:%S")
         
         # Obtener referencia al dispositivo desde el estado global
         device = device_state.device
@@ -1106,9 +1228,117 @@ def register_global_terminal_callbacks(app):
             # ===== MODO NORMAL: Esperar respuesta completa =====
             try:
                 logger.info(f"[Terminal] ▶ Enviando: '{command}'")
+
+                # ===== MANEJO ESPECIAL: calibrate erase (requiere contraseña) =====
+                if cmd_lower_check.startswith('calibrate erase'):
+                    parts = command.split()
+                    erase_password = parts[2] if len(parts) >= 3 else None
+
+                    import time
+                    erase_cmd = "calibrate erase"
+                    from lib.utils import clean_response_line
+
+                    try:
+                        device = device_state.device
+                        device.serial.reset_input_buffer()
+                        device.serial.reset_output_buffer()
+
+                        # Enviar comando erase
+                        device.serial.write((erase_cmd + '\n').encode('utf-8'))
+                        device.serial.flush()
+
+                        # Esperar prompt PASSWORD>
+                        first_buffer = bytearray()
+                        timeout = 5.0
+                        start_time = time.time()
+                        password_prompt_received = False
+
+                        while (time.time() - start_time) < timeout:
+                            if device.serial.in_waiting:
+                                first_buffer.extend(device.serial.read(device.serial.in_waiting))
+                                first_text = first_buffer.decode('utf-8', errors='ignore')
+                                if 'PASSWORD>' in first_text.upper():
+                                    password_prompt_received = True
+                                    time.sleep(0.05)
+                                    if device.serial.in_waiting:
+                                        first_buffer.extend(device.serial.read(device.serial.in_waiting))
+                                    break
+                            else:
+                                time.sleep(0.05)
+
+                        first_text = first_buffer.decode('utf-8', errors='ignore')
+
+                        # Si no vino password inline, entrar a modo interactivo
+                        if not erase_password:
+                            response = []
+                            for line in first_text.split('\n'):
+                                clean_line = clean_response_line(line)
+                                if clean_line and clean_line.lower() != erase_cmd:
+                                    response.append(clean_line)
+
+                            if password_prompt_received:
+                                password_state = {'waiting': True, 'original_command': erase_cmd}
+                                current_output.append(
+                                    html.Div([
+                                        html.Span("🔐 ", className="text-warning"),
+                                        html.Span("PASSWORD> ", className="terminal-response-warning fw-bold"),
+                                        html.Span("Ingrese la contraseña:", className="text-muted fst-italic")
+                                    ], className="terminal-line")
+                                )
+                                current_output.append(
+                                    html.Div([
+                                        html.Span("💡 ", className="text-info"),
+                                        html.Span("Contraseña predeterminada: ", className="text-muted"),
+                                        html.Code("Analog123", className="terminal-code text-success")
+                                    ], className="terminal-line")
+                                )
+                                current_output.append(html.Div(className="terminal-separator"))
+                                if len(current_output) > 80:
+                                    current_output = current_output[-80:]
+                                return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
+
+                            # Si no detecta PASSWORD>, mostrar lo que haya
+                            response = response or ["No se recibió prompt PASSWORD> para calibrate erase"]
+
+                        else:
+                            # Password inline: enviar contraseña y leer respuesta final
+                            device.serial.write((erase_password + '\n').encode('utf-8'))
+                            device.serial.flush()
+
+                            final_buffer = bytearray()
+                            timeout = 6.0
+                            start_time = time.time()
+                            while (time.time() - start_time) < timeout:
+                                if device.serial.in_waiting:
+                                    final_buffer.extend(device.serial.read(device.serial.in_waiting))
+                                    final_text = final_buffer.decode('utf-8', errors='ignore')
+                                    if 'ADMX2001>' in final_text or 'success' in final_text.lower() or 'invalid' in final_text.lower() or 'done' in final_text.lower():
+                                        time.sleep(0.05)
+                                        if device.serial.in_waiting:
+                                            final_buffer.extend(device.serial.read(device.serial.in_waiting))
+                                        break
+                                else:
+                                    time.sleep(0.05)
+
+                            response = []
+                            for line in (first_text + final_buffer.decode('utf-8', errors='ignore')).split('\n'):
+                                clean_line = clean_response_line(line)
+                                if not clean_line:
+                                    continue
+                                if clean_line.lower() == erase_cmd:
+                                    continue
+                                if clean_line == erase_password:
+                                    continue
+                                response.append(clean_line)
+
+                    except Exception as e:
+                        logger.error(f"[Terminal] ❌ Error en erase: {e}")
+                        import traceback
+                        traceback.print_exc()
+                        response = [f"Error: {e}"]
                 
                 # ===== MANEJO ESPECIAL: calibrate commit (requiere contraseña) =====
-                if cmd_lower_check.startswith('calibrate commit'):
+                elif cmd_lower_check.startswith('calibrate commit'):
                     # Parsear argumentos: calibrate commit [password] [timestamp]
                     parts = command.split()
                     password = None
@@ -1120,8 +1350,8 @@ def register_global_terminal_callbacks(app):
                         timestamp = parts[3]
                     
                     if password:
-                        # Usuario proporcionó contraseña - enviar todo el flujo
-                        logger.info(f"[Terminal] 🔐 Calibrate commit con contraseña proporcionada: '{password}'")
+                        # Usuario proporcionó contraseña - enviar todo el flujo (TeraTerm style)
+                        logger.info(f"[Terminal] 🔐 Calibrate commit con contraseña proporcionada: '{password}' (TeraTerm style)")
                         
                         # Construir comando commit
                         import time
@@ -1135,58 +1365,88 @@ def register_global_terminal_callbacks(app):
                         try:
                             device = device_state.device
                             
+                            # Limpiar buffers antes de comenzar
+                            device.serial.reset_input_buffer()
+                            device.serial.reset_output_buffer()
+                            
                             # Enviar comando commit
                             device.serial.write((commit_cmd + '\n').encode('utf-8'))
                             device.serial.flush()
                             
-                            # Esperar y leer respuesta con PASSWORD>
-                            time.sleep(1.0)
-                            response_buffer = ""
-                            if device.serial.in_waiting > 0:
-                                response_buffer = device.serial.read(device.serial.in_waiting).decode('utf-8', errors='ignore')
+                            # DETECCIÓN ACTIVA del prompt PASSWORD>
+                            response_buffer = bytearray()
+                            timeout = 5.0
+                            start_time = time.time()
+                            password_prompt_received = False
                             
-                            logger.info(f"[Terminal] 📥 Respuesta después de commit: {repr(response_buffer)}")
+                            while (time.time() - start_time) < timeout:
+                                if device.serial.in_waiting:
+                                    chunk = device.serial.read(device.serial.in_waiting)
+                                    response_buffer.extend(chunk)
+                                    
+                                    # Buscar el prompt de contraseña
+                                    buffer_str = response_buffer.decode('utf-8', errors='ignore')
+                                    if 'PASSWORD>' in buffer_str.upper():
+                                        password_prompt_received = True
+                                        logger.info(f"[Terminal] 🔐 PASSWORD> detectado activamente")
+                                        # Pequeña pausa para datos finales
+                                        time.sleep(0.05)
+                                        if device.serial.in_waiting:
+                                            response_buffer.extend(device.serial.read(device.serial.in_waiting))
+                                        break
+                                else:
+                                    time.sleep(0.05)
+                            
+                            first_response = response_buffer.decode('utf-8', errors='ignore')
+                            logger.info(f"[Terminal] 📥 Respuesta después de commit: {repr(first_response[:200])}")
                             
                             # Verificar que recibimos PASSWORD>
-                            if 'PASSWORD>' not in response_buffer:
-                                logger.warning(f"[Terminal] ⚠️ No se recibió PASSWORD>, respuesta: {response_buffer}")
+                            if not password_prompt_received:
+                                logger.warning(f"[Terminal] ⚠️ No se recibió PASSWORD>, respuesta: {first_response}")
                             
-                            # Enviar contraseña
+                            # Enviar contraseña (sin esperar prompt ADMX2001>)
                             logger.info(f"[Terminal] 🔐 Enviando contraseña...")
                             device.serial.write((password + '\n').encode('utf-8'))
                             device.serial.flush()
                             
-                            # Esperar respuesta del commit (puede tardar unos segundos)
-                            time.sleep(2.0)
+                            # DETECCIÓN ACTIVA de respuesta final
+                            commit_response_buffer = bytearray()
+                            timeout = 5.0
+                            start_time = time.time()
+                            success_detected = False
                             
-                            # Leer respuesta final
-                            commit_response = ""
-                            retries = 5
-                            for i in range(retries):
-                                if device.serial.in_waiting > 0:
-                                    chunk = device.serial.read(device.serial.in_waiting).decode('utf-8', errors='ignore')
-                                    commit_response += chunk
-                                    logger.info(f"[Terminal] 📥 Chunk {i+1}: {repr(chunk)}")
+                            while (time.time() - start_time) < timeout:
+                                if device.serial.in_waiting:
+                                    chunk = device.serial.read(device.serial.in_waiting)
+                                    commit_response_buffer.extend(chunk)
                                     
-                                    # Si vemos el prompt o success/invalid, ya podemos procesar
-                                    if 'ADMX2001>' in commit_response or 'success' in commit_response.lower() or 'invalid' in commit_response.lower():
+                                    # Buscar confirmación
+                                    buffer_str = commit_response_buffer.decode('utf-8', errors='ignore')
+                                    if 'success' in buffer_str.lower() or 'ADMX2001>' in buffer_str or 'invalid' in buffer_str.lower():
+                                        success_detected = True
+                                        logger.info(f"[Terminal] ✓ Respuesta final recibida")
+                                        # Pequeña pausa para datos finales
+                                        time.sleep(0.05)
+                                        if device.serial.in_waiting:
+                                            commit_response_buffer.extend(device.serial.read(device.serial.in_waiting))
                                         break
-                                
-                                time.sleep(0.5)  # Esperar más datos
+                                else:
+                                    time.sleep(0.05)
                             
-                            logger.info(f"[Terminal] 📥 Respuesta completa del commit: {repr(commit_response)}")
+                            commit_response = commit_response_buffer.decode('utf-8', errors='ignore')
+                            logger.info(f"[Terminal] 📥 Respuesta completa del commit: {repr(commit_response[:200])}")
                             
                             # Procesar respuesta
                             from lib.utils import clean_response_line
                             response = []
-                            for line in (response_buffer + commit_response).split('\n'):
+                            for line in (first_response + commit_response).split('\n'):
                                 clean_line = clean_response_line(line)
                                 if clean_line:
                                     # Filtrar eco del comando y timestamp
                                     if clean_line.lower() != commit_cmd.lower() and not clean_line.isdigit():
                                         response.append(clean_line)
                             
-                            logger.info(f"[Terminal] ✅ Respuesta procesada: {response}")
+                            logger.info(f"[Terminal] ✅ Respuesta procesada: {len(response)} líneas")
                             
                         except Exception as e:
                             logger.error(f"[Terminal] ❌ Error en commit: {e}")
@@ -1195,7 +1455,7 @@ def register_global_terminal_callbacks(app):
                             response = [f"Error: {e}"]
                     else:
                         # Sin contraseña - flujo interactivo: generar timestamp y enviar
-                        logger.info(f"[Terminal] 🔐 calibrate commit sin contraseña - modo interactivo")
+                        logger.info(f"[Terminal] 🔐 calibrate commit sin contraseña - modo interactivo (TeraTerm style)")
                         
                         import time
                         timestamp = int(time.time())
@@ -1206,30 +1466,51 @@ def register_global_terminal_callbacks(app):
                         try:
                             device = device_state.device
                             
+                            # Limpiar buffers antes de comenzar (TeraTerm style)
+                            device.serial.reset_input_buffer()
+                            device.serial.reset_output_buffer()
+                            
                             # Enviar comando commit
                             device.serial.write((commit_cmd + '\n').encode('utf-8'))
                             device.serial.flush()
+                            logger.debug(f"[Terminal] Comando enviado: {commit_cmd}")
                             
-                            # Esperar respuesta (debería incluir PASSWORD>)
-                            time.sleep(0.5)
-                            response_buffer = ""
+                            # DETECCIÓN ACTIVA del prompt PASSWORD> (similar a TeraTerm)
+                            response_buffer = bytearray()
+                            timeout = 5.0
                             start_time = time.time()
+                            password_prompt_received = False
                             
-                            while (time.time() - start_time) < 3.0:
+                            while (time.time() - start_time) < timeout:
                                 if device.serial.in_waiting:
-                                    chunk = device.serial.read(device.serial.in_waiting).decode('utf-8', errors='ignore')
-                                    response_buffer += chunk
+                                    chunk = device.serial.read(device.serial.in_waiting)
+                                    response_buffer.extend(chunk)
                                     
-                                    # Detectar PASSWORD> para terminar lectura
-                                    if 'PASSWORD>' in response_buffer:
-                                        logger.info(f"[Terminal] 🔐 PASSWORD> detectado")
+                                    # Buscar el prompt de contraseña (case-insensitive)
+                                    buffer_str = response_buffer.decode('utf-8', errors='ignore')
+                                    if 'PASSWORD>' in buffer_str.upper():
+                                        password_prompt_received = True
+                                        logger.info(f"[Terminal] 🔐 PASSWORD> detectado activamente")
+                                        # Pequeña pausa para datos finales
+                                        time.sleep(0.05)
+                                        # Leer cualquier dato adicional
+                                        if device.serial.in_waiting:
+                                            response_buffer.extend(device.serial.read(device.serial.in_waiting))
                                         break
                                 else:
-                                    time.sleep(0.1)
+                                    # No hay datos, breve pausa
+                                    time.sleep(0.05)
                             
-                            # Separar en líneas
-                            response = [line.strip() for line in response_buffer.split('\n') if line.strip()]
-                            logger.info(f"[Terminal] ✅ Respuesta recibida: {len(response)} líneas")
+                            # Decodificar buffer
+                            response_text = response_buffer.decode('utf-8', errors='ignore')
+                            
+                            if not password_prompt_received:
+                                logger.warning(f"[Terminal] ⚠️ No se recibió PASSWORD> en {timeout}s")
+                                logger.warning(f"[Terminal] Respuesta recibida: {repr(response_text)}")
+                            
+                            # Separar en líneas para mostrar
+                            response = [line.strip() for line in response_text.split('\n') if line.strip()]
+                            logger.info(f"[Terminal] ✅ Respuesta recibida: {len(response)} líneas (prompt detectado: {password_prompt_received})")
                             
                         except Exception as e:
                             logger.error(f"[Terminal] ❌ Error en commit interactivo: {e}")
@@ -1247,6 +1528,17 @@ def register_global_terminal_callbacks(app):
                     response = device_state.send_command(command, lock_timeout=5.0)
                 
                 logger.info(f"[Terminal] ◀ Recibido: {len(response) if response else 0} líneas")
+
+                # Reintento automático para calibración si llegó vacío (evita falsos 'sin respuesta')
+                if (not response) and cmd_lower_check.startswith('calibrate') and (not cmd_lower_check.startswith('calibrate commit')) and (not cmd_lower_check.startswith('calibrate erase')):
+                    logger.warning(f"[Terminal] ⚠️ Respuesta vacía en calibración. Reintentando: '{command}'")
+                    try:
+                        import time
+                        time.sleep(0.15)
+                        response = device_state.send_command(command, timeout=45.0, lock_timeout=8.0)
+                        logger.info(f"[Terminal] ◀ Reintento calibración: {len(response) if response else 0} líneas")
+                    except Exception as retry_error:
+                        logger.warning(f"[Terminal] Reintento de calibración falló: {retry_error}")
                 
                 # Log completo de la respuesta para comandos de calibración
                 if cmd_lower_check.startswith('calibrate'):

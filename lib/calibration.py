@@ -333,26 +333,77 @@ class CalibrationManager:
         logger.info(f"Guardando calibración en flash (timestamp={timestamp})...")
         
         try:
-            # Enviar comando commit
-            response = self.device.send_command(cmd)
+            # Limpiar buffers antes de comenzar
+            self.device.serial.reset_input_buffer()
+            self.device.serial.reset_output_buffer()
             
-            # El dispositivo pedirá la contraseña
-            # Buscar prompt "PASSWORD>"
-            time.sleep(0.5)
+            # Paso 1: Enviar comando commit
+            self.device.serial.write((cmd + "\n").encode('utf-8'))
+            self.device.serial.flush()
+            logger.debug(f"Comando enviado: {cmd}")
             
-            # Enviar contraseña
-            self.device.send_command(password, expect_prompt=False)
+            # Paso 2: Esperar prompt "PASSWORD>" (similar a TeraTerm)
+            password_prompt_received = False
+            response_buffer = bytearray()
+            timeout = 5.0
+            start_time = time.time()
             
-            # Verificar éxito
-            time.sleep(0.5)
-            final_response = self.device.serial.read(1024).decode('utf-8', errors='ignore')
+            while (time.time() - start_time) < timeout:
+                if self.device.serial.in_waiting:
+                    chunk = self.device.serial.read(self.device.serial.in_waiting)
+                    response_buffer.extend(chunk)
+                    
+                    # Buscar el prompt de contraseña
+                    buffer_str = response_buffer.decode('utf-8', errors='ignore')
+                    if 'PASSWORD>' in buffer_str.upper():
+                        password_prompt_received = True
+                        logger.debug(f"Prompt PASSWORD> detectado")
+                        break
+                else:
+                    time.sleep(0.05)
+            
+            if not password_prompt_received:
+                raise CalibrationError(
+                    f"No se recibió prompt PASSWORD> después de '{cmd}'. "
+                    f"Respuesta: {response_buffer.decode('utf-8', errors='ignore')}"
+                )
+            
+            # Paso 3: Enviar contraseña (sin esperar prompt ADMX2001>)
+            # CRÍTICO: La contraseña va sola con \n, no es un comando completo
+            self.device.serial.write((password + "\n").encode('utf-8'))
+            self.device.serial.flush()
+            logger.debug("Contraseña enviada")
+            
+            # Paso 4: Leer respuesta final
+            response_buffer = bytearray()
+            timeout = 5.0
+            start_time = time.time()
+            success_detected = False
+            
+            while (time.time() - start_time) < timeout:
+                if self.device.serial.in_waiting:
+                    chunk = self.device.serial.read(self.device.serial.in_waiting)
+                    response_buffer.extend(chunk)
+                    
+                    # Buscar confirmación de éxito
+                    buffer_str = response_buffer.decode('utf-8', errors='ignore')
+                    if 'success' in buffer_str.lower() or 'ADMX2001>' in buffer_str:
+                        success_detected = True
+                        break
+                else:
+                    time.sleep(0.05)
+            
+            final_response = response_buffer.decode('utf-8', errors='ignore')
+            logger.debug(f"Respuesta final: {final_response}")
             
             if "success" in final_response.lower():
                 self.current_state.timestamp = timestamp
                 self.calibration_history.append(self.current_state)
-                logger.info("Calibración guardada exitosamente en flash")
+                logger.info("✅ Calibración guardada exitosamente en flash")
             else:
-                raise CalibrationError(f"Commit falló: {final_response}")
+                raise CalibrationError(
+                    f"Commit falló. Respuesta: {final_response}"
+                )
                 
         except Exception as e:
             logger.error(f"Error en commit: {e}")
