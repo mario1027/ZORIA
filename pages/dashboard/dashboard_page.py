@@ -72,6 +72,7 @@ MAX_INTERVALS_WITHOUT_DATA = 300  # 30 segundos @ 100ms por interval
 measurement_config = {
     'display_mode': 6,
     'frequency': 1000,
+    'average': 1,
     'mdelay': -1,
     'tdelay': 0,
     'magnitude': 'auto'
@@ -441,25 +442,35 @@ def measurement_worker(config):
 def sweep_worker(config):
     """Worker para barridos de frecuencia"""
     global sweep_data
+    sweep_phase = 'init'
 
     # Adquirir lock para operaciones exclusivas con el dispositivo
     device_state._operation_lock.acquire()
     
     try:
+        sweep_phase = 'config'
         # Extraer parámetros de la configuración recibida
         start = config['start']
         end = config['end']
         points = config['points']
         scale = config['scale']
         display_mode = config['display_mode']
+        average = config.get('average', 1)
         mdelay = config['mdelay']
         tdelay = config['tdelay']
         magnitude = config.get('magnitude', 1.0)  # Valor por defecto 1.0V
+        configured_magnitude = None
+
+        # OPTIMIZACIÓN: evitar heredar delays lentos de operaciones previas (p.ej. calibración)
+        # Si UI envía -1 (auto/no cambiar), usar 0 ms para barridos rápidos.
+        effective_mdelay = 0 if mdelay is None or mdelay < 0 else mdelay
+        effective_tdelay = 0 if tdelay is None or tdelay < 0 else tdelay
+        effective_average = 1 if average is None or average < 1 else int(average)
         
         print(f"🔄 WORKER INICIADO - Configuración recibida:")
         print(f"   - Start: {start} Hz, End: {end} Hz")
         print(f"   - Puntos: {points}, Escala: {scale}")
-        print(f"   - Display Mode: {display_mode}, MDelay: {mdelay}, TDelay: {tdelay}")
+        print(f"   - Display Mode: {display_mode}, Average: {average} (efectivo {effective_average}), MDelay: {mdelay} (efectivo {effective_mdelay}), TDelay: {tdelay} (efectivo {effective_tdelay})")
         print(f"   - Magnitud: {magnitude} V")
 
         # Resetear datos
@@ -486,24 +497,36 @@ def sweep_worker(config):
             except Exception as e:
                 print(f"⚠️ Error configurando display mode: {e}")
 
+            # Forzar autorange para minimizar riesgo de saturación durante sweep
+            try:
+                print("🔧 Habilitando autorange (setgain auto)")
+                device_state.device.set_gain_auto()
+            except Exception as e:
+                print(f"⚠️ Error habilitando autorange: {e}")
+
+            # Configurar average para velocidad de sweep (evita heredar average=200 de calibración)
+            try:
+                print(f"🔧 Configurando average efectivo: {effective_average}")
+                device_state.device.send_command(f"average {effective_average}")
+            except Exception as e:
+                print(f"⚠️ Error configurando average: {e}")
+
             # Configurar delays ANTES del sweep
             try:
-                if mdelay >= 0:
-                    print(f"🔧 Configurando measurement delay: {mdelay} ms")
-                    device_state.device.set_measurement_delay(mdelay)
-                    time.sleep(0.0005)  # Esperar 0.5ms para estabilización del delay
-                if tdelay >= 0:
-                    print(f"🔧 Configurando trigger delay: {tdelay} ms")
-                    device_state.device.set_trigger_delay(tdelay)
+                print(f"🔧 Configurando measurement delay efectivo: {effective_mdelay} ms")
+                device_state.device.set_measurement_delay(effective_mdelay)
+                time.sleep(0.0005)  # Esperar 0.5ms para estabilización del delay
+                print(f"🔧 Configurando trigger delay efectivo: {effective_tdelay} ms")
+                device_state.device.set_trigger_delay(effective_tdelay)
             except Exception as e:
                 print(f"⚠️ Error configurando delays: {e}")
 
             # Configurar magnitud ANTES del sweep
             if magnitude and magnitude != 'auto':
                 try:
-                    mag_value = float(magnitude) if isinstance(magnitude, str) else magnitude
-                    print(f"🔧 Configurando magnitud: {mag_value} V")
-                    device_state.device.set_magnitude(mag_value)
+                    configured_magnitude = float(magnitude) if isinstance(magnitude, str) else float(magnitude)
+                    print(f"🔧 Configurando magnitud: {configured_magnitude} V")
+                    device_state.device.set_magnitude(configured_magnitude)
                 except Exception as e:
                     print(f"⚠️ Error configurando magnitud: {e}")
 
@@ -542,6 +565,7 @@ def sweep_worker(config):
             # Ejecutar barrido(s) - uno o múltiples segmentos
             all_results = []
             for seg_idx, (seg_start, seg_end, seg_points) in enumerate(segments):
+                sweep_phase = 'acquisition'
                 if len(segments) > 1:
                     print(f"🔄 Ejecutando segmento {seg_idx+1}/{len(segments)}: {seg_start:.1f}-{seg_end:.1f} Hz, {seg_points} puntos")
                 
@@ -581,10 +605,11 @@ def sweep_worker(config):
                 
                 segment_results = None
                 acquisition_complete = threading.Event()
+                segment_exception = [None]
                 
                 def acquire_segment():
                     nonlocal segment_results
-                    
+
                     # Callback para procesar puntos en tiempo real
                     point_counter = [0]  # Lista para permitir modificación en nested function
                     def process_point_realtime(point):
@@ -613,12 +638,16 @@ def sweep_worker(config):
                         except Exception as e:
                             print(f"⚠️ Error procesando punto en tiempo real: {e}")
                     
-                    # Ejecutar sweep con callback para streaming real-time
-                    segment_results = device_state.device.perform_sweep(
-                        timeout=sweep_timeout,
-                        point_callback=process_point_realtime
-                    )
-                    acquisition_complete.set()
+                    try:
+                        # Ejecutar sweep con callback para streaming real-time
+                        segment_results = device_state.device.perform_sweep(
+                            timeout=sweep_timeout,
+                            point_callback=process_point_realtime
+                        )
+                    except Exception as e:
+                        segment_exception[0] = e
+                    finally:
+                        acquisition_complete.set()
                 
                 # Iniciar adquisición en thread separado
                 acq_thread = threading.Thread(target=acquire_segment, daemon=True)
@@ -630,13 +659,45 @@ def sweep_worker(config):
                 
                 # Solo esperar a que termine
                 acq_thread.join()
+
+                if segment_exception[0] is not None:
+                    error_text = str(segment_exception[0]).lower()
+                    can_retry = (configured_magnitude is not None and configured_magnitude > 0.01)
+                    is_saturation_error = ('saturat' in error_text) or ('measurement failed' in error_text)
+
+                    if is_saturation_error and can_retry:
+                        retry_magnitude = max(0.01, configured_magnitude * 0.5)
+                        print(f"⚠️ Saturación detectada en segmento {seg_idx+1}. Reintentando con magnitud {configured_magnitude}V → {retry_magnitude}V")
+                        configured_magnitude = retry_magnitude
+                        try:
+                            device_state.device.set_gain_auto()
+                            device_state.device.set_magnitude(configured_magnitude)
+                        except Exception as e:
+                            print(f"⚠️ Error aplicando recuperación por saturación: {e}")
+
+                        # Reconfigurar el mismo segmento con nueva magnitud y reintentar UNA vez
+                        device_state.device.configure_sweep(
+                            SweepType.FREQUENCY,
+                            seg_start / 1000,
+                            seg_end / 1000,
+                            sweep_scale,
+                            seg_points
+                        )
+
+                        segment_results = device_state.device.perform_sweep(
+                            timeout=sweep_timeout,
+                            point_callback=process_point_realtime
+                        )
+                    else:
+                        raise segment_exception[0]
                 
                 if segment_results:
                     all_results.extend(segment_results)
                     print(f"  ✅ Segmento completado: {len(segment_results)} puntos obtenidos")
                     if len(segment_results) != seg_points:
-                        print(f"  ⚠️⚠️⚠️ PROBLEMA: Esperábamos {seg_points} puntos pero obtuvimos {len(segment_results)}")
-                        print(f"  ⚠️⚠️⚠️ Faltan {seg_points - len(segment_results)} puntos!")
+                        raise RuntimeError(
+                            f"Sweep incompleto en segmento {seg_idx+1}: esperados {seg_points}, recibidos {len(segment_results)}"
+                        )
                     
                     # ELIMINADO: Envío manual de progreso - el streaming lo maneja automáticamente
                     segment_end_point = segment_start_point + seg_points
@@ -649,6 +710,7 @@ def sweep_worker(config):
             print(f"✅ Barrido completo: {len(results)} puntos totales obtenidos")
 
             # Consolidar resultados finales en sweep_data (ya se enviaron al streaming en tiempo real)
+            sweep_phase = 'postprocess'
             print(f"📊 Consolidando {len(results)} puntos en datos finales...")
             try:
                 for i, point in enumerate(results):
@@ -697,10 +759,10 @@ def sweep_worker(config):
         print(f"WORKER: Mensaje completed enviado a la cola")
 
     except Exception as e:
-        print(f"WORKER ERROR: Error en sweep worker: {e}")
+        print(f"WORKER ERROR [{sweep_phase}]: Error en sweep worker: {e}")
         import traceback
         traceback.print_exc()
-        sweep_queue.put({'error': True, 'message': str(e)})
+        sweep_queue.put({'error': True, 'message': str(e), 'phase': sweep_phase})
     
     finally:
         # Liberar lock de operación
@@ -1777,6 +1839,16 @@ def register_callbacks(app):
                             return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, str(progress_value), status_text, status_text, stored_data, sweep_completed_trigger, interval_disabled, modal_close_interval_disabled, streaming_interval_disabled)
 
                         elif 'error' in data:
+                            error_phase = data.get('phase', 'unknown')
+                            if error_phase == 'config':
+                                print(f"❌ Error durante CONFIGURACIÓN de sweep: {data.get('message', '')}")
+                            elif error_phase == 'acquisition':
+                                print(f"❌ Error durante ADQUISICIÓN de sweep: {data.get('message', '')}")
+                            elif error_phase == 'postprocess':
+                                print(f"❌ Error durante POSTPROCESADO de sweep: {data.get('message', '')}")
+                            else:
+                                print(f"❌ Error en sweep (fase no clasificada): {data.get('message', '')}")
+
                             # CERRAR MODAL Y DETENER TODO cuando hay error
                             modal_style = {'display': 'none'}
                             modal_class = 'modal fade'
@@ -1784,7 +1856,7 @@ def register_callbacks(app):
                             progress_value = 0
                             progress_style = {'width': '0%'}
                             progress_text = "0%"
-                            status_text = f"❌ Error: {data['message']}"
+                            status_text = f"❌ Error ({error_phase}): {data['message']}"
                             interval_disabled = True  # Detener interval
                             streaming_interval_disabled = True  # Detener streaming
                             modal_close_interval_disabled = True  # No necesita cerrar (ya cerrado)
@@ -1880,6 +1952,7 @@ def register_callbacks(app):
                         'points': points,
                         'scale': scale,
                         'display_mode': display_mode or 6,
+                        'average': measurement_config.get('average', 1),
                         'mdelay': mdelay if mdelay is not None else -1,
                         'tdelay': tdelay if tdelay is not None else 0,
                         'magnitude': magnitude or 'auto'
@@ -1894,6 +1967,11 @@ def register_callbacks(app):
                     
                     # Iniciar nuevo barrido
                     stop_sweep.clear()
+
+                    # Limpiar datos previos para que el nuevo sweep inicie con gráficas vacías
+                    stored_data = {'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}
+                    bode_fig = create_empty_figure("Sin datos", theme)
+                    nyquist_fig = create_empty_figure("Sin datos", theme)
                     
                     # Mantener stored_data para que los gráficos NO desaparezcan
                     # Los nuevos puntos llegarán vía poll_sweep_streaming
@@ -2744,6 +2822,12 @@ def register_callbacks(app):
             return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, False
         
         print(f"[Sweep Poll] ✅ Actualizando gráficos con {len(new_points)} nuevos puntos")
+
+        # Protección: al entrar los primeros puntos de un sweep nuevo, eliminar datos viejos
+        current, total, pct = device_state.get_sweep_progress()
+        if len(current_data.get('param', [])) > 0 and current <= len(new_points):
+            print(f"[Sweep Poll] 🧹 Limpiando datos previos ({len(current_data['param'])} pts) para nuevo sweep")
+            current_data = {'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}
         
         # Agregar nuevos puntos a los datos actuales
         for point in new_points:
@@ -2772,7 +2856,6 @@ def register_callbacks(app):
             )
         
         # Actualizar progreso
-        current, total, pct = device_state.get_sweep_progress()
         progress_style = {'width': f'{pct}%'}
         progress_text = f"{pct}%"
         

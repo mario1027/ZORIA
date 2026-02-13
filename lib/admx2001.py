@@ -514,6 +514,7 @@ class ADMX2001:
                     max_time = timeout or COMMAND_TIMEOUT
                 if is_display_command and not timeout:
                     max_time = min(max_time, 5.0)
+                no_response_ok_timeout = min(max_time, 0.6)
                 
                 # Buffer para acumular datos fragmentados
                 response_buffer = ""
@@ -547,6 +548,9 @@ class ADMX2001:
                 
                 while True:
                     if time.time() - start_time > max_time:
+                        if not expect_prompt and not response_buffer_bytes:
+                            logger.info(f"Comando sin prompt/respuesta tratado como exitoso: {command}")
+                            break
                         if (is_list_command or is_display_command) and response_buffer_bytes:
                             logger.warning(f"Timeout en '{command}', retornando respuesta parcial")
                             if is_display_command:
@@ -619,6 +623,14 @@ class ADMX2001:
                     else:
                         # MEJORA TERATERM: Timeout más corto y más inteligente
                         time.sleep(0.05)
+
+                        # Algunos comandos de configuración pueden no devolver prompt.
+                        # Si el caller indicó expect_prompt=False y no llega nada en breve,
+                        # considerar éxito para evitar bloqueos innecesarios.
+                        if not expect_prompt and not response_buffer_bytes:
+                            if (time.time() - start_time) > no_response_ok_timeout:
+                                logger.info(f"Sin respuesta esperada para '{command}', continuando")
+                                break
                         
                         if response_buffer_bytes:
                             time_without_data = time.time() - last_data_time
@@ -719,6 +731,22 @@ class ADMX2001:
                 else:
                     # No hay más reintentos, lanzar el error
                     raise CommandError(f"Error de comunicación después de {retries+1} intentos: {e}")
+
+            except TimeoutError as e:
+                last_exception = e
+                self.error_count += 1
+                logger.warning(f"Timeout en comando '{command}' (intento {attempt+1}/{retries+1}): {e}")
+
+                if attempt < retries:
+                    try:
+                        if self.serial:
+                            self.serial.reset_input_buffer()
+                            self.serial.reset_output_buffer()
+                    except Exception:
+                        pass
+                    time.sleep(0.15)
+                    continue
+                raise CommandError(f"Error ejecutando comando '{command}': {e}")
                     
             except Exception as e:
                 last_exception = e
@@ -823,7 +851,7 @@ class ADMX2001:
         """
         validate_count(count)
         
-        self.send_command(f"count {count}")
+        self.send_command(f"count {count}", expect_prompt=False)
         self.current_config['count'] = count
         
         logger.info(f"Count configurado: {count}")
@@ -1150,7 +1178,7 @@ class ADMX2001:
         validate_count(count)
         
         # Configurar count y guardarlo en la configuración
-        self.send_command(f"count {count}")
+        self.send_command(f"count {count}", expect_prompt=False)
         self.current_config['count'] = count  # ← Guardar en configuración
         logger.debug(f"Count configurado y guardado: {count}")
         
@@ -1282,6 +1310,8 @@ class ADMX2001:
             start_time = time.time()
             last_data_time = time.time()
             prompt_seen = False
+            error_lines = []
+            saturation_detected = False
             
             # El sweep puede tomar tiempo dependiendo de la configuración
             # Usamos un timeout generoso pero monitoreamos actividad
@@ -1308,6 +1338,15 @@ class ADMX2001:
                     if line:
                         all_lines.append(line)
                         last_data_time = time.time()
+
+                        line_lower = line.lower()
+                        if ('error' in line_lower and ':' in line_lower) or line_lower.startswith('error'):
+                            error_lines.append(line)
+                            logger.warning(f"⚠️ Línea de error durante sweep: {line}")
+                            if 'adc saturated' in line_lower or 'measurement failed' in line_lower:
+                                saturation_detected = True
+                                logger.error("❌ Saturación ADC detectada durante sweep")
+                                break
                         
                         # Log cada 10 puntos para no saturar
                         if len(all_data_lines) % 10 == 0 and len(all_data_lines) > 0:
@@ -1346,9 +1385,11 @@ class ADMX2001:
                             logger.debug(f"Prompt detectado con {len(all_data_lines)} puntos")
                             
                             # Cuando vemos el prompt, verificar si hay más datos
-                            # Esperar un breve tiempo por datos retrasados (averaging)
-                            time.sleep(2.0)  # Esperar 2s por datos retrasados
-                            
+                            # Esperar brevemente por datos retrasados (sin penalizar cada segmento)
+                            grace_start = time.time()
+                            while (time.time() - grace_start) < 0.20 and self.serial.in_waiting == 0:
+                                time.sleep(0.02)
+
                             if self.serial.in_waiting == 0:
                                 # No hay más datos - el dispositivo terminó
                                 logger.info(f"✓ Sweep completado - {len(all_data_lines)} puntos recibidos")
@@ -1377,6 +1418,18 @@ class ADMX2001:
             if points_received < expected_count:
                 logger.warning(f"Sweep incompleto: esperados {expected_count} puntos, "
                              f"recibidos {points_received}")
+
+            if saturation_detected:
+                detail = " | ".join(error_lines[:2]) if error_lines else "Current ADC Saturated"
+                raise MeasurementError(
+                    f"Sweep interrumpido por saturación ADC ({points_received}/{expected_count} puntos). {detail}"
+                )
+
+            if points_received < expected_count and error_lines:
+                detail = " | ".join(error_lines[:2])
+                raise MeasurementError(
+                    f"Sweep incompleto por error del dispositivo ({points_received}/{expected_count} puntos). {detail}"
+                )
             
         except Exception as e:
             raise MeasurementError(f"Error ejecutando sweep: {e}")

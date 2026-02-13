@@ -617,6 +617,7 @@ def register_global_terminal_callbacks(app):
             current_output = [current_output]
         
         # Procesar nuevas líneas
+        appended_count = 0
         for line_data in new_lines:
             line_type = line_data.get('type')
             line_text = line_data.get('line', '')
@@ -630,6 +631,7 @@ def register_global_terminal_callbacks(app):
                         html.Span(f"Error: {line_text}", className="terminal-error-text")
                     ], className="terminal-line terminal-error-line")
                 )
+                appended_count += 1
             elif line_type == 'data' and line_text:
                 # Filtrar eco del comando (doble check por si acaso)
                 cmd = streaming_state.get('command', '').strip().lower()
@@ -655,10 +657,31 @@ def register_global_terminal_callbacks(app):
                 current_output.append(
                     html.Div([prefix, html.Span(line_text, className=css_class)], className="terminal-line")
                 )
+                appended_count += 1
+
+        # Acumular cantidad de líneas realmente mostradas durante el streaming
+        streaming_state['received'] = streaming_state.get('received', 0) + appended_count
         
         # Verificar si el comando terminó
         if device_state.is_streaming_complete():
             logger.info("[Terminal] Streaming completado, desactivando polling")
+
+            # Si no se recibió ninguna línea útil, mostrar feedback explícito
+            if streaming_state.get('received', 0) == 0:
+                current_output.append(
+                    html.Div([
+                        html.Span("  ", className="terminal-indent"),
+                        html.Span("(sin respuesta del dispositivo)", className="terminal-empty-response text-muted")
+                    ], className="terminal-line")
+                )
+                current_output.append(
+                    html.Div([
+                        html.Span("💡 ", className="text-info"),
+                        html.Span("Verifique que el comando sea correcto. Use ", className="text-muted"),
+                        html.Code("help", className="terminal-code"),
+                        html.Span(" para ver comandos disponibles.", className="text-muted")
+                    ], className="terminal-line")
+                )
             
             # Agregar separador
             current_output.append(html.Div(className="terminal-separator"))
@@ -1204,7 +1227,7 @@ def register_global_terminal_callbacks(app):
             
             # Detectar comandos que deben usar STREAMING (respuestas en tiempo real)
             cmd_lower_check = cmd_lower if 'cmd_lower' in locals() else command.lower()
-            use_streaming = cmd_lower_check == 'sweep'  # Solo sweep usa streaming
+            use_streaming = cmd_lower_check in ['sweep', 'z']
             
             if use_streaming:
                 # ===== MODO STREAMING: Mostrar datos en tiempo real =====
@@ -1219,11 +1242,12 @@ def register_global_terminal_callbacks(app):
                 )
                 
                 # Iniciar streaming en thread separado
-                device_state.start_streaming_command(command, timeout=30.0)
+                stream_timeout = 45.0 if cmd_lower_check == 'z' else 30.0
+                device_state.start_streaming_command(command, timeout=stream_timeout)
                 
                 # Activar polling interval
-                streaming_state = {'active': True, 'command': command}
-                return current_output, "", history_store, streaming_state, False  # False = activar Interval
+                streaming_state = {'active': True, 'command': command, 'received': 0}
+                return current_output, "", history_store, streaming_state, False, password_state  # False = activar Interval
             
             # ===== MODO NORMAL: Esperar respuesta completa =====
             try:
