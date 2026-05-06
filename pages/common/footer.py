@@ -33,7 +33,8 @@ def footer():
                                                 }
                                             ),
                                             html.P(
-                                                "Sistema avanzado de análisis de impedancia para el evaluador EVAL-ADMX2001. Precisión profesional para ingenieros.",
+                                                '',
+                                                **{'data-i18n': 'footer.description'},
                                                 style={
                                                     'color': '#4b5563',
                                                     'fontSize': '0.95rem',
@@ -79,7 +80,7 @@ def footer():
                             html.Div(
                                 [
                                     html.H6(
-                                        "Navegación",
+                                        html.Span('', **{'data-i18n': 'footer.navigation'}),
                                         style={
                                             'color': '#0f172a',
                                             'fontSize': '0.85rem',
@@ -116,7 +117,7 @@ def footer():
                                                             'fontSize': '1rem'
                                                         }
                                                     ),
-                                                    html.Span("Simulador RLC", style={'fontSize': '0.95rem'})
+                                                    html.Span('', **{'data-i18n': 'footer.nav_simulator'}, style={'fontSize': '0.95rem'})
                                                 ],
                                                 href="/simulator",
                                                 className="footer-link"
@@ -131,7 +132,7 @@ def footer():
                                                             'fontSize': '1rem'
                                                         }
                                                     ),
-                                                    html.Span("Calibración", style={'fontSize': '0.95rem'})
+                                                    html.Span('', **{'data-i18n': 'footer.nav_calib'}, style={'fontSize': '0.95rem'})
                                                 ],
                                                 href="/calibration",
                                                 className="footer-link"
@@ -146,7 +147,7 @@ def footer():
                                                             'fontSize': '1rem'
                                                         }
                                                     ),
-                                                    html.Span("Documentación", style={'fontSize': '0.95rem'})
+                                                    html.Span('', **{'data-i18n': 'footer.nav_docs'}, style={'fontSize': '0.95rem'})
                                                 ],
                                                 href="/documentacion",
                                                 className="footer-link"
@@ -160,7 +161,7 @@ def footer():
                             html.Div(
                                 [
                                     html.H6(
-                                        "Recursos",
+                                        html.Span('', **{'data-i18n': 'footer.resources'}),
                                         style={
                                             'color': '#0f172a',
                                             'fontSize': '0.85rem',
@@ -229,7 +230,7 @@ def footer():
                             html.Div(
                                 [
                                     html.H6(
-                                        "Atajos",
+                                        html.Span('', **{'data-i18n': 'footer.shortcuts'}),
                                         style={
                                             'color': '#0f172a',
                                             'fontSize': '0.85rem',
@@ -251,14 +252,14 @@ def footer():
                                                         ],
                                                         style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '0.4rem'}
                                                     ),
-                                                    html.Span("Terminal", style={'color': '#4b5563', 'fontSize': '0.9rem'})
+                                                    html.Span('', **{'data-i18n': 'footer.terminal'}, style={'color': '#4b5563', 'fontSize': '0.9rem'})
                                                 ],
                                                 style={'marginBottom': '1rem'}
                                             ),
                                             html.Div(
                                                 [
                                                     html.Kbd("Esc", className="footer-kbd", style={'marginBottom': '0.4rem'}),
-                                                    html.Span("Cerrar", style={'color': '#4b5563', 'fontSize': '0.9rem'})
+                                                    html.Span('', **{'data-i18n': 'footer.close'}, style={'color': '#4b5563', 'fontSize': '0.9rem'})
                                                 ],
                                                 style={'marginBottom': '1rem'}
                                             ),
@@ -272,7 +273,7 @@ def footer():
                                                         ],
                                                         style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '0.4rem'}
                                                     ),
-                                                    html.Span("Limpiar", style={'color': '#4b5563', 'fontSize': '0.9rem'})
+                                                    html.Span('', **{'data-i18n': 'footer.clear'}, style={'color': '#4b5563', 'fontSize': '0.9rem'})
                                                 ]
                                             )
                                         ]

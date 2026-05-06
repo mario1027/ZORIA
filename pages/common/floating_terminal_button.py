@@ -15,13 +15,15 @@ def floating_terminal_button():
         ],
         id="floating-terminal-btn",
         className="floating-terminal-btn",
-        title="Abrir Terminal CLI (Alt+T)"
+        title="",
+        **{'data-i18n-title': 'ui.open_terminal'}
         ),
         
         # Tooltip
         html.Span(
-            "Terminal",
-            className="floating-terminal-tooltip"
+            "",
+            className="floating-terminal-tooltip",
+            **{'data-i18n': 'footer.terminal'}
         )
     ], className="floating-terminal-container")
 

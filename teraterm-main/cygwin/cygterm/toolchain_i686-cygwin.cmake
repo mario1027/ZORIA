@@ -1,8 +1,0 @@
-﻿set(CMAKE_SYSROOT /usr/i686-pc-cygwin/sys-root)
-set(CMAKE_C_COMPILER i686-pc-cygwin-gcc)
-set(CMAKE_CXX_COMPILER i686-pc-cygwin-g++)
-set(CMAKE_RC_COMPILER i686-pc-cygwin-windres)
-if(NOT EXISTS ${CMAKE_SYSROOT})
-  unset(CMAKE_RC_COMPILER)
-  unset(CMAKE_SYSROOT)
-endif()

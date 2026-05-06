@@ -1,1 +1,0 @@
-﻿Susi Plugin用フォルダ

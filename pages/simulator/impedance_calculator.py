@@ -12,15 +12,17 @@ import numpy as np
 class ImpedanceCalculator:
     """Calcula la impedancia compleja para diferentes configuraciones de circuitos"""
     
-    def __init__(self, freq_start=1, freq_end=100000, points=1000):
+    def __init__(self, freq_start=0.2, freq_end=10000000, points=1000):
         """
         Inicializa el calculador con rango de frecuencias
-        
+
         Args:
-            freq_start: Frecuencia inicial en Hz
-            freq_end: Frecuencia final en Hz
-            points: Número de puntos en el rango (log scale)
+            freq_start: Frecuencia inicial en Hz (mínimo 0.2 Hz)
+            freq_end: Frecuencia final en Hz (máximo 10 MHz)
+            points: Número de puntos en el rango (escala logarítmica)
         """
+        freq_start = max(0.2, float(freq_start))
+        freq_end   = min(10_000_000.0, float(freq_end))
         self.frequencies = np.logspace(np.log10(freq_start), np.log10(freq_end), points)
         self.omega = 2 * np.pi * self.frequencies
     

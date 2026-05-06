@@ -52,7 +52,7 @@ def calibration_wizard_modal():
                 # Título
                 html.Div([
                     html.I(className="fas fa-balance-scale me-2"),
-                    html.Span("Wizard de Calibración"),
+                    html.Span('', **{'data-i18n': 'cal.wizard_title'}),
                 ], className="window-title"),
                 
                 # Controles
@@ -175,7 +175,7 @@ def calibration_wizard_modal():
                                 
                                 html.Button([
                                     html.I(className="fas fa-play me-2"),
-                                    "Iniciar Calibración"
+                                    html.Span('', **{'data-i18n': 'cal.start_wizard'}),
                                 ], id='cal-wizard-start', className="btn btn-primary btn-lg w-100")
                             ], className="p-4 border rounded bg-light")
                         ], className="text-center py-4")
@@ -473,7 +473,7 @@ def calibration_page_layout():
                         html.Div([
                             html.H2([
                                 html.I(className="fas fa-balance-scale me-3"),
-                                "Centro de Calibración"
+                                html.Span('', **{'data-i18n': 'cal.title'}),
                             ], className="h3 mb-1"),
                             html.P("Sistema de calibración Open/Short/Load para ADMX2001",
                                    className="text-muted mb-0 small")
@@ -493,11 +493,11 @@ def calibration_page_layout():
                             html.Div([
                                 html.Div([
                                     html.I(className="fas fa-magic fa-3x text-primary mb-3"),
-                                    html.H5("Nueva Calibración", className="card-title"),
+                                    html.H5(html.Span('', **{'data-i18n': 'cal.wizard_title'}), className="card-title"),
                                     html.P("Inicia el wizard de calibración automatizado con ganancia inteligente.", className="card-text text-muted small"),
                                     html.Button([
                                         html.I(className="fas fa-play me-2"),
-                                        "Iniciar Wizard"
+                                        html.Span('', **{'data-i18n': 'cal.start_wizard'}),
                                     ], id="btn-start-calibration", className="btn btn-primary w-100")
                                 ], className="card-body text-center")
                             ], className="card h-100 shadow-sm border-0")
@@ -508,7 +508,7 @@ def calibration_page_layout():
                             html.Div([
                                 html.Div([
                                     html.I(className="fas fa-list fa-3x text-info mb-3"),
-                                    html.H5("Calibraciones Guardadas", className="card-title"),
+                                    html.H5(html.Span('', **{'data-i18n': 'cal.list_title'}), className="card-title"),
                                     html.P("Visualiza y gestiona las calibraciones almacenadas en el dispositivo.", className="card-text text-muted small"),
                                     html.Button([
                                         html.I(className="fas fa-eye me-2"),
@@ -666,11 +666,9 @@ def register_calibration_callbacks(app):
         }
         """,
         Output('cal-wizard-initialized', 'data'),
-        Input('cal-wizard-modal', 'style')
+        Input('cal-wizard-modal', 'style'),
+        prevent_initial_call=True
     )
-    
-    # Store dummy para inicialización (no usado, mantener para compatibilidad)
-    dcc.Store(id='cal-wizard-initialized', data=False)
     
     # Los controles de ventana (maximizar, minimizar, cerrar) son manejados
     # automáticamente por draggable_windows.js a través de setupWindowControls()

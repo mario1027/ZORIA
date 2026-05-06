@@ -21,10 +21,15 @@ from .utils import (
     validate_offset,
     validate_average,
     validate_count,
+    max_count_for_span,
     calculate_impedance_from_rx,
     recommend_gain_settings,
     estimate_measurement_time,
+    estimate_sweep_time,
+    max_points_per_segment,
+    _acquisition_time_ms,
 )
+from .hw_timing_profile import HardwareTimingProfile, get_profile as get_hw_timing_profile
 from .enums import (
     DisplayMode,
     SweepType,
@@ -45,6 +50,16 @@ from .exceptions import (
     SaturationError,
 )
 
+# Exportar ajuste RC
+from .rc_model import (
+    fit_parallel_rc,
+    fit_parallel_rc_from_csv,
+    parallel_rc_z,
+    fit_series_rc,
+    fit_series_rc_from_csv,
+    series_rc_z,
+)
+
 __version__ = '1.0.0'
 __all__ = [
     # Clases principales
@@ -61,10 +76,27 @@ __all__ = [
     'validate_offset',
     'validate_average',
     'validate_count',
+    'max_count_for_span',
     # Cálculos
     'calculate_impedance_from_rx',
     'recommend_gain_settings',
     'estimate_measurement_time',
+    'estimate_sweep_time',
+    'max_points_per_segment',
+    # Ajuste de modelo RC
+    'fit_parallel_rc',
+    'fit_parallel_rc_from_csv',
+    'parallel_rc_z',
+    'fit_series_rc',
+    'fit_series_rc_from_csv',
+    'series_rc_z',
+    'estimate_series_equivalent',
+    'estimate_series_from_plateau',
+    'evaluate_bode',
+    'evaluate_nyquist',
+    'series_rc_with_leak_z',
+    'fit_series_rc_with_leak',
+    'fit_series_rc_from_csv',
     # Enumeraciones
     'DisplayMode',
     'SweepType',

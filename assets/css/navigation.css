@@ -1,4 +1,19 @@
 /* ==========================================================================
+   ANTI-FOUC (Flash of Untranslated Content)
+   La clase i18n-pending se añade al <html> por i18n_client.js ANTES de que el
+   DOM esté listo si el idioma guardado NO es español. Se elimina en cuanto
+   applyTranslations() tiene un diccionario válido o tras 1200 ms de seguridad.
+   ========================================================================== */
+
+html.i18n-pending body {
+    opacity: 0 !important;
+}
+
+body {
+    transition: opacity 0.15s ease;
+}
+
+/* ==========================================================================
    ESTILOS DE NAVEGACIÓN ZORIA
    Sidebar y Footer mejorados
    ========================================================================== */
@@ -711,4 +726,71 @@
 .badge.rounded-pill {
     font-weight: 500;
     letter-spacing: 0.02em;
+}
+
+/* ── Selector de idioma ──────────────────────────────────────────────────────── */
+.lang-picker {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px 6px 12px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    margin-top: auto;
+    flex-wrap: wrap;
+}
+
+.lang-globe {
+    font-size: 14px;
+    opacity: 0.6;
+    flex-shrink: 0;
+}
+
+.lang-btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.lang-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 7px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: transparent;
+    color: rgba(255,255,255,0.55);
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s, border-color 0.18s;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+
+.lang-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.9);
+    border-color: rgba(255,255,255,0.25);
+}
+
+.lang-btn--active {
+    background: rgba(99, 179, 237, 0.18);
+    color: #63b3ed;
+    border-color: rgba(99, 179, 237, 0.45);
+    font-weight: 600;
+}
+
+.lang-flag {
+    font-size: 13px;
+    line-height: 1;
+}
+
+.lang-name {
+    font-size: 10.5px;
+}
+
+/* En pantallas muy pequeñas ocultamos el nombre y sólo dejamos la bandera */
+@media (max-width: 200px) {
+    .lang-name { display: none; }
+    .lang-btn  { padding: 3px 5px; }
 }

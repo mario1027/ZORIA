@@ -31,7 +31,7 @@ def global_terminal_component():
                 # Título + status
                 html.Div([
                     html.I(className="fas fa-terminal me-2"),
-                    html.Span("ADMX2001 — CLI"),
+                    html.Span("", **{'data-i18n': 'ui.terminal_title'}),
                     html.Span([
                         html.Span(className="status-pulse me-1", id="terminal-status-dot"),
                         html.Small(id="terminal-status-text", className="text-muted status-text d-none d-sm-inline")
@@ -44,19 +44,22 @@ def global_terminal_component():
                         html.I(className="fas fa-minus"),
                         id="terminal-minimize-btn",
                         className="window-control-btn window-btn-minimize",
-                        title="Minimizar"
+                        title="",
+                        **{'data-i18n-title': 'ui.minimize'}
                     ),
                     html.Button(
                         html.I(className="fas fa-expand"),
                         id="terminal-maximize-btn",
                         className="window-control-btn window-btn-maximize",
-                        title="Maximizar/Restaurar"
+                        title="",
+                        **{'data-i18n-title': 'ui.max_restore'}
                     ),
                     html.Button(
                         html.I(className="fas fa-times"),
                         id="terminal-close-btn",
                         className="window-control-btn window-btn-close",
-                        title="Cerrar (Esc)"
+                        title="",
+                        **{'data-i18n-title': 'ui.close_esc'}
                     ),
                 ], className="window-controls")
             ], className="window-header", id="terminal-header-drag"),
@@ -87,39 +90,39 @@ def global_terminal_component():
                                 ], className="terminal-line"),
                                 html.Div([
                                     html.Span("→ ", className="text-warning"),
-                                    html.Span("Esperando conexión con ADMX2001...", className="text-muted")
+                                    html.Span("", className="text-muted", **{'data-i18n': 'ui.waiting_connection'})
                                 ], className="terminal-line mb-2"),
                                 
                                 # Ayuda de comandos
                                 html.Div([
                                     html.Span("💡 ", className="terminal-prompt-icon"),
-                                    html.Span("Comandos disponibles:", className="text-info fw-bold")
+                                    html.Span("", className="text-info fw-bold", **{'data-i18n': 'ui.available_commands'})
                                 ], className="terminal-line mb-1"),
                                 html.Div([
                                     html.Span("   • ", className="text-muted"),
                                     html.Code("help", className="terminal-code"),
-                                    html.Span(" - Lista todos los comandos", className="text-muted")
+                                    html.Span("", className="text-muted", **{'data-i18n': 'term.help_list_cmds'})
                                 ], className="terminal-line"),
                                 html.Div([
                                     html.Span("   • ", className="text-muted"),
                                     html.Code("z", className="terminal-code"),
-                                    html.Span(" - Medir impedancia actual", className="text-muted")
+                                    html.Span("", className="text-muted", **{'data-i18n': 'term.help_measure'})
                                 ], className="terminal-line"),
                                 html.Div([
                                     html.Span("   • ", className="text-muted"),
                                     html.Code("status", className="terminal-code"),
-                                    html.Span(" - Ver estado del dispositivo", className="text-muted")
+                                    html.Span("", className="text-muted", **{'data-i18n': 'term.help_status'})
                                 ], className="terminal-line"),
                                 html.Div([
                                     html.Span("   • ", className="text-muted"),
                                     html.Code("sweep", className="terminal-code"),
-                                    html.Span(" - Iniciar barrido de frecuencia", className="text-muted")
+                                    html.Span("", className="text-muted", **{'data-i18n': 'term.help_sweep'})
                                 ], className="terminal-line mb-2"),
                                 
                                 # Atajos de teclado
                                 html.Div([
                                     html.Span("⌨️  ", className="terminal-prompt-icon"),
-                                    html.Span("Atajos: ", className="text-info me-2"),
+                                    html.Span("", className="text-info me-2", **{'data-i18n': 'ui.shortcuts_label'}),
                                     html.Span("Alt+T", style={
                                         'background': 'rgba(255,255,255,0.15)',
                                         'border': '1px solid rgba(255,255,255,0.3)',
@@ -128,7 +131,7 @@ def global_terminal_component():
                                         'fontSize': '0.75rem',
                                         'color': '#fff'
                                     }),
-                                    html.Span(" Abrir/Cerrar  ", className="small text-light me-2"),
+                                    html.Span("", className="small text-light me-2", **{'data-i18n': 'ui.open_close'}),
                                     html.Span("↑↓", style={
                                         'background': 'rgba(255,255,255,0.15)',
                                         'border': '1px solid rgba(255,255,255,0.3)',
@@ -137,7 +140,7 @@ def global_terminal_component():
                                         'fontSize': '0.75rem',
                                         'color': '#fff'
                                     }),
-                                    html.Span(" Historial", className="small text-light")
+                                    html.Span("", className="small text-light", **{'data-i18n': 'ui.history'})
                                 ], className="terminal-line"),
                             ], className="terminal-content-area")
                         ]
@@ -190,10 +193,10 @@ def global_terminal_component():
                         html.Div([
                             html.Button([
                                 html.I(className="fas fa-trash-alt text-danger")
-                            ], id="clear-terminal-btn", className="terminal-float-quick-btn", title="Limpiar"),
+                            ], id="clear-terminal-btn", className="terminal-float-quick-btn", title="", **{'data-i18n-title': 'footer.clear'}),
                             html.Button([
                                 html.I(className="fas fa-download text-success")
-                            ], id="export-terminal-btn", className="terminal-float-quick-btn", title="Exportar"),
+                            ], id="export-terminal-btn", className="terminal-float-quick-btn", title="", **{'data-i18n-title': 'ui.export'}),
                         ], className="terminal-float-quick-group"),
                     ], className="terminal-float-footer-inner d-flex align-items-center px-2 py-1")
                 ], className="terminal-float-footer")

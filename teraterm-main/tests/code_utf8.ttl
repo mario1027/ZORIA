@@ -1,4 +1,0 @@
-;; -*- coding: utf-8 -*-
-
-messagebox "code utf8 (no bom)" "check code ttl"
-messagebox "こんにちは, 안녕하세요, שלום, utf8 code" "check code ttl"

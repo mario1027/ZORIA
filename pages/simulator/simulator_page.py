@@ -5,6 +5,7 @@ Usando el estilo de la plantilla Volt con navegación avanzada
 from dash import html, Input, Output, State, dcc
 from dash_spa import register_page
 import plotly.graph_objects as go
+import numpy as np
 
 from pages.simulator.components import (
     circuit_selector_card,
@@ -54,7 +55,9 @@ layout = html.Div([
                     # Header con título y botón de tema
                     html.Div([
                         html.Div([
-                            html.H2("Simulador de Circuitos RLC", className="h3 mb-0")
+                            html.H2([
+                                html.Span('', **{'data-i18n': 'sim.title'})
+                            ], className="h3 mb-0")
                         ], className="col-12 col-md-6 mb-2 mb-md-0"),
                         html.Div([
                             # Botón de tema
@@ -64,7 +67,8 @@ layout = html.Div([
                                 children=[
                                     html.I(className="fas fa-moon", id="simulator-theme-icon")
                                 ],
-                                title="Cambiar tema de gráficos"
+                                title="",
+                                **{'data-i18n-title': 'ui.change_chart_theme'}
                             )
                         ], className="col-12 col-md-6 d-flex justify-content-md-end align-items-center")
                     ], className="row align-items-center py-4"),
@@ -178,14 +182,15 @@ def register_simulator_callbacks(app):
         if R is None: R = 1000
         if L is None: L = 0.001
         if C is None: C = 1e-6
-        if f_start is None: f_start = 10
-        if f_end is None: f_end = 100000
-        if n_points is None: n_points = 100
+        if f_start is None: f_start = 0.2
+        if f_end is None: f_end = 10000000
+        if n_points is None: n_points = 1000
 
         if R <= 0: R = 1000
         if L <= 0: L = 0.001
         if C <= 0: C = 1e-6
-        if f_start <= 0: f_start = 10
+        if f_start < 0.2: f_start = 0.2
+        if f_end > 10000000: f_end = 10000000
         if f_end <= f_start: f_end = f_start * 1000
         if n_points < 10: n_points = 10
 
@@ -232,18 +237,22 @@ def register_simulator_callbacks(app):
             bode_fig.update_layout(
                 title={"text": f"Diagrama de Bode - {CIRCUIT_INFO[circuit_type]['name']}", "font": {"size": 16, "color": text_color}},
                 xaxis=dict(
-                    title="Frecuencia (Hz)", 
-                    type="log", 
+                    title="Frecuencia (Hz)",
+                    type="log",
+                    range=[np.log10(max(0.1, f_start)), np.log10(f_end)],
                     showgrid=True,
                     gridcolor=grid_color,
                     linecolor=text_color,
                     tickcolor=text_color,
                     tickfont=dict(color=text_color),
-                    title_font=dict(color=text_color)
+                    title_font=dict(color=text_color),
+                    # Etiquetas explícitas para toda la banda 0.2 Hz – 10 MHz
+                    tickvals=[0.2, 1, 10, 100, 1e3, 1e4, 1e5, 1e6, 1e7],
+                    ticktext=["0.2", "1", "10", "100", "1k", "10k", "100k", "1M", "10M"],
                 ),
                 yaxis=dict(
-                    title=dict(text="Magnitud |Z| (dB)", font=dict(color=mag_color)), 
-                    tickfont={"color": mag_color}, 
+                    title=dict(text="Magnitud |Z| (dB)", font=dict(color=mag_color)),
+                    tickfont={"color": mag_color},
                     side="left",
                     showgrid=True,
                     gridcolor=grid_color,
@@ -252,10 +261,10 @@ def register_simulator_callbacks(app):
                     title_font=dict(color=text_color)
                 ),
                 yaxis2=dict(
-                    title=dict(text="Fase φ (°)", font=dict(color=phase_color)), 
-                    tickfont={"color": phase_color}, 
-                    anchor="x", 
-                    overlaying="y", 
+                    title=dict(text="Fase φ (°)", font=dict(color=phase_color)),
+                    tickfont={"color": phase_color},
+                    anchor="x",
+                    overlaying="y",
                     side="right",
                     showgrid=False,
                     linecolor=text_color,

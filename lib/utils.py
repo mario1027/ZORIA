@@ -18,6 +18,70 @@ from .exceptions import ValidationError
 logger = logging.getLogger(__name__)
 
 
+def _port_identity_blob(port_obj: Any) -> str:
+    """Construye un texto normalizado con los metadatos del puerto."""
+    device = getattr(port_obj, 'device', '') or ''
+    description = getattr(port_obj, 'description', '') or ''
+    manufacturer = getattr(port_obj, 'manufacturer', '') or ''
+    product = getattr(port_obj, 'product', '') or ''
+    hwid = getattr(port_obj, 'hwid', '') or ''
+    interface = getattr(port_obj, 'interface', '') or ''
+    return f"{device} {description} {manufacturer} {product} {hwid} {interface}".upper()
+
+
+def is_usb_serial_port(port_obj: Any) -> bool:
+    """Retorna True si el puerto corresponde a un adaptador serial USB."""
+    device = (getattr(port_obj, 'device', '') or '').upper()
+    return (
+        'TTYUSB' in device or
+        'TTYACM' in device or
+        device.startswith('COM') or
+        '/DEV/CU.USBSERIAL' in device or
+        '/DEV/CU.USBMODEM' in device
+    )
+
+
+def get_admx_port_priority(port_obj: Any) -> int:
+    """Asigna prioridad a puertos USB según qué tan probable es que sean el cable TTL usado."""
+    if not is_usb_serial_port(port_obj):
+        return -1
+
+    blob = _port_identity_blob(port_obj)
+
+    if 'TTL232R-3V3' in blob:
+        return 120
+    if 'TTL-232R-RPI' in blob:
+        return 115
+    if 'TTL232R' in blob or 'TTL-232R' in blob:
+        return 110
+    if 'FT232R' in blob or 'FT232' in blob:
+        return 95
+    if 'FTDI' in blob and ('USB' in blob or 'SERIAL' in blob):
+        return 90
+    if 'USB SERIAL CONVERTER' in blob:
+        return 80
+    if 'CP210' in blob or 'SILICON LABS' in blob:
+        return 40
+    if 'CH340' in blob or 'PL2303' in blob:
+        return 30
+    return 10
+
+
+def is_likely_admx_port(port_obj: Any) -> bool:
+    """Determina si el puerto coincide con el perfil esperado del adaptador TTL del ADMX2001."""
+    return get_admx_port_priority(port_obj) >= 80
+
+
+def get_preferred_usb_serial_ports(ports: Optional[List[Any]] = None) -> List[Any]:
+    """Devuelve puertos USB ordenados por prioridad, con el TTL esperado primero."""
+    port_list = list(ports) if ports is not None else list(serial.tools.list_ports.comports())
+    usb_ports = [port for port in port_list if is_usb_serial_port(port)]
+    return sorted(
+        usb_ports,
+        key=lambda port: (-get_admx_port_priority(port), (getattr(port, 'device', '') or '').upper())
+    )
+
+
 def list_available_ports() -> List[Dict[str, str]]:
     """
     Lista solo los puertos USB disponibles en el sistema.
@@ -38,18 +102,13 @@ def list_available_ports() -> List[Dict[str, str]]:
         ...     print(f"{port['device']}: {port['description']}")
     """
     ports = []
-    for port in serial.tools.list_ports.comports():
-        device = port.device
-        # Solo incluir puertos USB (excluir ttyS*)
-        if ('ttyUSB' in device or 'ttyACM' in device or 
-            'COM' in device.upper() or 
-            '/dev/cu.usbserial' in device or '/dev/cu.usbmodem' in device):
-            ports.append({
-                'device': port.device,
-                'description': port.description,
-                'hwid': port.hwid,
-                'manufacturer': port.manufacturer or 'Unknown'
-            })
+    for port in get_preferred_usb_serial_ports():
+        ports.append({
+            'device': port.device,
+            'description': port.description,
+            'hwid': port.hwid,
+            'manufacturer': port.manufacturer or 'Unknown'
+        })
     return ports
 
 
@@ -68,20 +127,11 @@ def find_admx2001_devices() -> List[str]:
         Esta función usa heurísticas; no garantiza que el dispositivo
         sea realmente un ADMX2001. Use test_device_connection() para verificar.
     """
-    potential_devices = []
-    for port in serial.tools.list_ports.comports():
-        device = port.device
-        # Solo buscar en puertos USB
-        if not ('ttyUSB' in device or 'ttyACM' in device or 
-                'COM' in device.upper() or 
-                '/dev/cu.usbserial' in device or '/dev/cu.usbmodem' in device):
-            continue
-        
-        # ADMX2001 usa cable FTDI USB-to-UART (TTL-232R-RPI o TTL232R-3V3)
-        desc_upper = port.description.upper() if port.description else ""
-        if 'FTDI' in desc_upper or 'USB SERIAL' in desc_upper or 'TTL232' in desc_upper:
-            potential_devices.append(port.device)
-    return potential_devices
+    return [
+        port.device
+        for port in get_preferred_usb_serial_ports()
+        if is_likely_admx_port(port)
+    ]
 
 
 def test_device_connection(port: str, baudrate: int = 115200, timeout: float = 2.0) -> bool:
@@ -210,6 +260,36 @@ def validate_count(count: int) -> None:
             f"Count debe ser un entero entre {COUNT_MIN} y {COUNT_MAX}. "
             f"Valor recibido: {count}"
         )
+
+
+def max_count_for_span(start_hz: float, end_hz: float) -> int:
+    """
+    Calcula el número máximo de puntos que acepta el firmware del ADMX2001
+    para un barrido de frecuencias dado.
+
+    Basado en mediciones empíricas del hardware real:
+      - Spans >= 4 décadas: máximo 100 pts  (CONFIRMADO: 6 dec → 100 ✅)
+      - Spans < 4 décadas:  máximo 200 pts  (CONFIRMADO: 3 dec → 200 ✅)
+
+    IMPORTANTE: Superar este límite corrompe el estado del firmware, haciendo
+    que barridos siguientes retornen sólo COUNT_MIN=10 puntos en lugar del
+    valor configurado.
+
+    Args:
+        start_hz: Frecuencia inicial en Hz.
+        end_hz:   Frecuencia final en Hz.
+
+    Returns:
+        Número máximo de puntos seguros para este span.
+    """
+    import math
+    if start_hz <= 0 or end_hz <= 0 or end_hz <= start_hz:
+        return 10
+    decades = math.log10(end_hz / start_hz)
+    if decades >= 4.0:
+        return 100   # ≥ 4 décadas → máx 100 pts (medido empíricamente)
+    else:
+        return 200   # < 4 décadas → máx 200 pts (medido empíricamente)
 
 
 def calculate_impedance_from_rx(r: float, x: float) -> Dict[str, float]:
@@ -447,44 +527,240 @@ def format_scientific(value: float, precision: int = 6) -> str:
     return f"{value:.{precision}e}"
 
 
-def estimate_measurement_time(frequency: float, average: int, count: int, 
+# ---------------------------------------------------------------------------
+# Constantes derivadas de la documentación oficial del EVAL-ADMX2001
+# Firmware v1.3.x – medición vía UART a 115200 baud:
+#
+#   "Mediciones típicas: 10-12 ms" (trigger mode, autorange OFF, f > 3 kHz)
+#   "Mediciones más rápidas sobre ~3 kHz"
+#
+# Deducción del número de ciclos de integración DFT del hardware:
+#   piso_nominal = 15 ms  (modo UART normal, no trigger)
+#   cruce a f=3000 Hz  →  N = 3000 Hz × 0.015 s = 45 ciclos
+#   En la práctica el firmware oscila entre 30 y 36 ciclos en trigger;
+#   para UART normal (overhead de 5-8 ms) usamos 36 ciclos + piso 15 ms.
+#
+# Esto corrige el modelo anterior de 3 ciclos, que subestimaba 10-15×
+# los tiempos reales a bajas frecuencias.  La función también acepta
+# datos del perfil de hardware medido (lib/hw_timing_profile.py).
+# ---------------------------------------------------------------------------
+_HW_DFT_CYCLES   = 36      # ciclos mínimos de integración DFT del chip
+_HW_FLOOR_MS     = 15.0    # piso real en modo UART (measurement + comm)
+_HW_DC_FLOOR_MS  = 80.0    # estimación para modo DC (settle + measure)
+# Overhead fijo medido por cada llamada a perform_sweep():
+#   setup hardware + primer punto + latencia del dispositivo
+#   ~5800 ms medido en benchmark real (2024) a frecuencias > 100 Hz
+_HW_SWEEP_STARTUP_MS = 5800.0
+
+
+def _acquisition_time_ms(frequency: float, average: int = 1) -> float:
+    """
+    Calcula el tiempo de adquisición en ms para UNA medición a la frecuencia dada.
+
+    Modelo derivado de la documentación oficial EVAL-ADMX2001 v1.3.x:
+    - El motor DFT interno del chip necesita ~36 ciclos completos de la señal
+      de excitación para alcanzar la precisión especificada.
+    - Por encima de ~3 kHz, el piso de hardware (15 ms en modo UART) domina.
+    - El promediado multiplica linealmente el tiempo de adquisición.
+
+    Verificación:
+      f=0.2 Hz  → 36/0.2×1000 = 180 000 ms ≈ 3 min por punto  ✓ (correcto)
+      f=3 kHz   → max(12, 15) = 15 ms                           ✓ (docs: 10-12 ms)
+      f=10 MHz  → piso 15 ms                                    ✓
+
+    Args:
+        frequency: Frecuencia en Hz (>0 para AC, 0 para DC)
+        average:   Número de promedios (multiplica el tiempo linealmente)
+
+    Returns:
+        Tiempo de adquisición en ms (sin incluir mdelay/tdelay externos)
+    """
+    if frequency <= 0:
+        base_ms = _HW_DC_FLOOR_MS
+    else:
+        # Tiempo basado en ciclos de integración del hardware
+        period_ms = (1.0 / frequency) * 1000.0
+        base_ms = _HW_DFT_CYCLES * period_ms
+
+    # Piso de hardware (comunicación + procesamiento mínimo)
+    base_ms = max(base_ms, _HW_FLOOR_MS)
+
+    # El promediado multiplica el tiempo de adquisición linealmente
+    return base_ms * max(1, average)
+
+
+def estimate_measurement_time(frequency: float, average: int, count: int,
                               mdelay: float = 1.0, tdelay: float = 4.0) -> float:
     """
-    Estima el tiempo de medición basado en parámetros.
-    
-    Según documentación, el tiempo depende de:
-    - Frecuencia (necesita mínimo 3 ciclos)
-    - Average y count
-    - Delays configurados
-    - Overhead de comunicación
-    
+    Estima el tiempo de medición basado en parámetros para UNA frecuencia fija.
+
     Args:
         frequency: Frecuencia en Hz
         average: Número de promedios
-        count: Número de muestras
+        count: Número de muestras repetidas a esa frecuencia
         mdelay: Delay de medición (ms)
         tdelay: Delay de trigger (ms)
-    
+
     Returns:
         Tiempo estimado en segundos
     """
-    # Tiempo mínimo por ciclo (3 ciclos mínimo)
-    if frequency > 0:
-        min_acquisition_time = (3.0 / frequency) * 1000  # en ms
+    sample_time = _acquisition_time_ms(frequency, average)
+
+    # Suma de tiempos individuales + delays + overhead de comunicación
+    total_ms = sample_time * count + mdelay * count + tdelay + 50.0
+    return total_ms / 1000.0
+
+
+def estimate_sweep_time(freq_start: float, freq_end: float, n_points: int,
+                        scale: str = 'log', average: int = 1,
+                        mdelay: float = 0.0, tdelay: float = 0.0) -> dict:
+    """
+    Estima el tiempo total de un barrido de frecuencias de freq_start a freq_end.
+
+    Calcula punto a punto el tiempo de adquisición, ya que a frecuencias muy bajas
+    (p. ej. 0.2 Hz) cada medición requiere ~15 s, mientras que a 10 MHz el piso
+    de 10 ms domina.  La suma correcta es crítica para configurar timeouts reales.
+
+    Args:
+        freq_start : Frecuencia inicial en Hz  (≥ 0.2)
+        freq_end   : Frecuencia final en Hz    (≤ 10_000_000)
+        n_points   : Número de puntos del barrido
+        scale      : 'log' | 'linear'
+        average    : Número de promedios
+        mdelay     : Delay de medición por punto (ms)
+        tdelay     : Delay de trigger global (ms)
+
+    Returns:
+        dict con las siguientes claves:
+          - total_seconds     : tiempo total estimado en segundos
+          - frequencies       : array numpy de frecuencias del barrido
+          - per_point_ms      : array numpy – ms por punto
+          - bottleneck_freq   : frecuencia más lenta (Hz)
+          - bottleneck_ms     : tiempo del punto más lento (ms)
+          - fast_segment_s    : tiempo estimado de la mitad de alta frecuencia
+          - slow_segment_s    : tiempo estimado de la mitad de baja frecuencia
+          - recommended_segments : número mínimo de segmentos recomendado
+          - human_readable    : string legible (p. ej. "3 min 12 s")
+    """
+    n_points = max(2, int(n_points))
+    freq_start = max(0.2, float(freq_start))
+    freq_end   = min(10_000_000.0, float(freq_end))
+
+    if scale == 'log':
+        freqs = np.logspace(np.log10(freq_start), np.log10(freq_end), n_points)
     else:
-        min_acquisition_time = 50  # Para modo DC
-    
-    # Tiempo por muestra individual
-    sample_time = max(min_acquisition_time, 10)  # mínimo 10ms
-    
-    # Tiempo total considerando average y count
-    measurement_time = sample_time * count + mdelay * count + tdelay
-    
-    # Overhead de comunicación
-    communication_overhead = 50  # ms aproximado
-    
-    total_time_ms = measurement_time + communication_overhead
-    return total_time_ms / 1000.0  # convertir a segundos
+        freqs = np.linspace(freq_start, freq_end, n_points)
+
+    # Intentar usar el perfil de timing real del hardware si está disponible.
+    # Si no hay datos medidos, la función get_ms() cae en la fórmula teórica.
+    try:
+        from .hw_timing_profile import get_profile as _get_hw_profile
+        _hw_profile = _get_hw_profile()
+        per_point_ms = np.array([_hw_profile.get_ms(f, average) for f in freqs])
+    except Exception:
+        per_point_ms = np.array([_acquisition_time_ms(f, average) for f in freqs])
+
+    per_point_ms += mdelay  # añadir delay de medición por punto
+
+    # Overhead total:
+    #   - _HW_SWEEP_STARTUP_MS: tiempo fijo de setup por cada llamada a perform_sweep()
+    #     (inicialización HW + latencia de primer punto). Medido en benchmark real.
+    #   - tdelay: delay global de trigger
+    # El overhead de startup es dominante en sweeps cortos de alta frecuencia.
+    total_ms = per_point_ms.sum() + tdelay + _HW_SWEEP_STARTUP_MS
+
+    # Frecuencia "cuello de botella" (la más lenta)
+    bottleneck_idx = int(np.argmax(per_point_ms))
+    bottleneck_freq = float(freqs[bottleneck_idx])
+    bottleneck_ms   = float(per_point_ms[bottleneck_idx])
+
+    # Tiempos de la mitad lenta y rápida
+    mid = n_points // 2
+    slow_segment_s = float(per_point_ms[:mid].sum()) / 1000.0
+    fast_segment_s = float(per_point_ms[mid:].sum()) / 1000.0
+
+    total_s = total_ms / 1000.0
+
+    # Segmentos recomendados: no más de 50 puntos por segmento si hay frecuencias < 10 Hz,
+    # no más de 100 si hay frecuencias < 100 Hz, 200 en caso general.
+    if freq_start < 0.5:
+        max_seg = 1      # 0.2–0.5 Hz → 180–450 s/punto → 1 punto por segmento
+    elif freq_start < 1.0:
+        max_seg = 2      # 0.5–1 Hz   → 90–180 s/punto
+    elif freq_start < 5.0:
+        max_seg = 3      # 1–5 Hz     → 18–90 s/punto
+    elif freq_start < 20.0:
+        max_seg = 5      # 5–20 Hz    → 4.5–18 s/punto
+    elif freq_start < 100.0:
+        max_seg = 10     # 20–100 Hz  → 0.9–4.5 s/punto
+    elif freq_start < 1000.0:
+        max_seg = 30     # 100 Hz–1 kHz → 50ms–0.9s/punto
+    elif freq_start < 10000.0:
+        max_seg = 100    # 1–10 kHz   → 15–50 ms/punto (piso)
+    else:
+        max_seg = 200    # > 10 kHz   → piso 15 ms/punto
+    recommended_segs = math.ceil(n_points / max_seg)
+
+    # Texto legible
+    if total_s < 1.0:
+        human = f"{int(total_s * 1000)} ms"
+    else:
+        total_s_int = int(total_s)
+        h = total_s_int // 3600
+        m = (total_s_int % 3600) // 60
+        s = total_s_int % 60
+        if h > 0:
+            human = f"{h}h {m}min {s}s"
+        elif m > 0:
+            human = f"{m}min {s}s"
+        else:
+            human = f"{s}s"
+
+    return {
+        'total_seconds'       : total_s,
+        'frequencies'         : freqs,
+        'per_point_ms'        : per_point_ms,
+        'bottleneck_freq'     : bottleneck_freq,
+        'bottleneck_ms'       : bottleneck_ms,
+        'slow_segment_s'      : slow_segment_s,
+        'fast_segment_s'      : fast_segment_s,
+        'recommended_segments': recommended_segs,
+        'human_readable'      : human,
+    }
+
+
+def max_points_per_segment(freq_start: float) -> int:
+    """
+    Devuelve el tamaño máximo de segmento recomendado según la frecuencia más baja.
+
+    Basado en el modelo empírico de 36 ciclos de integración DFT del ADMX2001:
+    - 0.2 Hz: ~180 s/punto → solo 1 punto por segmento es tolerable
+    - 3 kHz+: piso de 15 ms/punto → segmentos grandes sin problema
+
+    El objetivo es que ningún segmento supere ~3-5 minutos de medición total,
+    para que los timeouts y el feedback al usuario sean razonables.
+
+    Args:
+        freq_start: Frecuencia mínima del segmento en Hz
+
+    Returns:
+        Número máximo de puntos por segmento
+    """
+    if freq_start < 0.5:
+        return 1      # 0.2–0.5 Hz → 180–450 s/pto → 1 pto max (3-7.5 min/seg)
+    if freq_start < 1.0:
+        return 2      # 0.5–1 Hz   → 90–180 s/pto  → 2 ptos  (3-6 min/seg)
+    if freq_start < 5.0:
+        return 3      # 1–5 Hz     → 18–90 s/pto   → 3 ptos  (~ 3 min/seg)
+    if freq_start < 20.0:
+        return 5      # 5–20 Hz    → 4.5–18 s/pto  → 5 ptos  (1-1.5 min/seg)
+    if freq_start < 100.0:
+        return 10     # 20–100 Hz  → 0.9–4.5 s/pto → 10 ptos (1-2 min/seg)
+    if freq_start < 1000.0:
+        return 30     # 100 Hz–1 kHz → 50ms–0.9s/pto → 30 ptos (1-2 min/seg)
+    if freq_start < 10000.0:
+        return 100    # 1–10 kHz   → piso 15-50 ms/pto → 100 ptos (1-5 s/seg)
+    return 200        # > 10 kHz   → piso 15 ms/pto → 200 ptos (3 s/seg)
 
 
 def save_sweep_data_to_csv(data: Dict[str, List], filename: str = None) -> str:

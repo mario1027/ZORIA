@@ -113,7 +113,7 @@ def content_inicio_rapido():
         html.Div([
             html.H3([
                 html.I(className="fas fa-rocket me-3", style={'color': '#d4af37'}),
-                "Inicio Rápido - Five Simple Steps"
+                html.Span("Inicio Rápido - Five Simple Steps", **{'data-i18n': 'doc.section.start'})
             ], className="mb-3 fw-bold", style={'color': '#0f172a'}),
             html.P([
                 "Esta guía te ayudará a configurar y comenzar a usar tu ",
@@ -138,14 +138,14 @@ def content_inicio_rapido():
         
         # Paso 1
         html.Div([
-            html.H5([step_number(1), "Instalación de Drivers FTDI VCP"], className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5([step_number(1), html.Span("Instalación de Drivers FTDI VCP", **{'data-i18n': 'doc.qs.h5.ftdi'})], className="fw-bold mb-3", style={'color': '#0f172a'}),
             html.P([
                 "El ", html.Strong("EVAL-ADMX2001EBZ"), " se comunica con tu PC mediante UART. "
                 "El cable USB-to-UART incluido requiere drivers ",
                 html.Strong("Virtual COM Port (VCP)"), " de FTDI."
             ], style={'color': '#475569', 'marginBottom': '15px'}),
             html.Div([
-                html.H6("Procedimiento:", className="fw-bold mt-3 mb-2", style={'color': '#0f172a'}),
+                html.H6("Procedimiento:", className="fw-bold mt-3 mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.qs.h6.procedure'}),
                 html.Ol([
                     html.Li([
                         "Descargar el setup executable del driver desde: ",
@@ -166,7 +166,7 @@ def content_inicio_rapido():
         
         # Paso 2
         html.Div([
-            html.H5([step_number(2), "Instalación del Emulador de Terminal"], className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5([step_number(2), html.Span("Instalación del Emulador de Terminal", **{'data-i18n': 'doc.qs.h5.terminal'})], className="fw-bold mb-3", style={'color': '#0f172a'}),
             html.P([
                 "Para comunicarse con el ADMX2001B mediante su interfaz CLI y UART, se recomienda ",
                 html.Strong("TeraTerm"), " (soporta códigos ANSI para colores y cursor)."
@@ -180,7 +180,7 @@ def content_inicio_rapido():
                 html.Strong("Alternativas: "), "PuTTY, CoolTerm (pueden tener problemas con códigos ANSI)"
             ], style={'color': '#64748b', 'fontSize': '0.9rem', 'marginTop': '15px'}),
             html.Div([
-                html.H6("Configuración de TeraTerm:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.H6("Configuración de TeraTerm:", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.qs.h6.teraterm_config'}),
                 html.Ul([
                     html.Li([html.Strong("Speed: "), "115200"], style={'color': '#475569'}),
                     html.Li([html.Strong("Data: "), "8 bits"], style={'color': '#475569'}),
@@ -193,7 +193,7 @@ def content_inicio_rapido():
         
         # Paso 3
         html.Div([
-            html.H5([step_number(3), "Configuración de Hardware"], className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5([step_number(3), html.Span("Configuración de Hardware", **{'data-i18n': 'doc.qs.h5.hardware_config'})], className="fw-bold mb-3", style={'color': '#0f172a'}),
             html.P("Sigue estos pasos para la configuración inicial:", style={'color': '#475569', 'marginBottom': '15px'}),
             html.Div([
                 html.Div([
@@ -245,7 +245,7 @@ def content_inicio_rapido():
         
         # Paso 4
         html.Div([
-            html.H5([step_number(4), "Abrir Sesión con TeraTerm"], className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5([step_number(4), html.Span("Abrir Sesión con TeraTerm", **{'data-i18n': 'doc.qs.h5.teraterm'})], className="fw-bold mb-3", style={'color': '#0f172a'}),
             html.Div([
                 html.Strong("Configuración inicial:", style={'display': 'block', 'marginBottom': '10px'}),
                 html.Ol([
@@ -279,7 +279,7 @@ def content_inicio_rapido():
         
         # Paso 5
         html.Div([
-            html.H5([step_number(5), "Primeras Mediciones"], className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5([step_number(5), html.Span("Primeras Mediciones", **{'data-i18n': 'doc.qs.h5.first_measurements'})], className="fw-bold mb-3", style={'color': '#0f172a'}),
             html.P([
                 "Al abrir una sesión, el ADMX2001B está listo para realizar mediciones de impedancia. ",
                 html.Strong("⚠️ Las mediciones no serán precisas hasta calibrar el módulo (ver sección Calibración).")
@@ -293,7 +293,7 @@ def content_inicio_rapido():
                     html.Li("Auto-ranging habilitado")
                 ], style={'color': '#475569'})
             ], style={'background': '#f8fafc', 'padding': '15px', 'borderRadius': '8px', 'marginBottom': '20px'}),
-            html.H6("Ejemplo: Medición de Capacitancia", className="fw-bold mb-2", style={'color': '#0f172a'}),
+            html.H6("Ejemplo: Medición de Capacitancia", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.qs.h6.example_cap'}),
             html.P("Realizar una medición Cp-Rp a 100kHz con amplitud de 1V, retornar 5 lecturas promediando 10 muestras:", style={'color': '#475569', 'marginBottom': '10px'}),
             html.Pre("""ADMX2001> frequency 100
 frequency = 100.0000kHz
@@ -341,7 +341,7 @@ def content_hardware():
         html.Div([
             html.H3([
                 html.I(className="fas fa-microchip me-3", style={'color': '#3b82f6'}),
-                "Especificaciones de Hardware"
+                html.Span("Especificaciones de Hardware", **{'data-i18n': 'doc.section.hardware'})
             ], className="mb-3 fw-bold", style={'color': '#0f172a'}),
             html.P([
                 "El ", html.Strong("EVAL-ADMX2001 LCR Meter Demo", style={'color': '#3b82f6'}),
@@ -357,7 +357,7 @@ def content_hardware():
         
         # ADMX2001B Module
         html.Div([
-            html.H5("ADMX2001B - Módulo Analizador de Impedancia", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("ADMX2001B - Módulo Analizador de Impedancia", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.hw.h5.module'}),
             html.Div([
                 html.Ul([
                     html.Li([html.Strong("Altamente compacto: "), "System-on-Module (SOM) de 1.5 × 2.5 pulgadas"]),
@@ -379,7 +379,7 @@ def content_hardware():
         
         # EVAL-ADMX2001EBZ Board
         html.Div([
-            html.H5("EVAL-ADMX2001EBZ - Placa de Evaluación", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("EVAL-ADMX2001EBZ - Placa de Evaluación", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.hw.h5.eval_board'}),
             html.Div([
                 html.Ul([
                     html.Li([html.Strong("Conectores BNC: "), "Para sondas y accesorios LCR estándar"]),
@@ -401,7 +401,7 @@ def content_hardware():
         
         # Descripción de Terminales
         html.Div([
-            html.H5("Descripción de Terminales", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Descripción de Terminales", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.hw.h5.terminals'}),
             html.Div([
                 html.Table([
                     html.Thead([
@@ -457,7 +457,7 @@ def content_hardware():
         
         # Self-Test
         html.Div([
-            html.H5("Funcionalidad de Self-Test", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Funcionalidad de Self-Test", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.hw.h5.selftest'}),
             html.P("Al encender, el ADMX2001B ejecuta automáticamente un self-test. El LED bicolor indica el estado:", style={'color': '#475569', 'marginBottom': '15px'}),
             html.Div([
                 html.Div([
@@ -491,7 +491,7 @@ def content_hardware():
         
         # Switches
         html.Div([
-            html.H5("Configuración de Switches", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Configuración de Switches", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.hw.h5.switches'}),
             html.P("Los switches S1 y S2 configuran el modo de operación:", style={'color': '#475569', 'marginBottom': '15px'}),
             html.Div([
                 html.Div([
@@ -522,7 +522,7 @@ def content_software():
         html.Div([
             html.H3([
                 html.I(className="fas fa-laptop-code me-3", style={'color': '#10b981'}),
-                "Guía de Software ZORIA"
+                html.Span("Guía de Software ZORIA", **{'data-i18n': 'doc.section.software'})
             ], className="mb-3 fw-bold", style={'color': '#0f172a'}),
             html.P([
                 "ZORIA es una plataforma web de código abierto que transforma el analizador de impedancia ",
@@ -533,11 +533,11 @@ def content_software():
         
         # Arquitectura
         html.Div([
-            html.H5("Arquitectura de ZORIA", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Arquitectura de ZORIA", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.sw.h5.architecture'}),
             html.P("ZORIA implementa una arquitectura modular de tres capas:", style={'color': '#475569', 'marginBottom': '15px'}),
             html.Div([
                 html.Div([
-                    html.H6("1. Capa de Hardware", className="fw-bold mb-2", style={'color': '#10b981'}),
+                    html.H6("1. Capa de Hardware", className="fw-bold mb-2", style={'color': '#10b981'}, **{'data-i18n': 'doc.sw.h6.hw_layer'}),
                     html.Ul([
                         html.Li("Comunicación serial con EVAL-ADMX2001 via protocolo UART"),
                         html.Li("Parsing y validación de comandos"),
@@ -547,7 +547,7 @@ def content_software():
                 ], style={'background': '#f0fdf4', 'padding': '20px', 'borderRadius': '12px', 'marginBottom': '15px', 'border': '2px solid #10b981'}),
                 
                 html.Div([
-                    html.H6("2. Backend (Python)", className="fw-bold mb-2", style={'color': '#10b981'}),
+                    html.H6("2. Backend (Python)", className="fw-bold mb-2", style={'color': '#10b981'}, **{'data-i18n': 'doc.sw.h6.backend'}),
                     html.Pre("""lib/
 ├── admx2001.py       # Clase principal de control del dispositivo (43 métodos)
 ├── calibration.py    # Gestión de calibración (open/short/load)
@@ -565,7 +565,7 @@ def content_software():
                 ], style={'background': '#f0fdf4', 'padding': '20px', 'borderRadius': '12px', 'marginBottom': '15px', 'border': '2px solid #10b981'}),
                 
                 html.Div([
-                    html.H6("3. Frontend (Dash-SPA)", className="fw-bold mb-2", style={'color': '#10b981'}),
+                    html.H6("3. Frontend (Dash-SPA)", className="fw-bold mb-2", style={'color': '#10b981'}, **{'data-i18n': 'doc.sw.h6.frontend'}),
                     html.Pre("""pages/
 ├── dashboard/        # Interfaz de medición en tiempo real
 ├── simulator/        # Calculadora de impedancia RLC
@@ -585,11 +585,11 @@ def content_software():
         
         # Biblioteca Python
         html.Div([
-            html.H5("Biblioteca Python - lib/admx2001.py", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Biblioteca Python - lib/admx2001.py", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.sw.h5.library'}),
             html.P("La clase ADMX2001 proporciona 43 métodos para control completo del dispositivo:", style={'color': '#475569', 'marginBottom': '15px'}),
             html.Div([
                 html.Div([
-                    html.H6("Conexión y Comunicación:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                    html.H6("Conexión y Comunicación:", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.sw.h6.connection'}),
                     html.Ul([
                         html.Li([html.Code("connect()"), " - Establecer conexión serial"]),
                         html.Li([html.Code("disconnect()"), " - Cerrar conexión"]),
@@ -602,7 +602,7 @@ def content_software():
                 ], style={'marginBottom': '20px'}),
                 
                 html.Div([
-                    html.H6("Configuración de Medición:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                    html.H6("Configuración de Medición:", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.sw.h6.measurement_config'}),
                     html.Ul([
                         html.Li([html.Code("set_frequency(freq)"), " - Configurar frecuencia (0.2 Hz - 10 MHz)"]),
                         html.Li([html.Code("set_magnitude(mag)"), " - Configurar amplitud de señal (0 - 2.5 V pk)"]),
@@ -614,7 +614,7 @@ def content_software():
                 ], style={'marginBottom': '20px'}),
                 
                 html.Div([
-                    html.H6("Control de Ganancia:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                    html.H6("Control de Ganancia:", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.sw.h6.gain_control'}),
                     html.Ul([
                         html.Li([html.Code("set_gain_auto()"), " - Activar auto-ranging"]),
                         html.Li([html.Code("set_gain_manual(ch0, ch1)"), " - Configurar ganancias manualmente"]),
@@ -624,7 +624,7 @@ def content_software():
                 ], style={'marginBottom': '20px'}),
                 
                 html.Div([
-                    html.H6("Mediciones:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                    html.H6("Mediciones:", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.sw.h6.measurements'}),
                     html.Ul([
                         html.Li([html.Code("measure_impedance()"), " - Medición de impedancia AC"]),
                         html.Li([html.Code("measure()"), " - Retorna tupla (valor1, valor2)"]),
@@ -635,7 +635,7 @@ def content_software():
                 ], style={'marginBottom': '20px'}),
                 
                 html.Div([
-                    html.H6("Barridos:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                    html.H6("Barridos:", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.sw.h6.sweeps'}),
                     html.Ul([
                         html.Li([html.Code("configure_sweep(type, start, end, points, scale)"), " - Configurar barrido"]),
                         html.Li([html.Code("perform_sweep(timeout)"), " - Ejecutar barrido y retornar datos"]),
@@ -644,7 +644,7 @@ def content_software():
                 ], style={'marginBottom': '20px'}),
                 
                 html.Div([
-                    html.H6("Utilidades:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                    html.H6("Utilidades:", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.sw.h6.utilities'}),
                     html.Ul([
                         html.Li([html.Code("set_mdelay(ms)"), " - Retardo entre mediciones"]),
                         html.Li([html.Code("set_tdelay(ms)"), " - Retardo después de trigger"]),
@@ -665,9 +665,9 @@ def content_software():
         
         # Ejemplos de código
         html.Div([
-            html.H5("Ejemplos de Código Python", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Ejemplos de Código Python", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.sw.h5.code_examples'}),
             
-            html.H6("1. Conexión y Medición Simple:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+            html.H6("1. Conexión y Medición Simple:", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.sw.h6.ex1_simple'}),
             html.Pre("""from lib import ADMX2001
 
 # Inicializar y conectar
@@ -703,7 +703,7 @@ device.disconnect()
                 'marginBottom': '20px'
             }),
             
-            html.H6("2. Barrido de Frecuencia Logarítmico:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+            html.H6("2. Barrido de Frecuencia Logarítmico:", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.sw.h6.ex2_sweep'}),
             html.Pre("""from lib import ADMX2001, SweepType, SweepScale
 
 device = ADMX2001(port='/dev/ttyUSB0')
@@ -744,7 +744,7 @@ device.disconnect()
                 'marginBottom': '20px'
             }),
             
-            html.H6("3. Uso del Simulador RLC:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+            html.H6("3. Uso del Simulador RLC:", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.sw.h6.ex3_rlc'}),
             html.Pre("""from pages.simulator.impedance_calculator import ImpedanceCalculator
 
 # Crear calculadora con rango de frecuencia
@@ -785,12 +785,12 @@ print(f"Frecuencia de resonancia: {f_resonance:.2f} Hz")
         
         # =============== USO DEL DASHBOARD DE ZORIA ===============
         html.Div([
-            html.H5("📊 Uso del Dashboard de Medición", className="fw-bold mb-3", style={'color': '#10b981'}),
+            html.H5("📊 Uso del Dashboard de Medición", className="fw-bold mb-3", style={'color': '#10b981'}, **{'data-i18n': 'doc.sw.h5.dashboard'}),
             html.P("El Dashboard es la página principal de ZORIA donde se realizan mediciones en tiempo real y barridos de frecuencia.", style={'color': '#475569', 'marginBottom': '20px'}),
             
             # Conexión al dispositivo
             html.Div([
-                html.H6("1. Conexión al Dispositivo", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.H6("1. Conexión al Dispositivo", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.sw.h6.db1_connect'}),
                 html.Ul([
                     html.Li([html.Strong("Botón \"Conectar ADMX2001\":"), " Hacer clic en el botón principal de conexión"]),
                     html.Li([html.Strong("Detección automática:"), " El sistema detecta puertos USB-Serial disponibles (FTDI, Silicon Labs, CH340)"]),
@@ -802,7 +802,7 @@ print(f"Frecuencia de resonancia: {f_resonance:.2f} Hz")
             
             # Medición simple
             html.Div([
-                html.H6("2. Medición Simple (Punto Único)", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.H6("2. Medición Simple (Punto Único)", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.sw.h6.db2_single'}),
                 html.Ul([
                     html.Li([html.Strong("Modo de Display:"), " Seleccionar uno de los 18 modos (Z-θ, R-X, Cp-D, Cs-D, Ls-Q, etc.)"]),
                     html.Li([html.Strong("Frecuencia:"), " Configurar frecuencia de medición (0.2 Hz - 10 MHz)"]),
@@ -815,7 +815,7 @@ print(f"Frecuencia de resonancia: {f_resonance:.2f} Hz")
             
             # Barrido de frecuencia
             html.Div([
-                html.H6("3. Barrido de Frecuencia", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.H6("3. Barrido de Frecuencia", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.sw.h6.db3_sweep'}),
                 html.Ul([
                     html.Li([html.Strong("Panel de configuración:"), " Tarjeta \"Configuración de Barrido\" en la parte inferior"]),
                     html.Li([html.Strong("Frecuencia inicial (Hz):"), " Punto de inicio del barrido"]),
@@ -830,7 +830,7 @@ print(f"Frecuencia de resonancia: {f_resonance:.2f} Hz")
             
             # Gráficos científicos
             html.Div([
-                html.H6("4. Gráficos Científicos en Tiempo Real", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.H6("4. Gráficos Científicos en Tiempo Real", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.sw.h6.db4_graphs'}),
                 
                 html.Div([
                     html.Strong("📈 Diagrama de Bode:", style={'color': '#10b981'}),
@@ -857,7 +857,7 @@ print(f"Frecuencia de resonancia: {f_resonance:.2f} Hz")
             
             # Exportación de datos
             html.Div([
-                html.H6("5. Exportación de Datos", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.H6("5. Exportación de Datos", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.sw.h6.db5_export'}),
                 html.Ul([
                     html.Li([html.Strong("Botón \"Exportar CSV\":"), " Descargar datos del último barrido"]),
                     html.Li([html.Strong("Formato:"), " CSV con columnas: Frecuencia(Hz), Z_real(Ω), Z_imag(Ω), |Z|(Ω), Phase(°)"]),
@@ -868,7 +868,7 @@ print(f"Frecuencia de resonancia: {f_resonance:.2f} Hz")
             
             # Terminal flotante
             html.Div([
-                html.H6("6. Terminal CLI Integrada", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.H6("6. Terminal CLI Integrada", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.sw.h6.db6_cli'}),
                 html.Ul([
                     html.Li([html.Strong("Acceso:"), " Presionar ", html.Kbd("Alt + T"), " o botón flotante inferior derecho"]),
                     html.Li([html.Strong("Comandos CLI:"), " Enviar comandos directos al ADMX2001"]),
@@ -880,7 +880,7 @@ print(f"Frecuencia de resonancia: {f_resonance:.2f} Hz")
             
             # Características avanzadas
             html.Div([
-                html.H6("✨ Características Avanzadas", className="fw-bold mb-2", style={'color': '#10b981'}),
+                html.H6("✨ Características Avanzadas", className="fw-bold mb-2", style={'color': '#10b981'}, **{'data-i18n': 'doc.sw.h6.db7_adv'}),
                 html.Div([
                     html.Div([
                         html.I(className="fas fa-database me-2", style={'color': '#10b981'}),
@@ -908,11 +908,11 @@ print(f"Frecuencia de resonancia: {f_resonance:.2f} Hz")
         
         # =============== SIMULADOR RLC ===============
         html.Div([
-            html.H5("🔬 Simulador de Circuitos RLC", className="fw-bold mb-3", style={'color': '#10b981'}),
+            html.H5("🔬 Simulador de Circuitos RLC", className="fw-bold mb-3", style={'color': '#10b981'}, **{'data-i18n': 'doc.sw.h5.simulator'}),
             html.P("El Simulador permite calcular y visualizar la respuesta en frecuencia de circuitos RLC antes de realizar mediciones físicas.", style={'color': '#475569', 'marginBottom': '20px'}),
             
             html.Div([
-                html.H6("Uso del Simulador", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.H6("Uso del Simulador", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.sw.h6.sim1_usage'}),
                 html.Ol([
                     html.Li([html.Strong("Acceso:"), " Menú lateral → Simulador RLC"]),
                     html.Li([html.Strong("Seleccionar circuito:"), " Dropdown con 10 topologías (RC serie/paralelo, RL serie/paralelo, RLC serie/paralelo, etc.)"]),
@@ -925,7 +925,7 @@ print(f"Frecuencia de resonancia: {f_resonance:.2f} Hz")
             ], style={'background': '#fef3c7', 'padding': '20px', 'borderRadius': '12px', 'border': '1px solid #f59e0b', 'marginBottom': '20px'}),
             
             html.Div([
-                html.H6("Circuitos Disponibles", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.H6("Circuitos Disponibles", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.sw.h6.sim2_circuits'}),
                 html.Ul([
                     html.Li("RC Serie / RC Paralelo"),
                     html.Li("RL Serie / RL Paralelo"),
@@ -936,7 +936,7 @@ print(f"Frecuencia de resonancia: {f_resonance:.2f} Hz")
             ], style={'background': '#eff6ff', 'padding': '20px', 'borderRadius': '12px', 'border': '1px solid #3b82f6', 'marginBottom': '20px'}),
             
             html.Div([
-                html.H6("Aplicaciones del Simulador", className="fw-bold mb-2", style={'color': '#10b981'}),
+                html.H6("Aplicaciones del Simulador", className="fw-bold mb-2", style={'color': '#10b981'}, **{'data-i18n': 'doc.sw.h6.sim3_apps'}),
                 html.Ul([
                     html.Li("Predecir respuesta de circuitos antes de construirlos"),
                     html.Li("Comparar mediciones reales vs. teóricas para validación"),
@@ -949,26 +949,26 @@ print(f"Frecuencia de resonancia: {f_resonance:.2f} Hz")
         
         # Casos de uso
         html.Div([
-            html.H5("Casos de Uso", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Casos de Uso", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.sw.h5.use_cases'}),
             html.Div([
                 html.Div([
-                    html.H6("1. Caracterización de Resonadores RLC", className="fw-bold mb-2", style={'color': '#10b981'}),
+                    html.H6("1. Caracterización de Resonadores RLC", className="fw-bold mb-2", style={'color': '#10b981'}, **{'data-i18n': 'doc.sw.h6.uc1'}),
                     html.P("Medir frecuencia de resonancia, factor de calidad (Q) y ancho de banda en circuitos resonantes para aplicaciones RF y diseño de filtros.", style={'color': '#475569', 'fontSize': '0.9rem'})
                 ], style={'marginBottom': '20px'}),
                 html.Div([
-                    html.H6("2. Análisis de Baterías (EIS)", className="fw-bold mb-2", style={'color': '#10b981'}),
+                    html.H6("2. Análisis de Baterías (EIS)", className="fw-bold mb-2", style={'color': '#10b981'}, **{'data-i18n': 'doc.sw.h6.uc2'}),
                     html.P("Espectroscopia de Impedancia Electroquímica para determinar State of Health (SOH) y State of Charge (SOC) en sistemas de gestión de baterías.", style={'color': '#475569', 'fontSize': '0.9rem'})
                 ], style={'marginBottom': '20px'}),
                 html.Div([
-                    html.H6("3. Caracterización de Materiales", className="fw-bold mb-2", style={'color': '#10b981'}),
+                    html.H6("3. Caracterización de Materiales", className="fw-bold mb-2", style={'color': '#10b981'}, **{'data-i18n': 'doc.sw.h6.uc3'}),
                     html.P("Medir propiedades dieléctricas, conductividad y tangente de pérdida de materiales en función de la frecuencia.", style={'color': '#475569', 'fontSize': '0.9rem'})
                 ], style={'marginBottom': '20px'}),
                 html.Div([
-                    html.H6("4. Diseño de Filtros y Redes de Acoplamiento", className="fw-bold mb-2", style={'color': '#10b981'}),
+                    html.H6("4. Diseño de Filtros y Redes de Acoplamiento", className="fw-bold mb-2", style={'color': '#10b981'}, **{'data-i18n': 'doc.sw.h6.uc4'}),
                     html.P("Verificar impedancia característica, pérdida de inserción y parámetros S de filtros y redes de acoplamiento de impedancia.", style={'color': '#475569', 'fontSize': '0.9rem'})
                 ], style={'marginBottom': '20px'}),
                 html.Div([
-                    html.H6("5. Desarrollo de Sensores", className="fw-bold mb-2", style={'color': '#10b981'}),
+                    html.H6("5. Desarrollo de Sensores", className="fw-bold mb-2", style={'color': '#10b981'}, **{'data-i18n': 'doc.sw.h6.uc5'}),
                     html.P("Caracterización de sensores impedimétricos para biosensores, sensores químicos y monitoreo ambiental.", style={'color': '#475569', 'fontSize': '0.9rem'})
                 ])
             ], style={
@@ -981,7 +981,7 @@ print(f"Frecuencia de resonancia: {f_resonance:.2f} Hz")
         
         # Atajos de teclado
         html.Div([
-            html.H5("Atajos de Teclado", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Atajos de Teclado", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.sw.h5.shortcuts'}),
             html.Div([
                 html.Div([
                     html.Kbd("Alt + T", style={
@@ -1025,12 +1025,559 @@ print(f"Frecuencia de resonancia: {f_resonance:.2f} Hz")
 
 # ==================== CONTENIDO: CALIBRACIÓN ====================
 
+def content_matematica_background():
+    return html.Div([
+        html.Div([
+            html.H3([
+                html.I(className="fas fa-square-root-alt me-3", style={'color': '#8b5cf6'}),
+                html.Span("Matemática Background: Hardware + Software", **{'data-i18n': 'doc.section.math'})
+            ], className="mb-3 fw-bold", style={'color': '#0f172a'}),
+            html.P([
+                "Marco matemático y físico de extremo a extremo: desde el front-end analógico real "
+                "del ADMX2001 hasta el pipeline de software de ZORIA (adquisición, streaming, calibración, "
+                "sweep segmentado, Bode/Nyquist y ajuste de modelos)."
+            ], style={'color': '#475569', 'fontSize': '1.05rem', 'marginBottom': '30px'})
+        ]),
+
+        info_box([
+            html.Strong("✅ Alcance auditado para esta sección:"),
+            html.Ul([
+                html.Li("Documentación oficial completa (modos, timing, calibración, trigger, firmware)"),
+                html.Li("Implementación real del backend: ADMX2001, device_state, utils, calibration"),
+                html.Li("Flujo runtime del dashboard: workers, streaming, segmentación, recuperación por saturación"),
+                html.Li("Modelos matemáticos de simulación y fitting RC/RLC")
+            ], style={'marginBottom': '0'})
+        ], "success"),
+
+        html.Div([
+            dcc.Markdown(
+                r"""
+### 1) Núcleo matemático de impedancia
+
+En todo el sistema se trabaja con impedancia compleja:
+
+$$
+Z(\omega)=R+jX, \quad Y(\omega)=\frac{1}{Z}=G+jB
+$$
+
+$$
+|Z|=\sqrt{R^2+X^2}, \quad \theta=\operatorname{atan2}(X,R)
+$$
+
+Elementos ideales:
+
+$$
+Z_R=R, \qquad Z_L=j\omega L, \qquad Z_C=\frac{1}{j\omega C}=-\frac{j}{\omega C}
+$$
+
+Relaciones usadas en modos de display:
+
+- Rectangular de impedancia: $(R, X)$
+- Polar de impedancia: $(|Z|, \theta)$
+- Rectangular de admitancia: $(G, B)$
+- Polar de admitancia: $(|Y|, \theta)$
+
+Factores de pérdidas:
+
+$$
+D=\tan(\delta), \qquad Q=\frac{1}{D} \;\; (\text{ideal})
+$$
+""",
+                mathjax=True,
+                style={'color': '#475569', 'fontSize': '1rem', 'lineHeight': '1.75'}
+            )
+        ], style={'background': '#ffffff', 'padding': '22px', 'borderRadius': '12px', 'border': '1px solid #e2e8f0', 'marginBottom': '24px'}),
+
+        html.Div([
+            dcc.Markdown(
+                r"""
+### 2) Física del hardware real (no ideal)
+
+En ZORIA se considera explícitamente el front-end real del evaluador:
+
+- Resistencia de fuente: $100\,\Omega$
+- Resistencia de protección: $10\,\Omega$
+- Total serie efectivo: $R_s=110\,\Omega$
+
+Por tanto, para una excitación configurada $V_{cfg}$:
+
+$$
+V_{DUT}=V_{cfg}\frac{|Z_{DUT}|}{|Z_{DUT}|+110},
+\qquad
+I_{DUT}=\frac{V_{cfg}}{|Z_{DUT}|+110}
+$$
+
+Consecuencia experimental:
+
+- Si $|Z_{DUT}|\ll110\,\Omega$, cae fuerte $V_{DUT}$
+- Si $|Z_{DUT}|\gg110\,\Omega$, cae fuerte $I_{DUT}$
+
+Esto fundamenta la lógica de selección de ganancia y autorange para preservar SNR y evitar saturación.
+
+Canal de voltaje (CH0): rangos típicos $\pm2.5V, \pm1.25V, \pm625mV, \pm312.5mV$.
+
+Canal de corriente (CH1): transimpedancias típicas $49.9\Omega, 499\Omega, 4.99k\Omega, 49.9k\Omega$.
+""",
+                mathjax=True,
+                style={'color': '#475569', 'fontSize': '1rem', 'lineHeight': '1.75'}
+            )
+        ], style={'background': '#eff6ff', 'padding': '22px', 'borderRadius': '12px', 'border': '1px solid #3b82f6', 'marginBottom': '24px'}),
+
+        html.Div([
+            dcc.Markdown(
+                r"""
+### 3) Flujo de trabajo real del sistema (end-to-end)
+
+#### A. Conexión y estado global
+
+1. Autodetección de puertos USB-Serial (FTDI/CP210/TTYUSB/TTYACM).
+2. Verificación activa con `*idn`.
+3. Estado compartido en `device_state` con lock de operación para evitar I/O simultáneo.
+
+#### B. Medición continua
+
+1. Configuración de `display`, `frequency`, `mdelay`, `tdelay`, `magnitude`.
+2. Lectura periódica (`measure`) en worker dedicado.
+3. Ventana deslizante de datos para actualización en tiempo real.
+
+#### C. Sweep de frecuencia (pipeline robusto)
+
+1. Forzar `setgain auto` para reducir saturación al barrer décadas.
+2. Aplicar `average`, `mdelay`, `tdelay` efectivos.
+3. Segmentar barridos largos (chunks) para robustez operativa.
+4. Streaming de puntos en tiempo real al buffer de sweep.
+5. Si hay saturación, reintento con magnitud reducida (estrategia de recuperación).
+6. Consolidación final y render de Bode/Nyquist.
+
+#### D. Calibración OSL
+
+1. `open` (obligatorio)
+2. `short` (condicionado: recomendado cuando CH1 es 0 o 1)
+3. `load` con patrón conocido $(R_t, X_t)$
+4. `commit` con contraseña para persistencia en NVM
+
+La calibración es específica de la tupla:
+
+$$
+(\text{gain}_{ch0},\;\text{gain}_{ch1},\;f)
+$$
+""",
+                mathjax=True,
+                style={'color': '#475569', 'fontSize': '1rem', 'lineHeight': '1.75'}
+            )
+        ], style={'background': '#ffffff', 'padding': '22px', 'borderRadius': '12px', 'border': '1px solid #e2e8f0', 'marginBottom': '24px'}),
+
+        html.Div([
+            dcc.Markdown(
+                r"""
+### 4) Diagramas Bode y Nyquist (convención usada por ZORIA)
+
+Bode:
+
+$$
+|Z|_{dB}=20\log_{10}(|Z|), \qquad \phi_{deg}=\angle Z
+$$
+
+Nyquist (impedancia):
+
+$$
+x=\Re\{Z\}, \qquad y=-\Im\{Z\}
+$$
+
+Interpretación práctica:
+
+- Semiplano con $\Im(Z)<0$: comportamiento dominante capacitivo.
+- Semiplano con $\Im(Z)>0$: comportamiento dominante inductivo.
+- Arcos no ideales/deprimidos: suelen indicar parásitos, dispersión o no idealidad del DUT.
+""",
+                mathjax=True,
+                style={'color': '#475569', 'fontSize': '1rem', 'lineHeight': '1.75'}
+            )
+        ], style={'background': '#f0fdf4', 'padding': '22px', 'borderRadius': '12px', 'border': '1px solid #10b981', 'marginBottom': '24px'}),
+
+        html.Div([
+            dcc.Markdown(
+                r"""
+### 5) Modelos implementados en software (simulación + fitting)
+
+Modelos ideales usados en simulador:
+
+$$
+Z_{RC,serie}=R+\frac{1}{j\omega C},
+\qquad
+Z_{RC,paralelo}=\frac{R}{1+j\omega RC}
+$$
+
+$$
+Z_{RL,serie}=R+j\omega L,
+\qquad
+Z_{RLC,serie}=R+j\omega L+\frac{1}{j\omega C}
+$$
+
+Resonancia ideal:
+
+$$
+f_0=\frac{1}{2\pi\sqrt{LC}}
+$$
+
+Ajuste RC en backend:
+
+- Se ajustan **simultáneamente** partes real e imaginaria.
+- Se usan restricciones físicas ($R>0$, $C>0$, y en modelos extendidos $R_{leak}>0$).
+- Incluye modelo no ideal tipo serie con fuga: $R + (C \parallel R_{leak})$.
+""",
+                mathjax=True,
+                style={'color': '#475569', 'fontSize': '1rem', 'lineHeight': '1.75'}
+            )
+        ], style={'background': '#ffffff', 'padding': '22px', 'borderRadius': '12px', 'border': '1px solid #e2e8f0', 'marginBottom': '24px'}),
+
+        html.Div([
+            dcc.Markdown(
+                r"""
+### 6) Tiempo de medición: compromiso velocidad vs precisión
+
+Estimador usado en utilidades:
+
+$$
+t_{acq,min}\approx\frac{3}{f},
+\qquad
+t_{sample}=\max\left(t_{acq,min}, 10\,ms\right)
+$$
+
+$$
+t_{total}\approx t_{sample}\cdot count + mdelay\cdot count + tdelay + overhead
+$$
+
+Promediado (aprox. estadística):
+
+$$
+\sigma_{noise}\propto\frac{1}{\sqrt{N_{avg}}}
+$$
+
+Es decir, subir `average` mejora ruido, pero incrementa latencia total.
+
+Técnica recomendada en práctica:
+
+1. Sweep rápido inicial (`setgain auto`, delays bajos, average moderado).
+2. Identificar subrangos críticos (resonancia, cambios de pendiente, bucles Nyquist).
+3. Refinar localmente con mayor promedio y/o delays.
+""",
+                mathjax=True,
+                style={'color': '#475569', 'fontSize': '1rem', 'lineHeight': '1.75'}
+            )
+        ], style={'background': '#fff7ed', 'padding': '22px', 'borderRadius': '12px', 'border': '1px solid #fb923c', 'marginBottom': '24px'}),
+
+        html.Div([
+            dcc.Markdown(
+                r"""
+### 7) Streaming Worker del terminal CLI (lo que faltaba)
+
+Este flujo está implementado como **streaming asíncrono con polling** y no como lectura bloqueante directa en UI.
+
+#### Estado interno (`device_state`)
+
+- Buffer incremental de líneas: `_streaming_buffer`
+- Lock de buffer: `_streaming_lock`
+- Flag de comando activo: `_command_in_progress`
+- Evento de finalización: `_streaming_complete`
+- Señal de stop cooperativo: `_stop_requested`
+- Mutex global de I/O serie: `_operation_lock`
+
+#### Máquina de estados simplificada
+
+1. `start_streaming_command(cmd)` limpia estado y levanta thread daemon.
+2. El thread adquiere `_operation_lock` (exclusión mutua con otras operaciones seriales).
+3. Envía comando y entra en bucle de lectura incremental.
+4. Limpia ANSI/VT100, filtra eco inicial y detecta prompt `ADMX2001>`.
+5. Publica líneas nuevas en `_streaming_buffer`.
+6. Al finalizar/error: marca `_streaming_complete`, baja `_command_in_progress` y libera lock.
+
+#### Integración con UI
+
+- `terminal-streaming-interval` hace poll cada 100 ms.
+- `get_streaming_lines()` drena buffer y actualiza salida incremental.
+- Si llega un nuevo comando y hay streaming activo: auto-stop controlado (`abort` + `stop`).
+
+#### Modelo temporal
+
+Si el polling es cada $\Delta t_{poll}=100\,ms$ y llegan $n_k$ líneas por ciclo:
+
+$$
+    \text{throughput}_{ui}\approx\frac{\sum_k n_k}{\sum_k \Delta t_{poll}}
+$$
+
+Con latencia visual aproximada en el orden de $\Delta t_{poll}$ más jitter de scheduler.
+""",
+                mathjax=True,
+                style={'color': '#475569', 'fontSize': '1rem', 'lineHeight': '1.75'}
+            )
+        ], style={'background': '#eef2ff', 'padding': '22px', 'borderRadius': '12px', 'border': '1px solid #8b5cf6', 'marginBottom': '24px'}),
+
+        html.Div([
+            dcc.Markdown(
+                r"""
+### 8) Streaming Worker del sweep (adquisición científica en tiempo real)
+
+El sweep en ZORIA combina:
+
+1. **Worker de adquisición** (`sweep_worker`)  
+2. **Buffer de puntos de sweep** en `device_state`  
+3. **Polling rápido** (`sweep-streaming-interval`, 100 ms) para pintar Bode/Nyquist en vivo
+
+#### Flujo real
+
+1. Preconfiguración robusta: `display`, `setgain auto`, `average`, `mdelay`, `tdelay`, `magnitude`.
+2. Segmentación para barridos grandes (evita operaciones monolíticas frágiles).
+3. Ejecución de `perform_sweep(..., point_callback=...)`.
+4. Cada punto callback hace `add_sweep_point(freq, z_real, z_imag, z_mag, phase)`.
+5. El callback de UI consume `get_sweep_points()` y actualiza gráficas/progreso.
+6. Cierre con `end_sweep_streaming()` o cancelación por usuario/error.
+
+#### Progreso y consistencia
+
+El progreso no es estimado por tiempo fijo; se basa en puntos realmente recibidos:
+
+$$
+    \text{progress}(\%) = 100\cdot\frac{N_{recibidos}}{N_{total}}
+$$
+
+Esto evita falsos 100% cuando el hardware aún no terminó.
+
+#### Recuperación de fallos incluida
+
+- Saturación ADC / `measurement failed`: reintento con magnitud reducida.
+- Sweep "abandonado" (sin puntos nuevos por ventana larga): cierre automático seguro.
+- Lock global serial para impedir colisiones con comandos concurrentes.
+
+#### Cadena de datos física → gráfica
+
+Para `display mode = 6`:
+
+$$
+\text{measurement}=(R, X),\quad |Z|=\sqrt{R^2+X^2},\quad \phi=\operatorname{atan2}(X,R)
+$$
+
+y se grafica en tiempo real:
+
+- Bode: $(f, 20\log_{10}|Z|)$ y $(f,\phi)$
+- Nyquist: $(Z', -Z'') = (R, -X)$
+""",
+                mathjax=True,
+                style={'color': '#475569', 'fontSize': '1rem', 'lineHeight': '1.75'}
+            )
+    ], style={'background': '#ffffff', 'padding': '22px', 'borderRadius': '12px', 'border': '1px solid #e2e8f0', 'marginBottom': '24px'}),
+
+    # ── §9 Diagramas Mermaid ───────────────────────────────────────────────
+    html.Div([
+        html.H4([
+            html.I(className="fas fa-project-diagram me-2", style={'color': '#3b82f6'}),
+            "9) Diagramas de arquitectura y flujos"
+        ], className="fw-bold mb-1", style={'color': '#1e40af', 'fontSize': '1.4rem'}),
+        html.P("Cada diagrama cubre una capa del sistema. Los de flujo muestran el camino exacto del dato desde el hardware hasta la UI.",
+               style={'color': '#64748b', 'fontSize': '0.92rem', 'marginBottom': '24px'}),
+
+        # ── 9.1 Arquitectura general (ancho completo) ───────────────────────
+        html.Div([
+            html.Div([
+                html.Span("9.1", className="diagram-badge"),
+                html.Span("Arquitectura general ZORIA + ADMX2001", className="fw-semibold"),
+            ], className="diagram-header"),
+            html.Div("""graph TD
+    U(["Usuario"])
+
+    subgraph FE["Capa de Presentacion  —  pages/*"]
+        direction LR
+        D["Dashboard"] --- CAL["Calibracion"] --- TERM["Terminal CLI"] --- DOC["Documentacion"]
+    end
+
+    subgraph BE["Capa de Negocio  —  lib/*"]
+        direction LR
+        APP["app.py"] --- DS["device_state.py"] --- ADM["admx2001.py"] --- CALB["calibration.py"]
+    end
+
+    subgraph HW["Hardware  —  EVAL-ADMX2001EBZ"]
+        direction LR
+        MCU["ADMX2001B"] -->|"4-wire sense"| DUT["DUT"]
+    end
+
+    U       -->|"Browser / HTTP"| FE
+    FE      -->|"callbacks + dcc.Store"| BE
+    BE      -->|"UART 115200 bps  /dev/ttyUSBx"| HW
+
+    style U   fill:#1e40af,color:#fff,stroke:#1e3a8a
+    style FE  fill:#eff6ff,stroke:#3b82f6,color:#1e293b
+    style BE  fill:#f0fdf4,stroke:#22c55e,color:#14532d
+    style HW  fill:#fff7ed,stroke:#f97316,color:#7c2d12
+    classDef default fill:#f8fafc,stroke:#cbd5e1,color:#1e293b
+""", className="mermaid diagram-canvas"),
+        ], className="diagram-card diagram-card--blue diagram-card--full"),
+
+        # ── Fila 1: 9.2 + 9.3 ──────────────────────────────────────────────
+        html.Div([
+
+            # 9.2
+            html.Div([
+                html.Div([
+                    html.Span("9.2", className="diagram-badge diagram-badge--cyan"),
+                    html.Span("Flujo de conexion global", className="fw-semibold"),
+                ], className="diagram-header"),
+                html.Div("""flowchart TD
+    A(["Quick Connect"]) --> B["Escanear puertos USB"]
+    B --> C["ADMX2001(port, 115200)"]
+    C --> D["send_command('*idn')"]
+    D --> E{Respuesta OK?}
+    E -->|Si| F["device_state.set_device()"]
+    E -->|No| G["Siguiente puerto"]
+    G -->|Sin puertos| H(["Error: sin dispositivo"])
+    F --> I["Monitor verify_connection()"]
+    I --> J{Responde?}
+    J -->|No| K(["clear_device()"])
+    J -->|Si| I
+
+    classDef ok fill:#dcfce7,stroke:#16a34a,color:#14532d
+    classDef err fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
+    classDef default fill:#f0f9ff,stroke:#7dd3fc,color:#0c4a6e
+    class F,I ok
+    class H,K err
+""", className="mermaid diagram-canvas"),
+            ], className="diagram-card diagram-card--cyan"),
+
+            # 9.3
+            html.Div([
+                html.Div([
+                    html.Span("9.3", className="diagram-badge diagram-badge--green"),
+                    html.Span("Streaming del Terminal CLI", className="fw-semibold"),
+                ], className="diagram-header"),
+                html.Div("""flowchart TD
+    A(["Comando de usuario"]) --> B["handle_terminal_command()"]
+    B --> C{Streaming activo?}
+    C -->|Si| D["stop_streaming_command()"]
+    C -->|No| E
+    D --> E["start_streaming_command()"]
+    E --> F[["Thread daemon"]]
+    F --> G["acquire _operation_lock"]
+    G --> H["serial.write + readline loop"]
+    H --> I["Limpiar ANSI, filtrar eco"]
+    I --> J{Prompt ADMX2001>?}
+    J -->|No| H
+    J -->|Si| K["_streaming_complete.set()"]
+    K -.->|poll 100ms| L(["Render terminal"])
+
+    classDef thread fill:#d1fae5,stroke:#059669,color:#064e3b
+    classDef out fill:#dcfce7,stroke:#16a34a,color:#14532d
+    classDef default fill:#f0fdf4,stroke:#86efac,color:#14532d
+    class F thread
+    class L out
+""", className="mermaid diagram-canvas"),
+            ], className="diagram-card diagram-card--green"),
+
+        ], className="diagram-row"),
+
+        # ── Fila 2: 9.4 + 9.5 ──────────────────────────────────────────────
+        html.Div([
+
+            # 9.4
+            html.Div([
+                html.Div([
+                    html.Span("9.4", className="diagram-badge diagram-badge--purple"),
+                    html.Span("Sweep streaming en tiempo real", className="fw-semibold"),
+                ], className="diagram-header"),
+                html.Div("""flowchart TD
+    A(["Iniciar Barrido"]) --> B["sweep_worker()"]
+    B --> C["preconfig + auto-gain"]
+    C --> D{N > 200 pts?}
+    D -->|Si| E["Segmentar bloques"]
+    D -->|No| F
+    E --> F["start_sweep_streaming(N)"]
+    F --> G["perform_sweep(callback)"]
+    G --> H{Saturacion?}
+    H -->|Si| I["Retry magnitude x 0.5"]
+    I --> G
+    H -->|No| J["end_sweep_streaming()"]
+    G -.->|point_callback| K["(R,X) -> |Z|, fase"]
+    K -.->|poll 100ms| L(["Bode + Nyquist actualizado"])
+
+    classDef cb fill:#ede9fe,stroke:#7c3aed,color:#4c1d95
+    classDef out fill:#f5f3ff,stroke:#a78bfa,color:#4c1d95
+    classDef default fill:#faf5ff,stroke:#c4b5fd,color:#4c1d95
+    class K cb
+    class L out
+""", className="mermaid diagram-canvas"),
+            ], className="diagram-card diagram-card--purple"),
+
+            # 9.5
+            html.Div([
+                html.Div([
+                    html.Span("9.5", className="diagram-badge diagram-badge--amber"),
+                    html.Span("Calibracion OSL + commit", className="fw-semibold"),
+                ], className="diagram-header"),
+                html.Div("""flowchart TD
+    A(["Wizard: Configuracion"]) --> B["Auto-gain por R_load"]
+    B --> S1["PASO 1: OPEN"]
+    S1 --> C["H-H / L-L en circuito abierto"]
+    C --> D["calibrate open"]
+    D --> S2["PASO 2: SHORT"]
+    S2 --> E["Cortocircuitar H-H / L-L"]
+    E --> F["calibrate short"]
+    F --> S3["PASO 3: LOAD"]
+    S3 --> G["Conectar R de referencia"]
+    G --> H["calibrate rt R xt X"]
+    H --> S4["PASO 4: COMMIT"]
+    S4 --> I["calibrate commit timestamp"]
+    I --> J{"PASSWORD>"}
+    J -->|"Analog123"| K["NVM persistida"]
+    K --> L(["Calibracion guardada"])
+
+    classDef step fill:#f97316,color:#fff,stroke:#c2410c
+    classDef ok fill:#dcfce7,stroke:#16a34a,color:#14532d
+    classDef default fill:#fffbeb,stroke:#fcd34d,color:#78350f
+    class S1,S2,S3,S4 step
+    class K,L ok
+""", className="mermaid diagram-canvas"),
+            ], className="diagram-card diagram-card--amber"),
+
+        ], className="diagram-row"),
+
+        # ── 9.6 Secuencia de locks (ancho completo) ─────────────────────────
+        html.Div([
+            html.Div([
+                html.Span("9.6", className="diagram-badge diagram-badge--red"),
+                html.Span("Sincronizacion de locks y concurrencia", className="fw-semibold"),
+            ], className="diagram-header"),
+            html.Div("""sequenceDiagram
+    participant UI as Thread UI (Dash callbacks)
+    participant W  as Thread Streaming
+    participant S  as Puerto Serial
+
+    UI ->> W  : start_streaming_command(cmd)
+    W  ->> W  : acquire _operation_lock
+    W  ->> S  : serial.write(cmd)
+    loop readline hasta ADMX2001>
+        S  -->> W : linea de datos
+        W  ->>  W : append _streaming_buffer
+    end
+    UI ->> W  : poll get_streaming_lines() cada 100ms
+    W -->> UI : nuevas lineas -> render incremental
+    S -->> W  : prompt ADMX2001> detectado
+    W  ->> W  : _streaming_complete.set()
+    W  ->> W  : release _operation_lock
+    W -->> UI : done -> deshabilitar interval
+""", className="mermaid diagram-canvas"),
+        ], className="diagram-card diagram-card--red diagram-card--full"),
+
+    ], style={'background': '#f1f5f9', 'padding': '28px', 'borderRadius': '16px',
+              'border': '1px solid #cbd5e1', 'marginBottom': '10px'})
+    ])
+
+
+# ==================== CONTENIDO: CALIBRACIÓN ====================
+
 def content_calibracion():
     return html.Div([
         html.Div([
             html.H3([
                 html.I(className="fas fa-balance-scale me-3", style={'color': '#f59e0b'}),
-                "Procedimiento de Calibración OSL"
+                html.Span("Procedimiento de Calibración OSL", **{'data-i18n': 'doc.section.calibration'})
             ], className="mb-3 fw-bold", style={'color': '#0f172a'}),
             html.P([
                 "La calibración Open/Short/Load (OSL) es esencial para mediciones precisas. ",
@@ -1040,7 +1587,7 @@ def content_calibracion():
         
         # ========== WIZARD DE CALIBRACIÓN EN ZORIA ==========
         html.Div([
-            html.H4("🚀 Wizard de Calibración Automatizado en ZORIA", className="fw-bold mb-3", style={'color': '#10b981', 'fontSize': '1.5rem'}),
+            html.H4("🚀 Wizard de Calibración Automatizado en ZORIA", className="fw-bold mb-3", style={'color': '#10b981', 'fontSize': '1.5rem'}, **{'data-i18n': 'doc.cal.h4.wizard'}),
             html.P([
                 "ZORIA incluye un ",
                 html.Strong("Wizard de Calibración Automatizado"),
@@ -1050,7 +1597,7 @@ def content_calibracion():
             
             # Acceso al Wizard
             html.Div([
-                html.H6("📍 Acceso al Wizard", className="fw-bold mb-3", style={'color': '#0f172a'}),
+                html.H6("📍 Acceso al Wizard", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cal.h6.wizard_access'}),
                 html.Ol([
                     html.Li("Navega a la página \"Calibración\" en el menú lateral izquierdo", style={'marginBottom': '8px'}),
                     html.Li("Haz clic en el botón \"⚖️ Iniciar Wizard de Calibración\"", style={'marginBottom': '8px'}),
@@ -1060,7 +1607,7 @@ def content_calibracion():
             
             # Pasos del Wizard
             html.Div([
-                html.H6("🔧 Pasos del Wizard de Calibración", className="fw-bold mb-3", style={'color': '#0f172a'}),
+                html.H6("🔧 Pasos del Wizard de Calibración", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cal.h6.wizard_steps'}),
                 
                 # Paso 1: Configuración
                 html.Div([
@@ -1142,7 +1689,7 @@ def content_calibracion():
             
             # Ventajas del Wizard
             html.Div([
-                html.H6("✨ Ventajas del Wizard Automatizado", className="fw-bold mb-3", style={'color': '#10b981'}),
+                html.H6("✨ Ventajas del Wizard Automatizado", className="fw-bold mb-3", style={'color': '#10b981'}, **{'data-i18n': 'doc.cal.h6.wizard_adv'}),
                 html.Div([
                     html.Div([
                         html.I(className="fas fa-magic me-2", style={'color': '#10b981', 'fontSize': '1.2rem'}),
@@ -1186,7 +1733,7 @@ def content_calibracion():
         ], style={'marginBottom': '50px'}),
         
         html.Div([
-            html.H4("⌨️ Calibración Manual por CLI", className="fw-bold mb-3", style={'color': '#0f172a', 'fontSize': '1.5rem'}),
+            html.H4("⌨️ Calibración Manual por CLI", className="fw-bold mb-3", style={'color': '#0f172a', 'fontSize': '1.5rem'}, **{'data-i18n': 'doc.cal.h4.manual_cli'}),
             html.P([
                 "Para usuarios avanzados que prefieren control total, la calibración puede realizarse manualmente ",
                 "usando comandos CLI directamente en el terminal del dispositivo."
@@ -1202,7 +1749,7 @@ def content_calibracion():
         
         # Configuraciones de calibración
         html.Div([
-            html.H5("Configuraciones de Calibración", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Configuraciones de Calibración", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cal.h5.configurations'}),
             html.P([
                 "Cada configuración de front-end (combinación de ganancia ch0 y ch1) necesita calibrarse por separado. ",
                 "Hay ", html.Strong("16 combinaciones posibles"), " (4 ganancias ch0 × 4 ganancias ch1)."
@@ -1219,7 +1766,7 @@ def content_calibracion():
         
         # Pasos previos
         html.Div([
-            html.H5("Preparación para Calibración", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Preparación para Calibración", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cal.h5.preparation'}),
             html.Ol([
                 html.Li("Seleccionar la configuración de medición deseada (ganancia, frecuencia, magnitud, offset)", style={'color': '#475569', 'marginBottom': '10px'}),
                 html.Li([html.Strong("⚠️ Deshabilitar autorange: "), "setgain ch0 <0-3> y setgain ch1 <0-3>"], style={'color': '#475569', 'marginBottom': '10px'}),
@@ -1230,7 +1777,7 @@ def content_calibracion():
         
         # Pasos de calibración
         html.Div([
-            html.H5("Procedimiento Paso a Paso", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Procedimiento Paso a Paso", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cal.h5.step_by_step'}),
             
             # Paso 1: OPEN
             html.Div([
@@ -1248,7 +1795,7 @@ def content_calibracion():
                         'marginRight': '12px',
                         'fontWeight': '700'
                     }),
-                    "Calibración OPEN"
+                    html.Span("Calibración OPEN", **{'data-i18n': 'doc.cal.h6.open'})
                 ], className="fw-bold mb-3", style={'color': '#0f172a'}),
                 html.Ol([
                     html.Li("Conectar terminales H_POT/H_CUR juntos y L_POT/L_CUR juntos (sin conectarlos entre sí)", style={'color': '#475569', 'marginBottom': '10px'}),
@@ -1279,7 +1826,7 @@ def content_calibracion():
                         'marginRight': '12px',
                         'fontWeight': '700'
                     }),
-                    "Calibración SHORT"
+                    html.Span("Calibración SHORT", **{'data-i18n': 'doc.cal.h6.short'})
                 ], className="fw-bold mb-3", style={'color': '#0f172a'}),
                 html.Ol([
                     html.Li("Conectar TODAS las terminales juntas (H_CUR, H_POT, L_POT, L_CUR)", style={'color': '#475569', 'marginBottom': '10px'}),
@@ -1314,7 +1861,7 @@ def content_calibracion():
                         'marginRight': '12px',
                         'fontWeight': '700'
                     }),
-                    "Calibración LOAD"
+                    html.Span("Calibración LOAD", **{'data-i18n': 'doc.cal.h6.load'})
                 ], className="fw-bold mb-3", style={'color': '#0f172a'}),
                 html.Ol([
                     html.Li([
@@ -1340,7 +1887,7 @@ def content_calibracion():
         
         # Guardar calibración
         html.Div([
-            html.H5("Guardar en Memoria No Volátil", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Guardar en Memoria No Volátil", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cal.h5.save_nvm'}),
             html.P("Después de completar los pasos, los coeficientes se generan y almacenan en RAM. Para guardarlos en memoria flash:", style={'color': '#475569', 'marginBottom': '15px'}),
             html.Pre("""ADMX2001> calibrate commit
 PASSWORD> Analog123
@@ -1365,7 +1912,7 @@ commit : success
         html.Div([
             html.H5([
                 html.I(className="fas fa-balance-scale me-2", style={'color': '#f59e0b'}),
-                "Comandos de Calibración en Terminal"
+                html.Span("Comandos de Calibración en Terminal", **{'data-i18n': 'doc.cal.h5.cli_commands'})
             ], className="fw-bold mb-3", style={'color': '#0f172a'}),
             html.P([
                 "La calibración Open/Short/Load (OSL) puede realizarse directamente desde el terminal CLI. "
@@ -1374,7 +1921,7 @@ commit : success
             
             # Preparación
             html.Div([
-                html.H6("Preparación para Calibración", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.H6("Preparación para Calibración", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cal.h6.prep'}),
                 html.Ol([
                     html.Li([
                         "Deshabilitar autorange y configurar ganancias manualmente:"
@@ -1423,7 +1970,7 @@ ADMX2001> setgain ch1 1""", style={
             
             # Comandos de calibración
             html.Div([
-                html.H6("Comandos de Calibración OSL", className="fw-bold mb-3", style={'color': '#0f172a'}),
+                html.H6("Comandos de Calibración OSL", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cal.h6.osl_cmds'}),
                 
                 # Calibrate Open
                 html.Div([
@@ -1494,7 +2041,7 @@ commit : success""", style={
             
             # Comandos adicionales de calibración
             html.Div([
-                html.H6("Comandos Adicionales de Calibración", className="fw-bold mb-3", style={'color': '#0f172a'}),
+                html.H6("Comandos Adicionales de Calibración", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cal.h6.additional_cmds'}),
                 
                 html.Div([
                     html.Code("calibrate list", style={'background': '#1e293b', 'color': '#10b981', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
@@ -1537,7 +2084,7 @@ commit : success""", style={
             
             # Ejemplo completo de calibración en terminal
             html.Div([
-                html.H6("Ejemplo Completo de Calibración en Terminal", className="fw-bold mb-3", style={'color': '#0f172a'}),
+                html.H6("Ejemplo Completo de Calibración en Terminal", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cal.h6.terminal_example'}),
                 html.P("Calibración a 1kHz con resistor de 1kΩ (configuración CH0=0, CH1=1):", style={'color': '#475569', 'marginBottom': '15px'}),
                 html.Pre("""# 1. Configurar ganancias (autorange OFF durante calibración)
 ADMX2001> setgain ch0 0
@@ -1621,7 +2168,7 @@ ADMX2001> z
         
         # Ejemplo completo
         html.Div([
-            html.H5("Ejemplo Completo de Calibración", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Ejemplo Completo de Calibración", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cal.h5.complete_example'}),
             html.P("Calibrar configuración de ganancia (ch0=0, ch1=1) a 100kHz con resistor de 1kΩ:", style={'color': '#475569', 'marginBottom': '15px'}),
             html.Pre("""ADMX2001> setgain ch0 0
 voltGain = 0
@@ -1701,13 +2248,13 @@ ADMX2001> z
         
         # Calibración sobre frecuencia
         html.Div([
-            html.H5("Calibración sobre Frecuencia", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Calibración sobre Frecuencia", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cal.h5.freq_cal'}),
             html.P([
                 "Desde firmware versión 1.2.2, se soporta calibración en múltiples puntos de frecuencia. ",
                 "Esto permite calibrar todas las 16 configuraciones de ganancia en varias frecuencias."
             ], style={'color': '#475569', 'marginBottom': '15px'}),
             html.Div([
-                html.H6("Comandos Adicionales:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.H6("Comandos Adicionales:", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cal.h6.additional_cal'}),
                 html.Ul([
                     html.Li([
                         html.Code("calibrate list", style={'background': '#1e293b', 'color': '#f59e0b', 'padding': '2px 8px', 'borderRadius': '4px'}),
@@ -1738,7 +2285,7 @@ ADMX2001> z
         
         # Coeficientes precargados
         html.Div([
-            html.H5("Conjuntos de Calibración Precargados", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Conjuntos de Calibración Precargados", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cal.h5.preloaded'}),
             html.P("Algunos módulos envían con coeficientes de calibración precargados:", style={'color': '#475569', 'marginBottom': '15px'}),
             html.Pre("""ADMX2001> calibrate switch evalkit    # Usar coeficientes precargados
 ADMX2001> calibrate switch default    # Usar coeficientes de usuario
@@ -1765,7 +2312,7 @@ def content_cli():
         html.Div([
             html.H3([
                 html.I(className="fas fa-terminal me-3", style={'color': '#8b5cf6'}),
-                "Terminal CLI - Interfaz de Línea de Comandos"
+                html.Span("Terminal CLI - Interfaz de Línea de Comandos", **{'data-i18n': 'doc.section.cli'})
             ], className="mb-3 fw-bold", style={'color': '#0f172a'}),
             html.P([
                 "La interfaz de línea de comandos CLI permite control completo del sistema ADMX2001B. ",
@@ -1775,7 +2322,7 @@ def content_cli():
         
         # Modos de Display
         html.Div([
-            html.H5("Modos de Display de Medición", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Modos de Display de Medición", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cli.h5.display_modes'}),
             html.P("El ADMX2001B retorna resultados en uno de 18 modos de display diferentes. El resultado siempre se reporta en la unidad SI base.", style={'color': '#475569', 'marginBottom': '15px'}),
             html.Div([
                 html.Table([
@@ -1821,10 +2368,10 @@ def content_cli():
         
         # Selección de Ganancia
         html.Div([
-            html.H5("Selección de Ganancia y Rango", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Selección de Ganancia y Rango", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cli.h5.gain'}),
             html.P("Por defecto, el ADMX2001B está en modo auto-ranging. Para seleccionar manualmente:", style={'color': '#475569', 'marginBottom': '15px'}),
             html.Div([
-                html.H6("Ganancias de Corriente (Ch1)", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.H6("Ganancias de Corriente (Ch1)", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cli.h6.current_gain'}),
                 html.Table([
                     html.Thead([
                         html.Tr([
@@ -1841,7 +2388,7 @@ def content_cli():
                     ])
                 ], style={'width': '100%', 'borderCollapse': 'collapse', 'marginBottom': '20px'}),
                 
-                html.H6("Ganancias de Voltaje (Ch0)", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.H6("Ganancias de Voltaje (Ch0)", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cli.h6.voltage_gain'}),
                 html.Table([
                     html.Thead([
                         html.Tr([
@@ -1858,7 +2405,7 @@ def content_cli():
                     ])
                 ], style={'width': '100%', 'borderCollapse': 'collapse', 'marginBottom': '20px'}),
                 
-                html.H6("Rangos de Impedancia Recomendados", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                html.H6("Rangos de Impedancia Recomendados", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cli.h6.impedance_ranges'}),
                 html.Table([
                     html.Thead([
                         html.Tr([
@@ -1889,7 +2436,7 @@ def content_cli():
         
         # Comandos básicos
         html.Div([
-            html.H5("Comandos Básicos", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Comandos Básicos", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cli.h5.basic_commands'}),
             html.Div([
                 html.Div([
                     html.Code("z", style={'background': '#1e293b', 'color': '#10b981', 'padding': '6px 12px', 'borderRadius': '4px', 'fontSize': '0.9rem'}),
@@ -1938,7 +2485,7 @@ def content_cli():
         
         # Barridos
         html.Div([
-            html.H5("Barridos Paramétricos (Sweeps)", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Barridos Paramétricos (Sweeps)", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cli.h5.sweeps'}),
             html.P("El ADMX2001B puede realizar barridos automáticos:", style={'color': '#475569', 'marginBottom': '15px'}),
             html.Div([
                 html.Div([
@@ -1968,7 +2515,7 @@ def content_cli():
         
         # Ejemplo
         html.Div([
-            html.H5("Ejemplo de Uso Completo", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Ejemplo de Uso Completo", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cli.h5.example'}),
             html.Pre("""ADMX2001> frequency 100
 frequency = 100.0000kHz
 
@@ -2001,7 +2548,7 @@ ADMX2001> z
                 'marginBottom': '20px'
             }),
             
-            html.H6("Barrido Logarítmico:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+            html.H6("Barrido Logarítmico:", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.cli.h6.log_sweep'}),
             html.Pre("""ADMX2001> count 11
 ADMX2001> sweep_type frequency 100 1000
 ADMX2001> sweep_scale log
@@ -2029,7 +2576,7 @@ def content_firmware():
         html.Div([
             html.H3([
                 html.I(className="fas fa-code me-3", style={'color': '#ef4444'}),
-               "Actualización de Firmware ADMX2001B"
+               html.Span("Actualización de Firmware ADMX2001B", **{'data-i18n': 'doc.section.firmware'})
             ], className="mb-3 fw-bold", style={'color': '#0f172a'}),
             html.P([
                 "El firmware del módulo ADMX2001B es actualizable por el usuario. ",
@@ -2045,7 +2592,7 @@ def content_firmware():
         
         # Versiones disponibles
         html.Div([
-            html.H5("Versiones de Firmware Disponibles", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Versiones de Firmware Disponibles", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.fw.h5.versions'}),
             html.Div([
                 html.Table([
                     html.Thead([
@@ -2115,10 +2662,10 @@ def content_firmware():
         
         # Equipo requerido
         html.Div([
-            html.H5("Equipo y Software Requerido", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Equipo y Software Requerido", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.fw.h5.requirements'}),
             html.Div([
                 html.Div([
-                    html.H6("Hardware:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                    html.H6("Hardware:", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.fw.h6.hardware'}),
                     html.Ul([
                         html.Li("Placa EVAL-ADMX2001EBZ"),
                         html.Li("Módulo ADMX2001B"),
@@ -2128,7 +2675,7 @@ def content_firmware():
                     ], style={'color': '#475569'})
                 ], style={'marginBottom': '20px'}),
                 html.Div([
-                    html.H6("Software:", className="fw-bold mb-2", style={'color': '#0f172a'}),
+                    html.H6("Software:", className="fw-bold mb-2", style={'color': '#0f172a'}, **{'data-i18n': 'doc.fw.h6.software'}),
                     html.Ul([
                         html.Li("Python 3.7 o superior"),
                         html.Li([html.Strong("Intel Quartus Prime Programmer And Tools"), " (última versión)"]),
@@ -2147,7 +2694,7 @@ def content_firmware():
         
         # Método con script
         html.Div([
-            html.H5("Método de Actualización con Script Python", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Método de Actualización con Script Python", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.fw.h5.python_method'}),
             html.P([
                 html.Strong("Versiones 1.2.4+"), " incluyen un script de instalación Python que automatiza el proceso:"
             ], style={'color': '#475569', 'marginBottom': '15px'}),
@@ -2171,7 +2718,7 @@ def content_firmware():
         
         # Procedimiento manual
         html.Div([
-            html.H5("Procedimiento Manual de Actualización", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Procedimiento Manual de Actualización", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.fw.h5.manual'}),
             
             html.Div([
                 html.H6([
@@ -2188,7 +2735,7 @@ def content_firmware():
                         'marginRight': '12px',
                         'fontWeight': '700'
                     }),
-                    "Descargar Firmware"
+                    html.Span("Descargar Firmware", **{'data-i18n': 'doc.fw.h6.step1_download'})
                 ], className="fw-bold mb-3", style={'color': '#0f172a'}),
                 html.P([
                     "Contacta ", html.Strong("admx-support@analog.com"), " para obtener el archivo de programación (*.pof) más reciente."
@@ -2210,7 +2757,7 @@ def content_firmware():
                         'marginRight': '12px',
                         'fontWeight': '700'
                     }),
-                    "Instalar Software"
+                    html.Span("Instalar Software", **{'data-i18n': 'doc.fw.h6.step2_install'})
                 ], className="fw-bold mb-3", style={'color': '#0f172a'}),
                 html.Ol([
                     html.Li("Descargar e instalar Intel Quartus Prime Programmer", style={'marginBottom': '8px'}),
@@ -2234,7 +2781,7 @@ def content_firmware():
                         'marginRight': '12px',
                         'fontWeight': '700'
                     }),
-                    "Conexión de Hardware"
+                    html.Span("Conexión de Hardware", **{'data-i18n': 'doc.fw.h6.step3_connect'})
                 ], className="fw-bold mb-3", style={'color': '#0f172a'}),
                 html.Ol([
                     html.Li("Conectar adaptador de corriente 9VDC a la placa EVAL-ADMX2001EBZ", style={'marginBottom': '8px'}),
@@ -2259,7 +2806,7 @@ def content_firmware():
                         'marginRight': '12px',
                         'fontWeight': '700'
                     }),
-                    "Programación"
+                    html.Span("Programación", **{'data-i18n': 'doc.fw.h6.step4_program'})
                 ], className="fw-bold mb-3", style={'color': '#0f172a'}),
                 html.P("Ejecutar el script de programación:", style={'color': '#475569', 'marginLeft': '44px', 'marginBottom': '10px'}),
                 html.Pre("""python admx2001_flash_pof.py --pof firmware.pof
@@ -2293,7 +2840,7 @@ def content_firmware():
                         'marginRight': '12px',
                         'fontWeight': '700'
                     }),
-                    "Verificación"
+                    html.Span("Verificación", **{'data-i18n': 'doc.fw.h6.step5_verify'})
                 ], className="fw-bold mb-3", style={'color': '#0f172a'}),
                 html.Ol([
                     html.Li("Desconectar el USB Blaster", style={'marginBottom': '8px'}),
@@ -2311,7 +2858,7 @@ def content_firmware():
         
         # Obtener archivos
         html.Div([
-            html.H5("Cómo Obtener Archivos de Firmware", className="fw-bold mb-3", style={'color': '#0f172a'}),
+            html.H5("Cómo Obtener Archivos de Firmware", className="fw-bold mb-3", style={'color': '#0f172a'}, **{'data-i18n': 'doc.fw.h5.get_files'}),
             html.P("Los archivos de programación deben solicitarse directamente a Analog Devices:", style={'color': '#475569', 'marginBottom': '15px'}),
             html.Div([
                 html.Div([
@@ -2349,7 +2896,7 @@ def hero_section():
                     'letterSpacing': '0.3em',
                     'fontWeight': '500',
                     'color': '#64748b'
-                })
+                }, **{'data-i18n': 'doc.hero.badge'})
             ], style={
                 'marginBottom': '40px',
                 'display': 'flex',
@@ -2367,7 +2914,7 @@ def hero_section():
                     'lineHeight': '0.9',
                     'color': '#0f172a',
                     'marginBottom': '10px'
-                }),
+                }, **{'data-i18n': 'doc.hero.title'}),
                 html.Span("EVAL-ADMX2001", style={
                     'display': 'block',
                     'fontSize': 'clamp(1rem, 2vw, 1.5rem)',
@@ -2391,9 +2938,9 @@ def hero_section():
             
             # Descripción
             html.P([
-                "Documentación completa del sistema de análisis de impedancia.",
+                html.Span("Documentación completa del sistema de análisis de impedancia.", **{'data-i18n': 'doc.hero.desc1'}),
                 html.Br(),
-                "Selecciona una sección para comenzar."
+                html.Span("Selecciona una sección para comenzar.", **{'data-i18n': 'doc.hero.desc2'})
             ], style={
                 'fontSize': 'clamp(1rem, 1.5vw, 1.25rem)',
                 'fontWeight': '300',
@@ -2411,6 +2958,764 @@ def hero_section():
         'background': 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
         'position': 'relative'
     })
+
+
+# ==================== CONTENIDO: OVERVIEW ZORIA ====================
+
+def content_overview():
+    """
+    Sección completa: qué hace ZORIA, beneficios, capacidades y limitaciones.
+    """
+
+    # ── Helper local: tarjeta de feature ──────────────────────────────────────
+    def feature_card(icon, title, description, color="#3b82f6"):
+        return html.Div([
+            html.Div([
+                html.I(className=f"{icon} fa-lg", style={'color': color}),
+            ], style={
+                'width': '48px', 'height': '48px',
+                'background': f'{color}18',
+                'borderRadius': '12px',
+                'display': 'flex', 'alignItems': 'center', 'justifyContent': 'center',
+                'marginBottom': '16px', 'flexShrink': '0',
+            }),
+            html.H6(title, className="fw-bold mb-2", style={'color': '#0f172a', 'fontSize': '0.95rem'}),
+            html.P(description, style={'color': '#64748b', 'fontSize': '0.875rem', 'marginBottom': '0', 'lineHeight': '1.6'}),
+        ], style={
+            'background': '#ffffff',
+            'border': '1px solid #e2e8f0',
+            'borderRadius': '12px',
+            'padding': '20px',
+            'boxShadow': '0 1px 4px rgba(0,0,0,0.06)',
+        })
+
+    # ── Helper local: tarjeta benefit/limitation ───────────────────────────────
+    def bl_row(icon, color, title, items):
+        return html.Div([
+            html.Div([
+                html.I(className=icon, style={'color': color, 'fontSize': '1.1rem'}),
+                html.Span(title, className="fw-bold ms-2", style={'color': '#0f172a'}),
+            ], style={'marginBottom': '12px', 'display': 'flex', 'alignItems': 'center'}),
+            html.Ul([
+                html.Li(
+                    item if isinstance(item, list) else item,
+                    style={'color': '#475569', 'marginBottom': '8px', 'lineHeight': '1.6'}
+                ) for item in items
+            ], style={'paddingLeft': '20px', 'marginBottom': '0'})
+        ], style={
+            'background': '#f8fafc',
+            'border': f'1px solid {color}40',
+            'borderLeft': f'4px solid {color}',
+            'borderRadius': '8px',
+            'padding': '18px 20px',
+            'marginBottom': '16px',
+        })
+
+    # ── Helper local: stat pill ───────────────────────────────────────────────
+    def stat_pill(value, label, color="#d4af37"):
+        return html.Div([
+            html.Div(value, style={'fontSize': '1.8rem', 'fontWeight': '800', 'color': color, 'lineHeight': '1'}),
+            html.Div(label, style={'fontSize': '0.75rem', 'color': '#64748b', 'marginTop': '4px', 'textAlign': 'center'}),
+        ], style={
+            'background': '#ffffff',
+            'border': '1px solid #e2e8f0',
+            'borderRadius': '12px',
+            'padding': '16px 20px',
+            'textAlign': 'center',
+            'minWidth': '110px',
+            'boxShadow': '0 1px 3px rgba(0,0,0,0.06)',
+        })
+
+    return html.Div([
+
+        # ── Presentación ─────────────────────────────────────────────────────
+        html.Div([
+            html.H3([
+                html.I(className="fas fa-layer-group me-3", style={'color': '#d4af37'}),
+                html.Span("¿Qué es ZORIA?", **{'data-i18n': 'doc.section.overview'})
+            ], className="mb-3 fw-bold", style={'color': '#0f172a'}),
+            html.P([
+                html.Strong("ZORIA", style={'color': '#d4af37'}),
+                " (", html.Em("Z-analyzer Open Responsive Impedance Application"), ") es una aplicación web "
+                "de código abierto para el análisis de impedancia de circuitos electrónicos, desarrollada sobre "
+                "el ecosistema ", html.Strong("Dash/Plotly"), " de Python. Actúa como interfaz gráfica avanzada "
+                "para el kit de evaluación ", html.Strong("EVAL-ADMX2001EBZ"), " de Analog Devices — "
+                "sustituyendo la interacción por terminal de texto con un entorno visual moderno, accesible y extensible."
+            ], style={'color': '#475569', 'fontSize': '1.05rem', 'lineHeight': '1.8', 'marginBottom': '24px'}),
+
+            # Stats rápidos
+            html.Div([
+                stat_pill("6", "Idiomas", "#d4af37"),
+                stat_pill("100+", "Traducciones", "#3b82f6"),
+                stat_pill("OSL", "Calibración 3-punt.", "#10b981"),
+                stat_pill("Bode+Nyquist", "Diagramas", "#8b5cf6"),
+                stat_pill("CLI", "Terminal integrado", "#f59e0b"),
+                stat_pill("MIT", "Licencia libre", "#64748b"),
+            ], style={'display': 'flex', 'flexWrap': 'wrap', 'gap': '12px', 'marginBottom': '32px'}),
+        ]),
+
+        # ── Qué hace ZORIA ───────────────────────────────────────────────────
+        html.H4([
+            html.I(className="fas fa-bolt me-2", style={'color': '#d4af37'}),
+            html.Span("Capacidades principales", **{'data-i18n': 'doc.ov.h4.capabilities'})
+        ], className="fw-bold mb-3 mt-2", style={'color': '#0f172a'}),
+
+        html.Div([
+            feature_card(
+                "fas fa-wave-square", "Barrido de frecuencia",
+                "Realiza sweeps logarítmicos y lineales desde 1 Hz hasta 300 kHz. "
+                "Streaming en tiempo real punto-a-punto directamente desde el dispositivo.",
+                "#3b82f6"
+            ),
+            feature_card(
+                "fas fa-chart-line", "Diagramas de Bode y Nyquist",
+                "Visualización interactiva de magnitud (dB), fase (°), parte real e imaginaria "
+                "con zoom, pan, selección de rango y exportación SVG/PNG.",
+                "#8b5cf6"
+            ),
+            feature_card(
+                "fas fa-balance-scale", "Calibración OSL",
+                "Procedimiento guiado de tres puntos: Open (circuito abierto), Short (cortocircuito) "
+                "y Load (resistencia de referencia). Almacenamiento de múltiples perfiles con nombre.",
+                "#10b981"
+            ),
+            feature_card(
+                "fas fa-atom", "Modelos RC/RL",
+                "Ajuste automático de modelos equivalentes serie/paralelo a partir de los "
+                "datos medidos. Extracción de R, L, C, Q, ESR y frecuencia de resonancia.",
+                "#f59e0b"
+            ),
+            feature_card(
+                "fas fa-terminal", "Terminal CLI integrado",
+                "Ventana de terminal arrastrable con historial de comandos, "
+                "auto-scroll, soporte ANSI y streaming bidireccional con el dispositivo.",
+                "#ef4444"
+            ),
+            feature_card(
+                "fas fa-file-csv", "Importar / Exportar CSV",
+                "Carga y guarda mediciones en formato CSV compatible con Excel, MATLAB, "
+                "Python/Pandas y herramientas SPICE. Superposición de múltiples archivos.",
+                "#06b6d4"
+            ),
+            feature_card(
+                "fas fa-desktop", "SPA multi-página",
+                "Arquitectura de Single Page Application con rutas dedicadas para Dashboard, "
+                "Calibración, Simulador RLC, Documentación y About. Sin recargas de página.",
+                "#d4af37"
+            ),
+            feature_card(
+                "fas fa-language", "Soporte multilenguaje",
+                "Interfaz disponible en Español, English, Português, 中文 (Chino), "
+                "Русский (Ruso) y Deutsch (Alemán). Selección persistente en el navegador.",
+                "#ec4899"
+            ),
+            feature_card(
+                "fas fa-flask", "Simulador RLC",
+                "Simulación numérica de circuitos RC, RL y RLC serie/paralelo con "
+                "parámetros ajustables en tiempo real. Ideal para comparar con mediciones reales.",
+                "#0ea5e9"
+            ),
+        ], style={
+            'display': 'grid',
+            'gridTemplateColumns': 'repeat(auto-fill, minmax(280px, 1fr))',
+            'gap': '16px',
+            'marginBottom': '40px',
+        }),
+
+        # ── Beneficios ───────────────────────────────────────────────────────
+        html.H4([
+            html.I(className="fas fa-thumbs-up me-2", style={'color': '#10b981'}),
+            html.Span("Beneficios de usar ZORIA", **{'data-i18n': 'doc.ov.h4.benefits'})
+        ], className="fw-bold mb-3", style={'color': '#0f172a'}),
+
+        bl_row(
+            "fas fa-check-circle", "#10b981",
+            "Productividad y facilidad de uso",
+            [
+                html.Span(["Elimina la necesidad de escribir comandos UART manualmente. ",
+                 "Una sola interfaz reemplaza TeraTerm, scripts de Python y hojas de cálculo."]),
+                html.Span(["Wizard guiado de calibración con instrucciones paso a paso: ",
+                 "reduce errores humanos en el procedimiento OSL."]),
+                html.Span(["Visualización instantánea del barrido en tiempo real: ",
+                 "el gráfico se construye punto a punto conforme llegan los datos."]),
+                "Historial de comandos CLI con navegación ↑↓ y atajos de teclado (Ctrl+L para limpiar).",
+                "Detección automática del puerto USB/COM: no es necesario conocer el puerto de antemano.",
+            ]
+        ),
+        bl_row(
+            "fas fa-code-branch", "#3b82f6",
+            "Código abierto y extensible",
+            [
+                html.Span(["Licencia ", html.Strong("MIT"), ": uso libre en proyectos académicos, comerciales y de investigación."]),
+                html.Span(["Arquitectura modular en Python: cada página, componente y callback es independiente, "
+                 "facilitando añadir nuevas funcionalidades sin romper las existentes."]),
+                "API interna documentada: lib/admx2001.py, lib/calibration.py y lib/rc_model.py son "
+                "usables de forma independiente como librerías Python.",
+                "Sistema i18n propio extensible: añadir un nuevo idioma es tan simple como agregar "
+                "un diccionario de 100 entradas en lib/i18n.py.",
+            ]
+        ),
+        bl_row(
+            "fas fa-wifi", "#8b5cf6",
+            "Acceso remoto y multiplataforma",
+            [
+                html.Span(["Al ser una app web (Dash/Flask), puede servirse en red local: ",
+                 "conexión del dispositivo al servidor y acceso desde cualquier navegador del laboratorio."]),
+                "Compatible con Windows, Linux y macOS sin instalar software adicional más allá de Python.",
+                "Interfaz responsive: usable en tablets para consultar mientras se trabaja en el banco.",
+            ]
+        ),
+        bl_row(
+            "fas fa-graduation-cap", "#f59e0b",
+            "Valor educativo y de investigación",
+            [
+                "Documentación completa e integrada: no es necesario consultar el datasheet del ADMX2001B en otro lugar.",
+                "Sección de matemática con derivaciones del modelo de impedancia, polos/ceros y método OSL.",
+                "Simulador RLC integrado: permite comparar resultados teóricos vs. medidos en la misma sesión.",
+                "Diagramas de arquitectura interactivos (Mermaid) que explican el flujo de datos del sistema.",
+            ]
+        ),
+
+        # ── Limitaciones ────────────────────────────────────────────────────
+        html.H4([
+            html.I(className="fas fa-exclamation-triangle me-2", style={'color': '#f59e0b'}),
+            html.Span("Limitaciones actuales", **{'data-i18n': 'doc.ov.h4.limitations'})
+        ], className="fw-bold mb-3 mt-4", style={'color': '#0f172a'}),
+
+        info_box([
+            html.Strong("ℹ️ Nota sobre las limitaciones: "),
+            "Las limitaciones listadas corresponden al estado actual del software (v1.x). "
+            "Muchas están planificadas para resolverse en versiones futuras. "
+            "Las contribuciones de la comunidad son bienvenidas (ver sección Contribuir)."
+        ], "info"),
+
+        bl_row(
+            "fas fa-microchip", "#ef4444",
+            "Compatibilidad de hardware",
+            [
+                html.Span([html.Strong("Un único dispositivo soportado: "),
+                 "ZORIA está diseñado exclusivamente para el EVAL-ADMX2001EBZ / ADMX2001B. "
+                 "No soporta otros analizadores de impedancia o LCR meters."]),
+                html.Span([html.Strong("Sin soporte USB nativo: "),
+                 "la comunicación se realiza únicamente vía UART a través del cable FTDI incluido. "
+                 "No hay driver USB HID propio."]),
+                html.Span([html.Strong("Rango de frecuencia acotado: "),
+                 "el ADMX2001B opera entre 1 Hz y 300 kHz. No cubre aplicaciones de RF "
+                 "(MHz, GHz) ni frecuencias sub-Hz."]),
+                html.Span([html.Strong("Una conexión a la vez: "),
+                 "no es posible conectar múltiples dispositivos simultáneamente en la misma instancia."]),
+            ]
+        ),
+        bl_row(
+            "fas fa-server", "#f59e0b",
+            "Despliegue y escalabilidad",
+            [
+                html.Span([html.Strong("Servidor local únicamente (recomendado): "),
+                 "el servidor Dash corre en localhost. Para producción multi-usuario se requiere "
+                 "configuración adicional (Gunicorn, Nginx, autenticación)."]),
+                html.Span([html.Strong("Sin soporte cloud nativo: "),
+                 "el dispositivo debe estar físicamente conectado al PC donde corre el servidor. "
+                 "Remote-access requiere VPN o tunel SSH por parte del usuario."]),
+                html.Span([html.Strong("Sin autenticación: "),
+                 "en la versión actual no hay sistema de login ni control de acceso por usuario. "
+                 "No usar expuesto directamente a internet."]),
+            ]
+        ),
+        bl_row(
+            "fas fa-chart-bar", "#8b5cf6",
+            "Análisis y post-procesamiento",
+            [
+                html.Span([html.Strong("Sin ajuste de circuitos complejos: "),
+                 "el fitting automático está limitado a modelos RC/RL simples (serie y paralelo). "
+                 "No soporta modelos Warburg, CPE ni circuitos equivalentes Randles."]),
+                html.Span([html.Strong("Sin análisis estadístico avanzado: "),
+                 "no hay cálculo nativo de incertidumbre, intervalos de confianza ni "
+                 "histogramas de dispersión sobre múltiples barridos."]),
+                html.Span([html.Strong("Exportación limitada: "),
+                 "sólo CSV. No exporta MATLAB (.mat), Touchstone (.s2p) ni formatos "
+                 "propietarios de herramientas EDA."]),
+            ]
+        ),
+        bl_row(
+            "fas fa-mobile-alt", "#64748b",
+            "Interfaz y UX",
+            [
+                html.Span([html.Strong("Diseño desktop-first: "),
+                 "aunque responsive, la experiencia óptima es en pantalla ≥ 1080px. "
+                 "El uso en móvil está limitado."]),
+                html.Span([html.Strong("Sin modo oscuro completo: "),
+                 "el dashboard principal tiene fondo blanco/gris. El sidebar y terminal tienen "
+                 "tema oscuro pero el resto de la UI aún no."]),
+            ]
+        ),
+
+        # ── Cuándo usar ZORIA ────────────────────────────────────────────────
+        html.H4([
+            html.I(className="fas fa-map-signs me-2", style={'color': '#3b82f6'}),
+            "¿Cuándo usar ZORIA?"
+        ], className="fw-bold mb-3 mt-4", style={'color': '#0f172a'}),
+
+        html.Div([
+            html.Div([
+                html.Div("✅ ZORIA es ideal para...", className="fw-bold mb-3", style={'color': '#065f46', 'fontSize': '0.95rem'}),
+                html.Ul([
+                    html.Li("Laboratorios universitarios de electrónica analógica", style={'marginBottom': '8px', 'color': '#374151'}),
+                    html.Li("Caracterización de componentes pasivos (condensadores, inductores, filtros)", style={'marginBottom': '8px', 'color': '#374151'}),
+                    html.Li("Medición de impedancia de baterías y supercapacitores", style={'marginBottom': '8px', 'color': '#374151'}),
+                    html.Li("Investigación de materiales y sensores de impedancia", style={'marginBottom': '8px', 'color': '#374151'}),
+                    html.Li("Prototipado y verificación de diseños de filtros", style={'marginBottom': '8px', 'color': '#374151'}),
+                    html.Li("Equipos usando hardware ADMX2001 que buscan una GUI moderna", style={'marginBottom': '0', 'color': '#374151'}),
+                ], style={'paddingLeft': '20px', 'marginBottom': '0'})
+            ], style={
+                'background': '#d1fae5', 'border': '1px solid #10b981',
+                'borderRadius': '12px', 'padding': '20px', 'flex': '1',
+            }),
+            html.Div([
+                html.Div("⚠️ Considera alternativas si...", className="fw-bold mb-3", style={'color': '#92400e', 'fontSize': '0.95rem'}),
+                html.Ul([
+                    html.Li("Necesitas rango de frecuencia > 300 kHz o RF", style={'marginBottom': '8px', 'color': '#374151'}),
+                    html.Li("Requieres soporte para múltiples dispositivos diferentes", style={'marginBottom': '8px', 'color': '#374151'}),
+                    html.Li("Necesitas modelos de circuito equivalente avanzados (Randles, Warburg)", style={'marginBottom': '8px', 'color': '#374151'}),
+                    html.Li("El entorno es producción industrial con requisitos de certificación", style={'marginBottom': '8px', 'color': '#374151'}),
+                    html.Li("Necesitas acceso multi-usuario simultáneo con control de sesión", style={'marginBottom': '0', 'color': '#374151'}),
+                ], style={'paddingLeft': '20px', 'marginBottom': '0'})
+            ], style={
+                'background': '#fef3c7', 'border': '1px solid #f59e0b',
+                'borderRadius': '12px', 'padding': '20px', 'flex': '1',
+            }),
+        ], style={'display': 'flex', 'gap': '16px', 'flexWrap': 'wrap', 'marginBottom': '40px'}),
+
+    ], style={'paddingTop': '20px'})
+
+
+# ==================== CONTENIDO: CÓMO CONTRIBUIR ====================
+
+def content_contribuir():
+    """
+    Guía completa de contribución al proyecto ZORIA.
+    """
+
+    def contrib_card(icon, color, title, body):
+        return html.Div([
+            html.Div([
+                html.I(className=f"{icon} fa-lg me-3", style={'color': color}),
+                html.Span(title, className="fw-bold", style={'color': '#0f172a', 'fontSize': '1rem'}),
+            ], style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '12px'}),
+            html.Div(body, style={'color': '#475569', 'fontSize': '0.9rem', 'lineHeight': '1.7'}),
+        ], style={
+            'background': '#ffffff',
+            'border': f'1px solid {color}50',
+            'borderTop': f'3px solid {color}',
+            'borderRadius': '10px',
+            'padding': '20px',
+            'boxShadow': '0 1px 4px rgba(0,0,0,0.05)',
+        })
+
+    def code_block(text, lang="bash"):
+        return html.Pre(text, style={
+            'background': '#1e293b',
+            'color': '#e2e8f0',
+            'padding': '16px 20px',
+            'borderRadius': '10px',
+            'fontFamily': 'monospace',
+            'fontSize': '0.82rem',
+            'overflowX': 'auto',
+            'lineHeight': '1.7',
+            'marginBottom': '20px',
+        })
+
+    def badge(text, color):
+        return html.Span(text, style={
+            'background': color,
+            'color': '#ffffff',
+            'borderRadius': '20px',
+            'padding': '3px 10px',
+            'fontSize': '0.75rem',
+            'fontWeight': '600',
+            'marginRight': '6px',
+            'display': 'inline-block',
+            'marginBottom': '6px',
+        })
+
+    return html.Div([
+
+        # ── Intro ─────────────────────────────────────────────────────────────
+        html.Div([
+            html.H3([
+                html.I(className="fas fa-hands-helping me-3", style={'color': '#d4af37'}),
+                html.Span("Contribuir a ZORIA", **{'data-i18n': 'doc.section.contribute'})
+            ], className="mb-3 fw-bold", style={'color': '#0f172a'}),
+            html.P([
+                "ZORIA es un proyecto de código abierto bajo licencia ", html.Strong("MIT"), ". "
+                "¡Tu contribución, sin importar el tamaño, hace una diferencia! "
+                "Ya sea reportando un bug, mejorando la documentación, traduciendo a un nuevo idioma, "
+                "o añadiendo una nueva funcionalidad — todas las formas de participación son bienvenidas."
+            ], style={'color': '#475569', 'fontSize': '1.05rem', 'lineHeight': '1.8', 'marginBottom': '24px'}),
+
+            # Links rápidos
+            html.Div([
+                html.A([html.I(className="fab fa-github me-2"), "GitHub Repository"],
+                    href="https://github.com/mariomontero942/zoria", target="_blank",
+                    className="btn me-3 mb-2",
+                    style={'background': '#0f172a', 'color': '#ffffff', 'textDecoration': 'none',
+                           'padding': '10px 18px', 'borderRadius': '8px', 'display': 'inline-flex', 'alignItems': 'center'}),
+                html.A([html.I(className="fas fa-bug me-2"), "Reportar un Bug"],
+                    href="https://github.com/mariomontero942/zoria/issues/new?template=bug_report.md", target="_blank",
+                    className="btn me-3 mb-2",
+                    style={'background': '#ef4444', 'color': '#ffffff', 'textDecoration': 'none',
+                           'padding': '10px 18px', 'borderRadius': '8px', 'display': 'inline-flex', 'alignItems': 'center'}),
+                html.A([html.I(className="fas fa-lightbulb me-2"), "Proponer una Feature"],
+                    href="https://github.com/mariomontero942/zoria/issues/new?template=feature_request.md", target="_blank",
+                    className="btn mb-2",
+                    style={'background': '#d4af37', 'color': '#ffffff', 'textDecoration': 'none',
+                           'padding': '10px 18px', 'borderRadius': '8px', 'display': 'inline-flex', 'alignItems': 'center'}),
+            ], style={'marginBottom': '32px'}),
+        ]),
+
+        # ── Código de conducta ───────────────────────────────────────────────
+        html.H4([
+            html.I(className="fas fa-heart me-2", style={'color': '#ec4899'}),
+            html.Span("Código de conducta", **{'data-i18n': 'doc.contrib.h4.conduct'})
+        ], className="fw-bold mb-3", style={'color': '#0f172a'}),
+
+        info_box([
+            html.Div([
+                html.Strong("🤝 Nuestro compromiso: "),
+                "En ZORIA nos comprometemos a que la participación en este proyecto sea una experiencia "
+                "libre de acoso para todos, independientemente de edad, discapacidad, etnia, identidad "
+                "de género, nivel de experiencia, nacionalidad, apariencia personal, raza, religión o "
+                "identidad/orientación sexual."
+            ], style={'marginBottom': '10px'}),
+            html.Ul([
+                html.Li("Usa lenguaje inclusivo y acogedor", style={'marginBottom': '5px'}),
+                html.Li("Acepta las críticas constructivas con gracia", style={'marginBottom': '5px'}),
+                html.Li("Enfócate en lo mejor para la comunidad", style={'marginBottom': '5px'}),
+                html.Li("Muestra empatía hacia otros miembros de la comunidad", style={'marginBottom': '0'}),
+            ], style={'paddingLeft': '20px', 'marginBottom': '0'})
+        ], "info"),
+
+        # ── Formas de contribuir ─────────────────────────────────────────────
+        html.H4([
+            html.I(className="fas fa-puzzle-piece me-2", style={'color': '#3b82f6'}),
+            html.Span("Formas de contribuir", **{'data-i18n': 'doc.contrib.h4.ways'})
+        ], className="fw-bold mb-3 mt-4", style={'color': '#0f172a'}),
+
+        html.Div([
+            contrib_card(
+                "fas fa-bug", "#ef4444", "Reportar bugs",
+                [
+                    html.P("Antes de crear un issue, busca si ya existe uno similar. "
+                           "Un buen bug report incluye:", style={'marginBottom': '10px'}),
+                    html.Ul([
+                        html.Li("Descripción clara del comportamiento esperado vs. observado"),
+                        html.Li("Pasos mínimos para reproducirlo"),
+                        html.Li([html.Strong("Versión de ZORIA, Python y SO"), " (ej. ZORIA 1.2, Python 3.11, Ubuntu 22.04)"]),
+                        html.Li("Logs del terminal o captura de pantalla del error"),
+                        html.Li("El puerto COM / modelo USB-UART si es un bug de conexión"),
+                    ], style={'paddingLeft': '20px', 'marginBottom': '0', 'lineHeight': '1.8'})
+                ]
+            ),
+            contrib_card(
+                "fas fa-lightbulb", "#f59e0b", "Proponer funcionalidades",
+                [
+                    html.P(["¿Tienes una idea para ZORIA? Abre un issue con la etiqueta ",
+                           html.Code("enhancement", style={'background': '#fef3c7', 'padding': '1px 6px', 'borderRadius': '4px'}),
+                           ". Incluye:"], style={'marginBottom': '10px'}),
+                    html.Ul([
+                        html.Li("Descripción del problema que resuelve la feature"),
+                        html.Li("Descripción detallada de la solución propuesta"),
+                        html.Li("Alternativas que hayas considerado"),
+                        html.Li("Si es nuevo hardware, modelos de dispositivos compatibles"),
+                    ], style={'paddingLeft': '20px', 'marginBottom': '10px', 'lineHeight': '1.8'}),
+                    html.Div([
+                        badge("good first issue", "#22c55e"),
+                        badge("help wanted", "#3b82f6"),
+                        badge("enhancement", "#f59e0b"),
+                        badge("documentation", "#8b5cf6"),
+                    ])
+                ]
+            ),
+            contrib_card(
+                "fas fa-language", "#ec4899", "Añadir / mejorar traducciones",
+                [
+                    html.P(["El sistema i18n vive en ", html.Code("lib/i18n.py", style={'background': '#fce7f3', 'padding': '1px 6px', 'borderRadius': '4px'}),
+                            ". Para agregar o corregir un idioma:"], style={'marginBottom': '10px'}),
+                    html.Ol([
+                        html.Li(["Abre ", html.Code("lib/i18n.py")]),
+                        html.Li("Para un idioma nuevo: añade su código al dict LANGUAGES y una columna a TRANSLATIONS"),
+                        html.Li("Para corregir: edita directamente el valor en el diccionario existente"),
+                        html.Li("Envía un PR con el título [i18n] Añadir/Corregir <idioma>"),
+                    ], style={'paddingLeft': '20px', 'marginBottom': '0', 'lineHeight': '1.8'})
+                ]
+            ),
+            contrib_card(
+                "fas fa-book", "#8b5cf6", "Documentación",
+                [
+                    html.P(["La documentación vive en ", html.Code("pages/documentation/documentation_page.py"),
+                            ". Para contribuir:"], style={'marginBottom': '10px'}),
+                    html.Ul([
+                        html.Li("Mejorar o corregir procediminetos existentes"),
+                        html.Li("Añadir ejemplos de comandos CLI con resultados reales"),
+                        html.Li("Agregar imágenes / diagramas aclaratorios"),
+                        html.Li("Construir diagramas Mermaid adicionales en la sección §9"),
+                        html.Li("Traducir contenido a otros idiomas"),
+                    ], style={'paddingLeft': '20px', 'marginBottom': '0', 'lineHeight': '1.8'})
+                ]
+            ),
+        ], style={
+            'display': 'grid',
+            'gridTemplateColumns': 'repeat(auto-fill, minmax(320px, 1fr))',
+            'gap': '16px',
+            'marginBottom': '40px',
+        }),
+
+        # ── Setup del entorno de desarrollo ──────────────────────────────────
+        html.H4([
+            html.I(className="fas fa-wrench me-2", style={'color': '#10b981'}),
+            html.Span("Configurar el entorno de desarrollo", **{'data-i18n': 'doc.contrib.h4.setup'})
+        ], className="fw-bold mb-3 mt-2", style={'color': '#0f172a'}),
+
+        html.Div([
+            html.Div([step_number(1), html.Span("Requisitos previos", className="fw-bold", style={'color': '#0f172a'})],
+                     style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '10px'}),
+            html.Ul([
+                html.Li(["Python ", html.Strong("3.9+"), " (recomendado 3.11)"]),
+                html.Li("Git 2.x"),
+                html.Li("pip o conda"),
+                html.Li(["(Opcional) Dispositivo EVAL-ADMX2001EBZ para tests de hardware"]),
+            ], style={'color': '#475569', 'paddingLeft': '20px', 'marginBottom': '20px'}),
+
+            html.Div([step_number(2), html.Span("Clonar el repositorio", className="fw-bold", style={'color': '#0f172a'})],
+                     style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '10px'}),
+            code_block("""# Clona el repositorio (sustituye con tu fork si ya hiciste fork)
+git clone https://github.com/mariomontero942/zoria.git
+cd zoria"""),
+
+            html.Div([step_number(3), html.Span("Crear entorno virtual e instalar dependencias", className="fw-bold", style={'color': '#0f172a'})],
+                     style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '10px'}),
+            code_block("""# Crear y activar entorno virtual
+python -m venv .venv
+source .venv/bin/activate          # Linux / macOS
+# .venv\\Scripts\\activate           # Windows PowerShell
+
+# Instalar dependencias
+pip install -r requirements.txt
+pip install -r requirements-dev.txt   # herramientas de desarrollo"""),
+
+            html.Div([step_number(4), html.Span("Ejecutar la aplicación en modo desarrollo", className="fw-bold", style={'color': '#0f172a'})],
+                     style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '10px'}),
+            code_block("""python app.py
+# La app estará disponible en http://localhost:8050"""),
+
+            html.Div([step_number(5), html.Span("Ejecutar los tests antes de hacer cambios", className="fw-bold", style={'color': '#0f172a'})],
+                     style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '10px'}),
+            code_block("""# Ejecutar suite de tests
+python -m pytest test_*.py -v
+
+# Tests específicos
+python -m pytest test_calibration_parsing.py -v
+python -m pytest test_fit_rc.py -v"""),
+
+        ], style={'background': '#f8fafc', 'borderRadius': '12px', 'padding': '24px', 'marginBottom': '32px'}),
+
+        # ── Guía de estilo de código ──────────────────────────────────────────
+        html.H4([
+            html.I(className="fas fa-paint-brush me-2", style={'color': '#f59e0b'}),
+            html.Span("Guía de estilo de código", **{'data-i18n': 'doc.contrib.h4.style'})
+        ], className="fw-bold mb-3", style={'color': '#0f172a'}),
+
+        html.Div([
+            html.Div([
+                html.Strong("Python", style={'color': '#3b82f6', 'display': 'block', 'marginBottom': '10px', 'fontSize': '0.95rem'}),
+                html.Ul([
+                    html.Li(["Seguir ", html.Strong("PEP 8"), " — se recomienda usar ", html.Code("ruff"), " o ", html.Code("flake8")]),
+                    html.Li([html.Strong("Tipo hints"), " en funciones nuevas: ", html.Code("def t(key: str, lang: str = 'es') -> str:")]),
+                    html.Li(["Docstrings en Google style para funciones públicas"]),
+                    html.Li(["Máximo ", html.Strong("120 caracteres"), " por línea"]),
+                    html.Li(["Nombres en español para variables de dominio (ej. ", html.Code("frecuencia"), ", ", html.Code("calibracion"), "), inglés para lógica general"]),
+                ], style={'color': '#475569', 'paddingLeft': '20px', 'lineHeight': '1.8', 'marginBottom': '0'})
+            ], style={'flex': '1', 'background': '#eff6ff', 'borderRadius': '10px', 'padding': '18px'}),
+
+            html.Div([
+                html.Strong("Dash / Componentes UI", style={'color': '#8b5cf6', 'display': 'block', 'marginBottom': '10px', 'fontSize': '0.95rem'}),
+                html.Ul([
+                    html.Li(["Cada página va en su propio directorio bajo ", html.Code("pages/<nombre>/")]),
+                    html.Li(["Componentes reutilizables → ", html.Code("pages/common/")]),
+                    html.Li(["IDs de componentes Dash: ", html.Code("kebab-case"), ", descriptivos y únicos globalmente"]),
+                    html.Li(["Callbacks con ", html.Code("prevent_initial_call=True"), " salvo que el comportamiento inicial sea explícito"]),
+                    html.Li(["Nuevos elementos de texto: añadir atributo ", html.Code("data-i18n"), " con la clave correspondiente"]),
+                ], style={'color': '#475569', 'paddingLeft': '20px', 'lineHeight': '1.8', 'marginBottom': '0'})
+            ], style={'flex': '1', 'background': '#f5f3ff', 'borderRadius': '10px', 'padding': '18px'}),
+
+            html.Div([
+                html.Strong("CSS", style={'color': '#ec4899', 'display': 'block', 'marginBottom': '10px', 'fontSize': '0.95rem'}),
+                html.Ul([
+                    html.Li(["Un archivo CSS por sección/página: ", html.Code("assets/css/<nombre>.css")]),
+                    html.Li(["Clases con prefijo del módulo: ", html.Code(".diagram-*"), ", ", html.Code(".lang-*"), ", ", html.Code(".calibration-*")]),
+                    html.Li(["Variables CSS en ", html.Code(":root"), " para colores y tipografía reutilizables"]),
+                    html.Li("Mobile-first: media queries desde 375px hacia arriba"),
+                    html.Li("No usar estilos inline salvo en valores dinámicos imposibles de parametrizar"),
+                ], style={'color': '#475569', 'paddingLeft': '20px', 'lineHeight': '1.8', 'marginBottom': '0'})
+            ], style={'flex': '1', 'background': '#fdf2f8', 'borderRadius': '10px', 'padding': '18px'}),
+
+        ], style={'display': 'flex', 'gap': '16px', 'flexWrap': 'wrap', 'marginBottom': '32px'}),
+
+        # ── Proceso de Pull Request ───────────────────────────────────────────
+        html.H4([
+            html.I(className="fas fa-code-branch me-2", style={'color': '#3b82f6'}),
+            html.Span("Proceso de Pull Request", **{'data-i18n': 'doc.contrib.h4.pr'})
+        ], className="fw-bold mb-3", style={'color': '#0f172a'}),
+
+        html.Div([
+            html.Div([
+                html.Div([step_number(i+1, color), html.Span(title, className="fw-bold", style={'color': '#0f172a', 'fontSize': '0.9rem'})],
+                         style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '8px'}),
+                html.P(desc, style={'color': '#475569', 'fontSize': '0.875rem', 'paddingLeft': '44px', 'marginBottom': '0'})
+            ], style={'marginBottom': '20px'})
+            for i, (title, desc, color) in enumerate([
+                ("Fork + branch", "Haz fork del repo en GitHub. Crea una rama descriptiva: git checkout -b feature/nyquist-zoom o fix/calibration-load-empty-list.", "#3b82f6"),
+                ("Desarrolla tus cambios", "Haz commits atómicos con mensajes claros en inglés y en tiempo presente: feat: add Portuguese translations, fix: prevent crash when no USB port detected, docs: add contributing guide.", "#10b981"),
+                ("Tests", "Añade o actualiza tests para cubrir tu cambio. Todos los tests deben pasar (pytest test_*.py). Si tu cambio afecta hardware, documenta el resultado manual.", "#f59e0b"),
+                ("Abre el Pull Request", "Abre el PR contra la rama main. Rellena la plantilla: descripción, tipo de cambio (feat/fix/docs/i18n/refactor), capturas de pantalla si es UI, y lista de tests ejecutados.", "#8b5cf6"),
+                ("Code review", "Un maintainer revisará el PR. Pueden pedirte ajustes — responde con commits adicionales en la misma rama. Evita force-push salvo que se solicite explícitamente.", "#d4af37"),
+                ("Merge", "Una vez aprobado y CIs en verde, el maintainer hará merge. ¡Tu contribución estará en ZORIA!", "#ec4899"),
+            ])
+        ], style={'background': '#f8fafc', 'borderRadius': '12px', 'padding': '24px', 'marginBottom': '32px'}),
+
+        # ── Convención de commits ──────────────────────────────────────────────
+        html.H4([
+            html.I(className="fas fa-tags me-2", style={'color': '#8b5cf6'}),
+            html.Span("Convención de commits (Conventional Commits)", **{'data-i18n': 'doc.contrib.h4.commits'})
+        ], className="fw-bold mb-3", style={'color': '#0f172a'}),
+
+        code_block("""# Formato
+<tipo>(<scope>): <descripción breve en inglés>
+
+# Ejemplos
+feat(dashboard): add real-time Nyquist plot streaming
+fix(calibration): prevent IndexError when calibration list is empty
+docs(contributing): add pull request guide
+i18n(ru): add Russian translations for calibration wizard
+refactor(lib): extract serial timeout into config constant
+test(rc_model): add fitting test for parallel RC above 100kHz
+style(css): normalize diagram-card min-height across browsers
+chore(deps): upgrade plotly to 5.18.0"""),
+
+        html.Div([
+            html.Div([badge(t, c) for t, c in [
+                ("feat", "#22c55e"), ("fix", "#ef4444"), ("docs", "#8b5cf6"),
+                ("i18n", "#ec4899"), ("refactor", "#f59e0b"), ("test", "#3b82f6"),
+                ("style", "#06b6d4"), ("chore", "#64748b"), ("perf", "#d4af37"),
+            ]]),
+        ], style={'marginBottom': '32px'}),
+
+        # ── Tests ─────────────────────────────────────────────────────────────
+        html.H4([
+            html.I(className="fas fa-vial me-2", style={'color': '#10b981'}),
+            html.Span("Tests", **{'data-i18n': 'doc.contrib.h4.tests'})
+        ], className="fw-bold mb-3", style={'color': '#0f172a'}),
+
+        html.Div([
+            html.Div([
+                html.Strong("Estructura de tests", style={'color': '#0f172a', 'display': 'block', 'marginBottom': '10px'}),
+                html.Ul([
+                    html.Li([html.Code("test_calibration_*.py"), " — Tests de parseo y ejecución del flujo OSL"]),
+                    html.Li([html.Code("test_fit_rc*.py"), " — Tests de ajuste de modelos RC/RL"]),
+                    html.Li([html.Code("test_connection*.py"), " — Tests de comunicación serial (mock)"]),
+                    html.Li([html.Code("test_sweep*.py"), " — Tests del flujo de barrido de frecuencia"]),
+                ], style={'color': '#475569', 'paddingLeft': '20px', 'lineHeight': '1.9', 'marginBottom': '0'})
+            ], style={'flex': '1'}),
+            html.Div([
+                html.Strong("Guía para nuevos tests", style={'color': '#0f172a', 'display': 'block', 'marginBottom': '10px'}),
+                html.Ul([
+                    html.Li("Cada nuevo módulo en lib/ debe tener su archivo test_<modulo>.py"),
+                    html.Li("Usa pytest fixtures para mock del dispositivo serial"),
+                    html.Li("Tests de componentes UI: usa dash.testing.DashComposite cuando sea necesario"),
+                    html.Li("Nombra tests descriptivamente: test_calibration_load_returns_list_when_empty()"),
+                ], style={'color': '#475569', 'paddingLeft': '20px', 'lineHeight': '1.9', 'marginBottom': '0'})
+            ], style={'flex': '1'}),
+        ], style={'display': 'flex', 'gap': '24px', 'flexWrap': 'wrap',
+                  'background': '#f0fdf4', 'borderRadius': '12px', 'padding': '24px', 'marginBottom': '32px'}),
+
+        # ── Estructura del repo ───────────────────────────────────────────────
+        html.H4([
+            html.I(className="fas fa-folder-open me-2", style={'color': '#d4af37'}),
+            html.Span("Estructura del repositorio", **{'data-i18n': 'doc.contrib.h4.structure'})
+        ], className="fw-bold mb-3", style={'color': '#0f172a'}),
+
+        code_block("""zoria/
+├── app.py                      # Punto de entrada, layout global, callbacks globales
+├── themes.py                   # Tema VOLT + paleta de colores
+├── requirements.txt            # Dependencias de producción
+├── requirements-dev.txt        # Dependencias de desarrollo (pytest, ruff…)
+│
+├── lib/                        # Lógica de negocio (importable independientemente)
+│   ├── admx2001.py             # Driver de comunicación serial con ADMX2001B
+│   ├── calibration.py          # Lógica de calibración OSL
+│   ├── calibration_parser.py   # Parsing de respuestas del dispositivo
+│   ├── device_state.py         # Estado global del dispositivo (singleton)
+│   ├── i18n.py                 # Sistema de traducciones (ES/EN/PT/ZH/RU/DE)
+│   ├── rc_model.py             # Ajuste de modelos RC/RL
+│   └── utils.py                # Utilidades comunes
+│
+├── pages/                      # Páginas de la SPA
+│   ├── common/                 # Componentes compartidos (sidebar, footer, etc.)
+│   ├── dashboard/              # Página principal de medición
+│   ├── calibration/            # Wizard de calibración
+│   ├── documentation/          # Esta documentación
+│   ├── simulator/              # Simulador RLC
+│   ├── about/                  # Acerca de
+│   └── ...
+│
+├── assets/
+│   ├── css/                    # Hojas de estilo por módulo
+│   ├── js/                     # Scripts clientside (i18n, mermaid, shortcuts…)
+│   └── vendor/                 # Dependencias JS/CSS locales (Bootstrap, Plotly…)
+│
+└── test_*.py                   # Tests (pytest)"""),
+
+        # ── Contacto ──────────────────────────────────────────────────────────
+        html.H4([
+            html.I(className="fas fa-envelope me-2", style={'color': '#ef4444'}),
+            html.Span("Contacto y comunidad", **{'data-i18n': 'doc.contrib.h4.contact'})
+        ], className="fw-bold mb-3", style={'color': '#0f172a'}),
+
+        html.Div([
+            html.Div([
+                html.I(className="fab fa-github fa-lg me-3", style={'color': '#0f172a'}),
+                html.Div([
+                    html.Strong("GitHub Issues", style={'display': 'block', 'color': '#0f172a'}),
+                    html.Span("Para bugs, features y preguntas técnicas", style={'color': '#64748b', 'fontSize': '0.875rem'}),
+                ]),
+            ], style={'display': 'flex', 'alignItems': 'center', 'padding': '16px',
+                      'background': '#f8fafc', 'borderRadius': '10px', 'flex': '1'}),
+            html.Div([
+                html.I(className="fas fa-envelope fa-lg me-3", style={'color': '#3b82f6'}),
+                html.Div([
+                    html.Strong("Email del mantenedor", style={'display': 'block', 'color': '#0f172a'}),
+                    html.A("mariomontero942@gmail.com", href="mailto:mariomontero942@gmail.com",
+                           style={'color': '#3b82f6', 'fontSize': '0.875rem'}),
+                ]),
+            ], style={'display': 'flex', 'alignItems': 'center', 'padding': '16px',
+                      'background': '#f8fafc', 'borderRadius': '10px', 'flex': '1'}),
+            html.Div([
+                html.I(className="fas fa-book-open fa-lg me-3", style={'color': '#8b5cf6'}),
+                html.Div([
+                    html.Strong("Wiki Analog Devices ADMX2001", style={'display': 'block', 'color': '#0f172a'}),
+                    html.A("wiki.analog.com/resources/eval/eval-admx2001", href="https://wiki.analog.com/resources/eval/eval-admx2001",
+                           target="_blank", style={'color': '#8b5cf6', 'fontSize': '0.875rem'}),
+                ]),
+            ], style={'display': 'flex', 'alignItems': 'center', 'padding': '16px',
+                      'background': '#f8fafc', 'borderRadius': '10px', 'flex': '1'}),
+        ], style={'display': 'flex', 'gap': '12px', 'flexWrap': 'wrap', 'marginBottom': '40px'}),
+
+        info_box([
+            html.Strong("🙏 ¡Muchas gracias por querer contribuir! "),
+            "Cada issue abierto, cada PR enviado, cada corrección de documentación — todo suma para "
+            "hacer de ZORIA una herramienta mejor para la comunidad de análisis de impedancia."
+        ], "success"),
+
+    ], style={'paddingTop': '20px'})
 
 
 # ==================== LAYOUT PRINCIPAL ====================
@@ -2449,6 +3754,13 @@ layout = html.Div([
                         selected_className='doc-tab-selected'
                     ),
                     dcc.Tab(
+                        label='🧮 Matemática',
+                        value='matematica',
+                        children=content_matematica_background(),
+                        className='doc-tab',
+                        selected_className='doc-tab-selected'
+                    ),
+                    dcc.Tab(
                         label='⚖️ Calibración',
                         value='calibracion',
                         children=content_calibracion(),
@@ -2466,6 +3778,20 @@ layout = html.Div([
                         label='🔌 Firmware',
                         value='firmware',
                         children=content_firmware(),
+                        className='doc-tab',
+                        selected_className='doc-tab-selected'
+                    ),
+                    dcc.Tab(
+                        label='🌟 ZORIA',
+                        value='overview',
+                        children=content_overview(),
+                        className='doc-tab',
+                        selected_className='doc-tab-selected'
+                    ),
+                    dcc.Tab(
+                        label='🤝 Contribuir',
+                        value='contribuir',
+                        children=content_contribuir(),
                         className='doc-tab',
                         selected_className='doc-tab-selected'
                     )
@@ -2492,9 +3818,63 @@ layout = html.Div([
     'background': '#ffffff'
 })
 
+# Store dummy para los callbacks i18n de esta página
+layout.children.insert(0, dcc.Store(id='doc-i18n-dummy', storage_type='memory'))
+
 
 def register_callbacks(app):
-    pass
+    from dash import Input, Output
+
+    # Cuando llegan traducciones frescas (cambio de idioma o carga inicial),
+    # reaplica con un pequeño retraso para asegurarse de que todo el DOM
+    # de la página esté montado (especialmente con dcc.Tabs).
+    app.clientside_callback(
+        """
+        function(translations) {
+            if (!translations || !translations['_lang']) return window.dash_clientside.no_update;
+            var lang = translations['_lang'];
+            // Cancelar timers anteriores para evitar que un idioma viejo se reaplique tarde
+            clearTimeout(window._zoriaDocApplyTimer1);
+            clearTimeout(window._zoriaDocApplyTimer2);
+            // Delay para que React termine de montar el DOM de los tabs
+            window._zoriaDocApplyTimer1 = setTimeout(function() {
+                if (window.ZORIA_I18N && window.ZORIA_I18N.current() === lang) {
+                    window.ZORIA_I18N.apply(lang, translations);
+                }
+            }, 150);
+            window._zoriaDocApplyTimer2 = setTimeout(function() {
+                if (window.ZORIA_I18N && window.ZORIA_I18N.current() === lang) {
+                    window.ZORIA_I18N.apply(lang);
+                }
+            }, 600);
+            return window.dash_clientside.no_update;
+        }
+        """,
+        Output('doc-i18n-dummy', 'data'),
+        Input('lang-translations-store', 'data'),
+        prevent_initial_call=False,
+    )
+
+    # También reaplica cuando el usuario cambia de pestaña,
+    # por si Dash renderiza el contenido de la pestaña en ese momento.
+    app.clientside_callback(
+        """
+        function(activeTab) {
+            clearTimeout(window._zoriaDocTabTimer1);
+            clearTimeout(window._zoriaDocTabTimer2);
+            window._zoriaDocTabTimer1 = setTimeout(function() {
+                if (window.ZORIA_I18N) window.ZORIA_I18N.apply(window.ZORIA_I18N.current());
+            }, 100);
+            window._zoriaDocTabTimer2 = setTimeout(function() {
+                if (window.ZORIA_I18N) window.ZORIA_I18N.apply(window.ZORIA_I18N.current());
+            }, 500);
+            return window.dash_clientside.no_update;
+        }
+        """,
+        Output('doc-i18n-dummy', 'data', allow_duplicate=True),
+        Input('doc-tabs', 'value'),
+        prevent_initial_call=True,
+    )
 
 
 def register_documentation_page(app):

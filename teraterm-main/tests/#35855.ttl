@@ -1,3 +1,0 @@
-testlink
-if result=0 connect '/C=1'
-messagebox result 'result'

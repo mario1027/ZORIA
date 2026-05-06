@@ -173,6 +173,164 @@
 .main-content::-webkit-scrollbar-thumb:hover {
     background: #555;
 }
+
+/* ==========================================================================
+   §9 Diagrams — grid layout + UX visual consistency
+   ========================================================================== */
+
+/* ── Grid de 2 columnas para filas de diagramas ── */
+.diagram-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+/* ── Tarjeta de diagrama ── */
+.diagram-card {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 6px rgba(15, 23, 42, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 420px;
+}
+
+.diagram-card--full {
+    margin-bottom: 16px;
+}
+
+/* Colores de borde por tema */
+.diagram-card--blue   { border-color: #bfdbfe; }
+.diagram-card--cyan   { border-color: #bae6fd; }
+.diagram-card--green  { border-color: #86efac; }
+.diagram-card--purple { border-color: #c4b5fd; }
+.diagram-card--amber  { border-color: #fcd34d; }
+.diagram-card--red    { border-color: #fca5a5; }
+
+/* ── Header de cada card ── */
+.diagram-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.97rem;
+    color: #0f172a;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 10px;
+    flex-shrink: 0;
+}
+
+/* ── Badge numerado ── */
+.diagram-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    background: #3b82f6;
+    color: #ffffff;
+    flex-shrink: 0;
+}
+.diagram-badge--cyan   { background: #0284c7; }
+.diagram-badge--green  { background: #16a34a; }
+.diagram-badge--purple { background: #7c3aed; }
+.diagram-badge--amber  { background: #d97706; }
+.diagram-badge--red    { background: #dc2626; }
+
+/* ── Canvas Mermaid ── */
+.diagram-canvas {
+    flex: 1;
+    display: block;
+    overflow-x: auto;
+    overflow-y: hidden;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 8px 4px;
+}
+
+.diagram-canvas svg {
+    display: block;
+    margin: 0 auto;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 320px;
+}
+
+.diagram-canvas .nodeLabel,
+.diagram-canvas .edgeLabel,
+.diagram-canvas .actor,
+.diagram-canvas .messageText,
+.diagram-canvas .label {
+    font-size: 13px !important;
+    font-family: 'Inter', system-ui, sans-serif !important;
+    line-height: 1.3;
+}
+
+/* ── Botón pantalla completa ── */
+.diagram-fullscreen-btn {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    cursor: pointer;
+    color: #94a3b8;
+    font-size: 0.8rem;
+    transition: all 0.18s ease;
+    flex-shrink: 0;
+}
+.diagram-fullscreen-btn:hover {
+    background: #eff6ff;
+    border-color: #93c5fd;
+    color: #1e40af;
+    transform: scale(1.08);
+}
+.diagram-fullscreen-btn:active {
+    transform: scale(0.95);
+}
+
+/* ── Estado :fullscreen del canvas ── */
+.diagram-canvas:fullscreen,
+.diagram-canvas:-webkit-full-screen {
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+    border-radius: 0;
+}
+.diagram-canvas:fullscreen svg,
+.diagram-canvas:-webkit-full-screen svg {
+    width: auto !important;
+    max-width: 95vw !important;
+    height: 90vh !important;
+    min-height: unset !important;
+}
+
+/* ── Responsive: stack columnas en pantallas chicas ── */
+@media (max-width: 1024px) {
+    .diagram-row {
+        grid-template-columns: 1fr;
+    }
+    .diagram-card {
+        min-height: unset;
+    }
+}
+
+
 /* Estilos para dcc.Tabs */
 .custom-tabs .tab {
     background-color: #ffffff !important;

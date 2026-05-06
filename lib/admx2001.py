@@ -1174,14 +1174,6 @@ class ADMX2001:
         except:
             pass  # Ignorar si ya está limpio
         
-        # Validar count
-        validate_count(count)
-        
-        # Configurar count y guardarlo en la configuración
-        self.send_command(f"count {count}", expect_prompt=False)
-        self.current_config['count'] = count  # ← Guardar en configuración
-        logger.debug(f"Count configurado y guardado: {count}")
-        
         if sweep_type == SweepType.OFF:
             # Desactivar sweep
             self.send_command("sweep_type off")
@@ -1190,13 +1182,27 @@ class ADMX2001:
         
         # Validar parámetros según tipo de sweep
         if sweep_type == SweepType.FREQUENCY:
-            from .utils import validate_frequency
+            from .utils import validate_frequency, max_count_for_span
             # Convertir kHz a Hz para validación
             validate_frequency(start * 1000)
             validate_frequency(end * 1000)
             if start >= end:
                 raise ValidationError(f"start ({start}) debe ser menor que end ({end})")
             cmd = f"sweep_type frequency {start} {end}"
+            # Guardar para que perform_sweep() calcule idle_timeout correcto
+            self.current_config['sweep_start_hz'] = start * 1000.0
+            self.current_config['sweep_end_hz']   = end   * 1000.0
+            # Clampear count al límite del firmware según span en décadas.
+            # Superar el límite corrompe el estado del firmware (los sweeps
+            # siguientes retornan solo COUNT_MIN=10 puntos).
+            max_n = max_count_for_span(start * 1000.0, end * 1000.0)
+            if count > max_n:
+                logger.warning(
+                    f"count={count} supera el límite del firmware para "
+                    f"{start*1000:.4g} Hz – {end*1000:.4g} Hz "
+                    f"(máx {max_n} pts). Recortando a {max_n}."
+                )
+                count = max_n
         
         elif sweep_type == SweepType.DC_BIAS:
             from .utils import validate_offset
@@ -1216,6 +1222,12 @@ class ADMX2001:
         
         else:
             raise ValidationError(f"Tipo de sweep no válido: {sweep_type}")
+        
+        # Validar y enviar count (ya clampeado si es sweep de frecuencia)
+        validate_count(count)
+        self.send_command(f"count {count}", expect_prompt=False)
+        self.current_config['count'] = count
+        logger.debug(f"Count configurado y guardado: {count}")
         
         # Enviar comando de sweep_type
         self.send_command(cmd)
@@ -1303,10 +1315,15 @@ class ADMX2001:
             self.serial.flush()
             self.command_count += 1
             time.sleep(0.5)  # Dar tiempo al dispositivo para empezar
-            
+
             # Leer TODOS los datos del sweep
             all_data_lines = []
             all_lines = []
+            # ── MEDICIÓN DE TIEMPOS REALES ──────────────────────────────────
+            # Cada entrada es time.time() en el momento en que llegó el punto.
+            # Los intervalos inter-punto = tiempo real del hardware por medición.
+            point_timestamps: list = []
+            # ────────────────────────────────────────────────────────────────
             start_time = time.time()
             last_data_time = time.time()
             prompt_seen = False
@@ -1314,20 +1331,48 @@ class ADMX2001:
             saturation_detected = False
             
             # El sweep puede tomar tiempo dependiendo de la configuración
-            # Usamos un timeout generoso pero monitoreamos actividad
-            # Aumentar timeout de inactividad para sweeps con averaging/promediado
-            # El dispositivo puede tardar varios segundos entre puntos cuando promedia
-            # CRÍTICO: Para sweeps muy grandes (>1000 puntos), necesitamos timeouts mucho más largos
-            if expected_count > 1000:
-                idle_timeout = 180.0  # 3 minutos para sweeps muy grandes (2000-10000 pts)
-            elif expected_count > 500:
-                idle_timeout = 120.0  # 2 minutos para sweeps grandes (500-1000 pts)
-            elif expected_count > 100:
-                idle_timeout = 60.0   # 1 minuto para sweeps medianos
-            elif expected_count > 50:
-                idle_timeout = 45.0   # 45 segundos para sweeps pequeños
+            # idle_timeout = tiempo máximo sin recibir ningún dato antes de asumir EOF.
+            # Usamos el tiempo real del hardware (perfil medido) para la frecuencia más
+            # baja del barrido, con margen ×4.  Si no hay perfil, caemos en heurística
+            # conservadora basada en el modelo teórico de 36 ciclos.
+            sweep_start_hz = self.current_config.get('sweep_start_hz', None)
+            if sweep_start_hz and sweep_start_hz > 0:
+                try:
+                    from .hw_timing_profile import get_profile
+                    from .utils import _acquisition_time_ms
+                    hw_ms       = get_profile().get_ms(float(sweep_start_hz))
+                    theory_ms   = _acquisition_time_ms(float(sweep_start_hz), 1)
+                    # Para idle_timeout usamos la cota SUPERIOR (máx) para evitar
+                    # timeout prematuro mientras el primer punto llega.  El perfil
+                    # puede sub-estimar si el valor registrado corresponde al
+                    # intervalo inter-punto de frecuencias más altas (off-by-one
+                    # en update_from_sweep) en lugar del tiempo real del primer
+                    # punto a f_start.
+                    conservative_ms = max(hw_ms, theory_ms)
+                    idle_timeout = max(60.0, (conservative_ms / 1000.0) * 4)
+                    logger.info(
+                        f"idle_timeout calculado: {idle_timeout:.1f}s  "
+                        f"(f_start={sweep_start_hz:.3g} Hz, "
+                        f"hw={hw_ms:.0f} ms, theoretical={theory_ms:.0f} ms, "
+                        f"used={conservative_ms:.0f} ms)"
+                    )
+                except Exception:
+                    idle_timeout = None  # caer a heurística
             else:
-                idle_timeout = 30.0   # 30 segundos para sweeps mínimos
+                idle_timeout = None
+
+            if idle_timeout is None:
+                # Heurística de respaldo basada en conteo de puntos
+                if expected_count > 1000:
+                    idle_timeout = 600.0  # 10 min para sweeps muy grandes
+                elif expected_count > 500:
+                    idle_timeout = 300.0  # 5 min para sweeps grandes
+                elif expected_count > 100:
+                    idle_timeout = 120.0  # 2 min para sweeps medianos
+                elif expected_count > 50:
+                    idle_timeout = 60.0   # 1 min para sweeps pequeños
+                else:
+                    idle_timeout = 30.0   # 30 s para sweeps mínimos
             
             logger.info("Leyendo datos del sweep...")
             
@@ -1364,8 +1409,11 @@ class ADMX2001:
                                 if parts and len(parts) >= 2:
                                     # Línea válida - guardar y notificar callback
                                     all_data_lines.append(line)
+                                    # ── Timestamp real del punto ────────────
+                                    point_timestamps.append(time.time())
+                                    # ────────────────────────────────────────
                                     logger.debug(f"✓ Datos: {line[:60]}...")
-                                    
+
                                     # CALLBACK INMEDIATO para streaming real-time
                                     if point_callback:
                                         try:
@@ -1459,12 +1507,27 @@ class ADMX2001:
                 logger.debug(f"Línea {i} no parseada: {line[:50]}")
         
         logger.info(f"Sweep completado: {len(results)} puntos parseados de {len(all_data_lines)} líneas de datos")
-        
+
+        # ── ACTUALIZAR PERFIL DE TIMING REAL ────────────────────────────────
+        # Usamos los timestamps por punto para medir los tiempos reales del HW.
+        # Solo si el sweep completó con suficientes puntos para ser significativo.
+        if len(results) >= 2 and len(point_timestamps) >= 2:
+            try:
+                from .hw_timing_profile import get_profile
+                profile = get_profile()
+                n_recorded = profile.update_from_sweep(results, point_timestamps)
+                logger.info(
+                    f"⏱ Perfil de timing HW actualizado con {n_recorded} puntos reales"
+                )
+            except Exception as e:
+                logger.warning(f"No se pudo actualizar perfil de timing: {e}")
+        # ────────────────────────────────────────────────────────────────────
+
         # Verificación final
         if len(results) < expected_count:
             logger.warning(f"Advertencia: se esperaban {expected_count} puntos pero solo "
                          f"se parsearon {len(results)}")
-        
+
         return results
     
     def disable_sweep(self) -> None:

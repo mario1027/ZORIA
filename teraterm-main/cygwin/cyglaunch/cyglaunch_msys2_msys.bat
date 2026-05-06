@@ -1,1 +1,0 @@
-cyglaunch -msys2

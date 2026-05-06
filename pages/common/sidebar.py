@@ -9,18 +9,20 @@ from ..icons.hero import ICON
 from .mobile_nav import mobileSidebarHeader
 
 SIDEBAR_ITEMS = [
-    {"text": "Dashboard", "icon": ICON.CHART_PIE, "href": "/"},
-    {"text": "Calibración", "icon": ICON.GEAR, "href": "/calibration"},
-    {"text": "Simulador RLC", "icon": ICON.VIEW_GRID, "href": "/simulator"},
-    {"text": "Documentación", "icon": ICON.DOCUMENT, "href": "/documentacion"},
-    {"text": "Acerca de", "icon": ICON.PEOPLE, "href": "/about"},
-    {"text": "Terminal CLI", "icon": ICON.CONSOLE, "href": "#", "id": "sidebar-terminal-btn", "className": "nav-link"},
+    {"text": "Dashboard",     "icon": ICON.CHART_PIE, "href": "/",            "i18n": "nav.dashboard"},
+    {"text": "Calibración",   "icon": ICON.GEAR,      "href": "/calibration", "i18n": "nav.calibration"},
+    {"text": "Simulador RLC", "icon": ICON.VIEW_GRID,  "href": "/simulator",   "i18n": "nav.simulator"},
+    {"text": "Configuración", "icon": html.I(className="fas fa-sliders-h"), "href": "/config", "i18n": "nav.config"},
+    {"text": "Documentación", "icon": ICON.DOCUMENT,  "href": "/documentacion","i18n": "nav.documentation"},
+    {"text": "Acerca de",     "icon": ICON.PEOPLE,    "href": "/about",        "i18n": "nav.about"},
+    {"text": "Terminal CLI",  "icon": ICON.CONSOLE,   "href": "#",             "i18n": "nav.terminal",
+     "id": "sidebar-terminal-btn", "className": "nav-link"},
 ]
 
 DROPDOWN_ITEMS = []
 
 
-def create_sidebar_link(text, icon, href, hyperlink=False, target="", **kwargs):
+def create_sidebar_link(text, icon, href, hyperlink=False, target="", i18n=None, **kwargs):
     """Crea un enlace en la barra lateral"""
     has_bootstrap_attrs = any(key.startswith('data-bs-') for key in kwargs.keys())
     has_id = 'id' in kwargs
@@ -38,9 +40,15 @@ def create_sidebar_link(text, icon, href, hyperlink=False, target="", **kwargs):
         attributes["target"] = target
     attributes.update(kwargs)
 
+    text_span = html.Span(
+        text,
+        className="mt-1 ms-1 sidebar-text",
+        **({'data-i18n': i18n} if i18n else {})
+    )
+
     children = [
         html.Span(icon, className="sidebar-icon"),
-        html.Span(text, className="mt-1 ms-1 sidebar-text")
+        text_span,
     ]
 
     el = element(children, **attributes)
@@ -60,7 +68,11 @@ def connection_panel():
         html.Hr(className="sidebar-divider my-3 opacity-25"),
         
         html.Div([
-            html.Small("DISPOSITIVO", className="sidebar-section-label text-uppercase text-muted fw-bold")
+            html.Small(
+                "DISPOSITIVO",
+                className="sidebar-section-label text-uppercase text-muted fw-bold",
+                **{'data-i18n': 'conn.section_label'},
+            )
         ], className="px-3 mb-2"),
         
         html.Div([
@@ -70,26 +82,36 @@ def connection_panel():
                     html.Span(className="connection-pulse", id="sidebar-connection-dot"),
                 ], className="connection-indicator-wrapper"),
                 html.Div([
-                    html.Span("Desconectado", className="connection-status-text fw-bold", id="sidebar-connection-text"),
-                    html.Small("ADMX2001", className="connection-device-id d-block text-muted", id="sidebar-device-port"),
+                    html.Span(
+                        "Desconectado",
+                        className="connection-status-text fw-bold",
+                        id="sidebar-connection-text",
+                    ),
+                    html.Small(
+                        "ADMX2001",
+                        className="connection-device-id d-block text-muted",
+                        id="sidebar-device-port",
+                    ),
                 ], className="connection-info ms-2 flex-grow-1"),
             ], className="connection-status-row d-flex align-items-center mb-3"),
             
-            # Los 3 botones clásicos
+            # Botones de conexión
             html.Div([
                 html.Button([
                     html.I(className="fas fa-bolt")
                 ], 
                 id="sidebar-quick-connect-btn",
-                className="btn btn-success btn-sm connection-btn",
-                title="Conexión Rápida"
+                className="btn btn-success btn-sm connection-btn flex-fill",
+                title="Conexión Rápida",
+                **{'data-i18n-title': 'conn.quick_connect'},
                 ),
                 html.Button([
                     html.I(className="fas fa-cog")
-                ], 
+                ],
                 id="sidebar-config-btn",
                 className="btn btn-gray-700 btn-sm connection-btn",
-                title="Configurar Conexión"
+                title="Configurar",
+                **{'data-i18n-title': 'conn.configure'},
                 ),
                 html.Button([
                     html.I(className="fas fa-power-off")
@@ -97,7 +119,8 @@ def connection_panel():
                 id="sidebar-disconnect-btn",
                 className="btn btn-outline-danger btn-sm connection-btn",
                 title="Desconectar",
-                disabled=True
+                disabled=True,
+                **{'data-i18n-title': 'conn.disconnect'},
                 ),
             ], className="connection-actions d-flex gap-1"),
             

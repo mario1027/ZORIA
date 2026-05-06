@@ -85,6 +85,7 @@ EXTERNAL_STYLESHEETS = [
     "/assets/css/modal-connect.css",
     "/assets/css/documentation.css",
     "/assets/css/about.css",
+    "/assets/css/config.css",
 ]
 
 EXTERNAL_SCRIPTS = [
@@ -98,6 +99,8 @@ EXTERNAL_SCRIPTS = [
     "/assets/js/draggable_windows.js",
     # Atajos de teclado globales (local)
     "/assets/js/keyboard_shortcuts.js",
+    # Mermaid.js para diagramas (UMD build local — expone window.mermaid)
+    "/assets/vendor/js/mermaid.min.js",
 ]
 
 # =============================================================================
@@ -120,18 +123,19 @@ def register_global_connection_callbacks(app):
     Estos callbacks controlan la conexión/desconexión del dispositivo ADMX2001
     desde el sidebar, disponible en todas las páginas.
     """
-    from dash import Input, Output, ctx
+    from dash import Input, Output, State, ctx
     from dash.exceptions import PreventUpdate
     import serial.tools.list_ports
     import time
     from lib.device_state import device_state
     from lib import ADMX2001
+    from lib.utils import get_preferred_usb_serial_ports, is_likely_admx_port
     
     logger = logging.getLogger(__name__)
     
     # Variable para rastrear si ya se intentó la auto-conexión
     auto_connect_attempted = {'flag': False}
-    
+
     # =========================================================================
     # CALLBACK ÚNICO DE CONEXIÓN - Sidebar (disponible en todas las páginas)
     # =========================================================================
@@ -145,9 +149,10 @@ def register_global_connection_callbacks(app):
         [Input('sidebar-quick-connect-btn', 'n_clicks'),
          Input('sidebar-disconnect-btn', 'n_clicks'),
          Input('auto-connect-on-start', 'data')],
+        State('autoconn-store', 'data'),
         prevent_initial_call=True
     )
-    def sidebar_connection_handler(sidebar_quick_clicks, sidebar_disconnect_clicks, auto_start):
+    def sidebar_connection_handler(sidebar_quick_clicks, sidebar_disconnect_clicks, auto_start, autoconn_pref):
         """
         Callback de conexión desde el sidebar (disponible globalmente):
         - Conexión rápida sidebar (sidebar-quick-connect-btn) 
@@ -162,6 +167,11 @@ def register_global_connection_callbacks(app):
             logger.info("Auto-connect ya fue intentado, ignorando ejecución duplicada")
             raise PreventUpdate
         
+        # Respetar preferencia: si autoconn-store es False, no auto-conectar
+        if triggered == 'auto-connect-on-start' and autoconn_pref is False:
+            logger.info("Auto-connect omitido: preferencia del usuario desactivada")
+            raise PreventUpdate
+
         # Marcar que se intentó auto-connect
         if triggered == 'auto-connect-on-start':
             auto_connect_attempted['flag'] = True
@@ -207,9 +217,12 @@ def register_global_connection_callbacks(app):
         
         # ===== CONEXIÓN RÁPIDA / AUTO =====
         if triggered in ['sidebar-quick-connect-btn', 'auto-connect-on-start']:
-            # Determinar si debe mostrar error modal (solo en conexión manual)
-            show_error_on_fail = (triggered == 'sidebar-quick-connect-btn')
-            logger.info(f"Iniciando conexión, show_error_on_fail={show_error_on_fail}")
+            # Mostrar error modal solo si hubo un intento real sobre un adaptador detectado.
+            # Si no hay dispositivo/adaptador conectado, solo actualizar el estado visual.
+            is_manual_quick_connect = (triggered == 'sidebar-quick-connect-btn')
+            logger.info(
+                f"Iniciando conexión, is_manual_quick_connect={is_manual_quick_connect}"
+            )
             
             # Adquirir lock para evitar conexiones simultáneas
             if not device_state._operation_lock.acquire(blocking=False):
@@ -220,41 +233,37 @@ def register_global_connection_callbacks(app):
             try:
                 logger.info("Iniciando conexión automática...")
                 all_ports = list(serial.tools.list_ports.comports())
-                
-                # Filtrar SOLO puertos USB (excluir ttyS* que causan errores I/O)
-                usb_ports = []
-                for p in all_ports:
-                    device_name = p.device
-                    # Solo USB: ttyUSB*, ttyACM* en Linux; COM* en Windows
-                    if ('ttyUSB' in device_name or 'ttyACM' in device_name or 
-                        'COM' in device_name.upper() or 
-                        '/dev/cu.usbserial' in device_name or '/dev/cu.usbmodem' in device_name):
-                        usb_ports.append(p)
+                usb_ports = get_preferred_usb_serial_ports(all_ports)
                 
                 if not usb_ports:
                     logger.warning("No hay puertos USB disponibles")
                     return ("Sin puertos USB", "connection-pulse disconnected",
-                            "ADMX2001", True, show_error_on_fail, False)
+                            "ADMX2001", True, False, False)
                 
                 logger.info(f"Puertos USB detectados: {[p.device for p in usb_ports]}")
                 
-                # Priorizar candidatos FTDI/USB-Serial/TTL232R
-                candidates = []
-                for p in usb_ports:
-                    desc = p.description.upper() if p.description else ""
-                    manuf = p.manufacturer.upper() if p.manufacturer else ""
-                    if any(x in desc or x in manuf for x in ['FTDI', 'CP210', 'SILICON', 'USB-SERIAL', 'FT232', 'TTL232']):
-                        candidates.append(p)
-                
-                # Probar candidatos primero, luego todos los USB
-                ports_to_try = candidates if candidates else usb_ports
-                logger.info(f"Probando {len(ports_to_try)} puerto(s) USB: {[p.device for p in ports_to_try[:3]]}")
-                
-                for p in ports_to_try[:3]:
+                ports_to_try = [p for p in usb_ports if is_likely_admx_port(p)]
+                if not ports_to_try and usb_ports:
+                    ports_to_try = usb_ports[:1]
+
+                if not ports_to_try:
+                    logger.warning("No se encontró adaptador USB TTL232R-3V3")
+                    return ("No detectado", "connection-pulse disconnected",
+                            "TTL232R-3V3", True, False, False)
+
+                logger.info(
+                    f"Probando {len(ports_to_try)} puerto(s) USB TTL232R-3V3: "
+                    f"{[p.device for p in ports_to_try[:8]]}"
+                )
+
+                attempted_candidate_connection = False
+
+                # Probar primero el adaptador TTL preferido; si no aparece exacto, usar el mejor USB.
+                for p in ports_to_try[:2]:
+                    attempted_candidate_connection = True
                     try:
                         logger.info(f"Probando {p.device}...")
-                        dev = ADMX2001(p.device, baudrate=115200, timeout=3.0)
-                        time.sleep(0.3)
+                        dev = ADMX2001(p.device, baudrate=115200, timeout=1.2)
                         
                         resp = dev.send_command('*idn')
                         logger.info(f"Respuesta: {resp}")
@@ -274,12 +283,14 @@ def register_global_connection_callbacks(app):
                 
                 logger.warning("No se encontró dispositivo ADMX2001")
                 return ("No detectado", "connection-pulse disconnected",
-                        "ADMX2001", True, show_error_on_fail, False)
+                        "ADMX2001", True,
+                        is_manual_quick_connect and attempted_candidate_connection,
+                        False)
                 
             except Exception as e:
                 logger.error(f"Error autoconnect: {e}")
                 return ("Error", "connection-pulse error",
-                        "ADMX2001", True, show_error_on_fail, False)
+                        "ADMX2001", True, False, False)
             
             finally:
                 # Liberar lock de operación
@@ -337,11 +348,17 @@ def register_global_connection_callbacks(app):
     @app.callback(
         Output('auto-connect-on-start', 'data'),
         Input('ports-interval', 'n_intervals'),
+        State('autoconn-store', 'data'),
         prevent_initial_call=True
     )
-    def trigger_auto_connect(n_intervals):
+    def trigger_auto_connect(n_intervals, autoconn_pref):
         """Trigger para auto-conexión al iniciar (solo una vez)"""
         if n_intervals == 1 and not device_state.is_connected:
+            # Respetar preferencia del usuario; si el store nunca fue configurado
+            # (None o False por defecto), igualmente intentar conectar
+            if autoconn_pref is False:
+                logger.info("Auto-connect desactivado por preferencia del usuario")
+                raise PreventUpdate
             logger.info("Activando auto-connect al inicio (n_intervals=1)")
             return True
         raise PreventUpdate
@@ -1973,6 +1990,68 @@ def register_global_terminal_callbacks(app):
         return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
 
 
+
+# =============================================================================
+# CALLBACKS GLOBALES DE INTERNACIONALIZACIÓN (i18n)
+# =============================================================================
+
+def register_global_i18n_callbacks(app):
+    """
+    Registra los callbacks de internacionalización.
+
+    Flujo:
+      1. El usuario hace clic en un botón del language_picker → actualiza 'lang-store'.
+      2. El callback server-side 'serve_translations' convierte el código de idioma
+         en el diccionario completo y lo guarda en 'lang-translations-store'.
+      3. El clientside_callback 'apply_i18n' invoca window.ZORIA_I18N.apply()
+         con el dict, que actualiza todos los [data-i18n] en el DOM.
+    """
+    from dash import Input, Output, ALL, ctx
+    from dash.exceptions import PreventUpdate
+    from lib.i18n import get_all_for_lang, LANGUAGES, DEFAULT_LANG
+
+    # ── 1. Botones de idioma → actualizar lang-store ────────────────────────────
+    @app.callback(
+        Output('lang-store', 'data'),
+        Input({'type': 'lang-btn', 'index': ALL}, 'n_clicks'),
+        prevent_initial_call=True,
+    )
+    def update_lang_store(n_clicks_list):
+        if not ctx.triggered or not ctx.triggered_id:
+            raise PreventUpdate
+        triggered = ctx.triggered_id
+        if isinstance(triggered, dict) and triggered.get('type') == 'lang-btn':
+            lang = triggered['index']
+            if lang in LANGUAGES:
+                return lang
+        raise PreventUpdate
+
+    # ── 2. lang-store → construir dict de traducciones (server-side) ────────────
+    # El idioma se incluye como '_lang' dentro del propio dict para que el clientside
+    # callback nunca tenga un lang desincronizado de sus traducciones.
+    @app.callback(
+        Output('lang-translations-store', 'data'),
+        Input('lang-store', 'data'),
+    )
+    def serve_translations(lang):
+        lang = lang or DEFAULT_LANG
+        result = get_all_for_lang(lang)
+        result['_lang'] = lang   # paquete atómico: traducciones + su idioma juntos
+        return result
+
+    # ── 3. Translations store → aplicar en el DOM (clientside) ─────────────────
+    # Usa ClientsideFunction para registrar la función desde i18n_client.js, evitando
+    # problemas de Dash 3 con callbacks inline que colisionan con nombres JS reservados.
+    # La función window.dash_clientside.zoria.applyI18n está definida en assets/js/i18n_client.js.
+    from dash import ClientsideFunction
+    app.clientside_callback(
+        ClientsideFunction(namespace='zoria', function_name='applyI18n'),
+        Output('lang-apply-done', 'data'),
+        Input('lang-translations-store', 'data'),
+        prevent_initial_call=False,
+    )
+
+
 def set_global_device(device, is_connected=False):
     """
     Establece el dispositivo global para el terminal CLI.
@@ -2080,6 +2159,7 @@ def create_app() -> DashSPA:
             from pages.simulator.simulator_page import register_simulator_page
             from pages.calibration.calibration_page import register_calibration_page
             from pages.about.about_page import register_about_page
+            from pages.config.config_page import register_config_page
             from pages.common.terminal_component import global_terminal_component
             from dash import html
             
@@ -2095,6 +2175,9 @@ def create_app() -> DashSPA:
             register_about_page(app)
             logger.info("  ✓ About registrado")
             
+            register_config_page(app)
+            logger.info("  ✓ Config registrado")
+            
             # Registrar callbacks globales de conexión
             register_global_connection_callbacks(app)
             logger.info("  ✓ Conexión sidebar global registrada")
@@ -2102,6 +2185,10 @@ def create_app() -> DashSPA:
             # Registrar callbacks globales del terminal
             register_global_terminal_callbacks(app)
             logger.info("  ✓ Terminal global registrado")
+
+            # Registrar callbacks globales de i18n (multilenguaje)
+            register_global_i18n_callbacks(app)
+            logger.info("  ✓ i18n multilenguaje registrado")
             
         except ImportError as e:
             logger.error(f"❌ Error registrando páginas: {e}")
@@ -2116,6 +2203,14 @@ def create_app() -> DashSPA:
             dcc.Store(id='auto-connect-on-start', data=False),  # Trigger para auto-conexión al iniciar
             dcc.Store(id='connection-error-trigger', data=False),  # Store para activar alerta de error de conexión
             dcc.Store(id='connection-success-trigger', data=False),  # Store para activar notificación de conexión exitosa
+            # i18n stores
+            dcc.Store(id='lang-store', storage_type='local', data='es'),          # Idioma activo (persiste en localStorage)
+            dcc.Store(id='lang-translations-store', storage_type='memory', data={}),  # Dict de traducciones listo para el cliente
+            dcc.Store(id='lang-apply-done', data=0),  # Output dummy del clientside i18n callback
+            # Theme store (global – usado por dashboard, config y simulador)
+            dcc.Store(id='theme-store', storage_type='local', data='dark'),
+            # Config preferences (persisten en localStorage)
+            dcc.Store(id='autoconn-store', storage_type='local', data=True),
             # Intervals globales
             dcc.Interval(id='ports-interval', interval=2000, n_intervals=0),  # Detección de puertos
             dcc.Interval(id='connection-monitor-interval', interval=5000, n_intervals=0),  # Monitor activo de conexión (cada 5s)
@@ -2145,8 +2240,12 @@ def main():
     logger = setup_logging()
     
     try:
-        # Crear aplicación
-        app = create_app()
+        # Reusar la instancia global ya creada al importar el módulo.
+        # No llamar create_app() de nuevo: registraría callbacks duplicados
+        # lo que provoca KeyError en SPA_NOTIFY (callback_map del 2.º app vacío).
+        global app
+        if app is None:
+            app = create_app()
         
         # Obtener configuración
         config = get_app_config()

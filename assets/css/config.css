@@ -1,0 +1,274 @@
+/* ============================================================
+   assets/css/config.css  –  ZORIA Settings / Configuración
+   ============================================================ */
+
+/* ── Page hero ─────────────────────────────────────────────── */
+.config-hero {
+    background: linear-gradient(135deg, #1a1f2e 0%, #232b3e 60%, #1e293b 100%);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    padding: 2.5rem 2rem 2rem;
+    margin-bottom: 2rem;
+}
+
+.config-hero-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #d4af37, #f7c948);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: #1a1f2e;
+    flex-shrink: 0;
+    box-shadow: 0 4px 16px rgba(212,175,55,0.3);
+}
+
+.config-hero-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #f8f9fa;
+    line-height: 1.2;
+    margin: 0;
+}
+
+.config-hero-subtitle {
+    color: rgba(255,255,255,0.5);
+    font-size: 0.88rem;
+    margin: 0;
+}
+
+/* ── Section cards ─────────────────────────────────────────── */
+.cfg-card {
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.07);
+    border-radius: 16px;
+    padding: 1.75rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+}
+
+.cfg-card-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid rgba(0,0,0,0.07);
+}
+
+.cfg-card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.cfg-card-icon--gold  { background: rgba(212,175,55,0.12); color: #d4af37; }
+.cfg-card-icon--blue  { background: rgba(66,153,225,0.12); color: #4299e1; }
+.cfg-card-icon--green { background: rgba(72,187,120,0.12); color: #48bb78; }
+.cfg-card-icon--purple{ background: rgba(159,122,234,0.12); color: #9f7aea; }
+
+.cfg-card-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.cfg-card-subtitle {
+    font-size: 0.8rem;
+    color: #718096;
+    margin: 0;
+}
+
+/* ── Connection status badge ───────────────────────────────── */
+.cfg-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.6rem 1rem;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 1.5px solid;
+}
+
+.cfg-status-badge--connected {
+    background: rgba(72,187,120,0.1);
+    color: #276749;
+    border-color: rgba(72,187,120,0.35);
+}
+
+.cfg-status-badge--disconnected {
+    background: rgba(113,128,150,0.08);
+    color: #4a5568;
+    border-color: rgba(113,128,150,0.25);
+}
+
+.cfg-status-badge--error {
+    background: rgba(245,101,101,0.1);
+    color: #c53030;
+    border-color: rgba(245,101,101,0.35);
+}
+
+.cfg-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.cfg-status-badge--connected  .cfg-status-dot { background: #48bb78; box-shadow: 0 0 0 3px rgba(72,187,120,0.2); animation: pulse-green 2s infinite; }
+.cfg-status-badge--disconnected .cfg-status-dot { background: #a0aec0; }
+.cfg-status-badge--error .cfg-status-dot { background: #f56565; box-shadow: 0 0 0 3px rgba(245,101,101,0.2); }
+
+@keyframes pulse-green {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(72,187,120,0.2); }
+    50%       { box-shadow: 0 0 0 6px rgba(72,187,120,0.08); }
+}
+
+/* ── Form controls override ────────────────────────────────── */
+.cfg-form-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #4a5568;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.4rem;
+}
+
+/* ── Language cards ────────────────────────────────────────── */
+.lang-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.85rem;
+}
+
+.lang-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 1rem 0.5rem;
+    border-radius: 14px;
+    border: 2px solid rgba(0,0,0,0.08);
+    background: #f7f9fc;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s, transform 0.15s;
+    text-align: center;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.lang-card:hover {
+    background: #eef2f9;
+    border-color: #90aecb;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.lang-card--active {
+    background: linear-gradient(135deg, rgba(212,175,55,0.12), rgba(247,201,72,0.07));
+    border-color: #d4af37 !important;
+    box-shadow: 0 0 0 3px rgba(212,175,55,0.15), 0 4px 12px rgba(212,175,55,0.1);
+    transform: translateY(-2px);
+}
+
+.lang-card__flag {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.lang-card__name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #2d3748;
+    line-height: 1.2;
+}
+
+.lang-card__native {
+    font-size: 0.7rem;
+    color: #718096;
+    line-height: 1;
+}
+
+.lang-card--active .lang-card__name {
+    color: #744210;
+}
+
+.lang-card--active::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 10px;
+    height: 10px;
+    background: #d4af37;
+    border-radius: 50%;
+}
+
+/* ── Theme toggle ──────────────────────────────────────────── */
+.theme-toggle-options {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.theme-option {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 1rem;
+    border-radius: 12px;
+    border: 2px solid rgba(0,0,0,0.08);
+    background: #f7f9fc;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    -webkit-appearance: none;
+    appearance: none;
+    outline: none;
+}
+
+.theme-option:hover {
+    background: #eef2f9;
+    border-color: #90aecb;
+}
+
+.theme-option--active {
+    border-color: #4299e1;
+    background: rgba(66,153,225,0.07);
+}
+
+.theme-option__icon {
+    font-size: 1.5rem;
+}
+
+.theme-option__label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.theme-option--active .theme-option__label { color: #2b6cb0; }
+
+/* ── Feedback alerts ──────────────────────────────────────── */
+.cfg-feedback {
+    border-radius: 10px;
+    padding: 0.65rem 1rem;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ── Scrollbar removal in narrow sidebar──────────────────── */
+.sidebar-content { overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }

@@ -152,7 +152,7 @@
 .window-dragging .window-header {
     cursor: grabbing;
 }
-}
+
 
 .window-title-icon {
     width: 24px;
@@ -858,6 +858,13 @@ body.window-dragging-active * {
 /* =============================================================================
    VENTANA DE CONEXIÓN - Estilos específicos
    ============================================================================= */
+
+/* Fallback de seguridad: si el inline style queda vacío por algún edge case,
+   el modal permanece oculto. El inline style="display:flex" (mayor especificidad)
+   lo sobrescribe cuando el usuario lo abre explícitamente. */
+#connect-modal {
+    display: none;
+}
 
 .connection-window {
     width: 380px;

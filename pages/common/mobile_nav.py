@@ -19,10 +19,11 @@ def mobileNavBar():
             html.Img(
                 src='/assets/logo.png', 
                 alt='ZORIA - Impedance Analysis Platform',
-                title='ZORIA - Analizador de Impedancia ADMX2001',
+                title='',
+                **{'data-i18n-title': 'ui.brand_title'},
                 style={'height': '32px', 'width': 'auto'}
             )
-        ], className='navbar-brand me-lg-5', href='/', title='Ir a Dashboard'),
+        ], className='navbar-brand me-lg-5', href='/', title='', **{'data-i18n-title': 'ui.go_dashboard'}),
         
         # Contenedor de controles
         html.Div([
@@ -32,7 +33,8 @@ def mobileNavBar():
             ], 
             className='navbar-toggler d-lg-none collapsed', 
             type='button',
-            title='Abrir menú de navegación',
+            title='',
+            **{'data-i18n-title': 'ui.open_menu'},
             **{
                 'data-bs-toggle': 'collapse', 
                 'data-bs-target': '#sidebarMenu',
@@ -62,7 +64,8 @@ def mobileSidebarHeader():
                 ], 
                 href='/', 
                 className='btn btn-primary btn-sm d-inline-flex align-items-center',
-                title='Volver al dashboard principal')
+                title='',
+                **{'data-i18n-title': 'ui.back_dashboard'})
             ], className='d-block')
         ], className='d-flex align-items-center'),
 
@@ -72,7 +75,8 @@ def mobileSidebarHeader():
                 ICON.CROSS,
             ], 
             href='#sidebarMenu', 
-            title='Cerrar menú (clickear afuera también cierra)',
+            title='',
+            **{'data-i18n-title': 'ui.close_menu'},
             **{
                 'data-bs-toggle': 'collapse',
                 'aria-label': 'Cerrar menú'
