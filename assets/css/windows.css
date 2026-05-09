@@ -171,8 +171,8 @@
 }
 
 .window-control-btn {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border: none;
     border-radius: 8px;
     display: flex;
@@ -182,7 +182,7 @@
     transition: all 0.2s ease;
     background: rgba(255, 255, 255, 0.1);
     color: white;
-    font-size: 12px;
+    font-size: 0.75rem;
 }
 
 .window-control-btn:hover {
@@ -230,232 +230,484 @@ body.window-dragging-active * {
 }
 
 /* =============================================================================
-   TERMINAL FLOTANTE - Estilos específicos
+   TERMINAL CLI — Instrumento Científico Premium
+   Estética: macOS Terminal × Warp × Tektronix
+   Regla: un solo acento (#00c896), sobriedad, precisión, profundidad real.
    ============================================================================= */
 
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* ── Variables ── */
 .terminal-window {
-    width: 700px;
-    height: 500px;
-    background: #0a0a0a;
-    border: 1px solid #333;
-    border-radius: 12px;
-    overflow: hidden;
+    --t-bg-deepest: #050816;
+    --t-bg-surface: #0a0f1a;
+    --t-bg-elevated: #0e1525;
+    --t-bg-layer4: rgba(12, 18, 30, 0.85);
+    --t-bg-layer3: rgba(10, 15, 26, 0.75);
+    --t-bg-layer2: #050816;
+    --t-bg-layer1: #0e1525;
+    --t-text-primary: #e6edf3;
+    --t-text-secondary: #9fb0c0;
+    --t-text-tertiary: #6b7c93;
+    --t-text-disabled: #3d4a5c;
+    --t-accent: #00c896;
+    --t-accent-glow: #33ffcc;
+    --t-accent-muted: rgba(0, 200, 150, 0.18);
+    --t-ice: #4fd1ff;
+    --t-amber: #d29922;
+    --t-red: #ff6b6b;
+    --t-red-muted: rgba(255, 107, 107, 0.12);
+    --t-border: rgba(255, 255, 255, 0.04);
+    --t-border-bright: rgba(255, 255, 255, 0.08);
+    --t-space-1: 4px;
+    --t-space-2: 8px;
+    --t-space-3: 12px;
+    --t-space-4: 16px;
+    --t-space-5: 24px;
+    --t-space-6: 32px;
+    --t-space-7: 48px;
 }
 
+/* ── Window Shell ── */
+.terminal-window {
+    width: 740px;
+    height: 520px;
+    background: var(--t-bg-deepest);
+    border: 1px solid var(--t-border);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.5),
+        0 25px 80px rgba(0, 0, 0, 0.55),
+        0 0 120px -40px rgba(0, 200, 150, 0.04);
+    animation: terminalWindowIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes terminalWindowIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.96) translateY(8px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* ── Title Bar ── */
 .terminal-window .window-header {
-    background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-    border-bottom: 1px solid #333;
+    background: var(--t-bg-layer4);
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border-bottom: 1px solid var(--t-border);
     padding: 12px 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: relative;
 }
 
-.terminal-window .window-title-icon {
-    width: 28px;
-    height: 28px;
+.terminal-window .window-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(0, 200, 150, 0.12) 50%,
+        transparent 100%);
+}
+
+.terminal-window .window-title {
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.1);
+    gap: 6px;
+    pointer-events: none;
+    color: var(--t-text-tertiary);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    font-family: "SF Mono", "JetBrains Mono", "Fira Code", monospace;
+}
+
+.terminal-window .window-title .fa-terminal {
+    color: var(--t-accent);
+    opacity: 0.4;
+    font-size: 0.6rem;
+}
+
+.terminal-window .window-title .title-device {
+    color: var(--t-text-secondary);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+}
+
+.terminal-window .window-title .title-sep {
+    color: var(--t-text-disabled);
+    opacity: 0.4;
+}
+
+.terminal-window .window-title .title-status {
+    font-weight: 400;
+}
+
+.terminal-window .window-title .title-port {
+    color: var(--t-text-disabled);
+    font-weight: 400;
+}
+
+.terminal-window .window-title-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--t-accent-muted);
+    border: 1px solid rgba(0, 200, 150, 0.15);
     border-radius: 6px;
-    color: #10b981;
+    color: var(--t-accent);
+    font-size: 0.7rem;
 }
 
 .terminal-window .window-title-text {
-    font-weight: 600;
-    font-size: 14px;
-    margin-left: 10px;
+    font-weight: 500;
+    font-size: 0.75rem;
+    margin-left: 0;
+    color: var(--t-text-secondary);
+    letter-spacing: 0.02em;
 }
 
+/* ── Traffic Lights ── */
 .terminal-window .window-controls {
     display: flex;
-    gap: 6px;
+    gap: 8px;
+    flex-shrink: 0;
 }
 
 .terminal-window .window-control-btn {
-    width: 28px;
-    height: 28px;
+    width: 12px;
+    height: 12px;
     border: none;
-    border-radius: 6px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    font-size: 11px;
+    transition: all 0.15s ease;
+    background: rgba(255, 255, 255, 0.06);
+    color: transparent;
+    font-size: 0;
+    padding: 0;
+    position: relative;
+    outline: none;
+    min-width: 12px;
+    min-height: 12px;
+    line-height: 12px;
 }
 
-.terminal-window .window-control-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
+.terminal-window .window-control-btn i {
+    display: none;
 }
 
-.terminal-window .window-control-btn.window-btn-close:hover {
-    background: #ef4444;
+.terminal-window .window-controls:hover .window-control-btn i {
+    display: inline;
+    font-size: 7px;
+    color: rgba(0, 0, 0, 0.5);
 }
 
+.terminal-window .window-controls:hover .window-control-btn:hover i {
+    color: rgba(0, 0, 0, 0.65);
+}
+
+.terminal-window .window-btn-minimize {
+    background: #f5c542;
+    box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1);
+}
+
+.terminal-window .window-btn-minimize:hover {
+    background: #fbbf24;
+    transform: scale(1.15);
+}
+
+.terminal-window .window-btn-maximize {
+    background: #34c759;
+    box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1);
+}
+
+.terminal-window .window-btn-maximize:hover {
+    background: #2db84d;
+    transform: scale(1.15);
+}
+
+.terminal-window .window-btn-close {
+    background: #ff5f57;
+    box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1);
+}
+
+.terminal-window .window-btn-close:hover {
+    background: #ff4943;
+    transform: scale(1.15);
+}
+
+/* ── Terminal Body ── */
 .terminal-window .window-body {
-    background: #0a0a0a;
+    background: var(--t-bg-layer2);
     flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
 }
 
-/* Terminal screen area */
+/* ── Screen Area ── */
 .terminal-float-screen {
     flex: 1;
     overflow-y: auto;
-    padding: 16px;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-family: "SF Mono", "JetBrains Mono", "Fira Code", monospace;
     font-size: 13px;
-    line-height: 1.5;
-    scroll-behavior: smooth; /* Scroll suave automático */
+    line-height: 1.6;
+    scroll-behavior: smooth;
+    color: var(--t-text-secondary);
+    position: relative;
+    background:
+        radial-gradient(ellipse at 50% 0%, rgba(0, 200, 150, 0.02), transparent 50%),
+        radial-gradient(ellipse at 20% 100%, rgba(79, 209, 255, 0.01), transparent 40%),
+        var(--t-bg-layer2);
 }
 
+/* ── Scrollbar ── */
+.terminal-float-screen::-webkit-scrollbar {
+    width: 6px;
+}
+
+.terminal-float-screen::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.terminal-float-screen::-webkit-scrollbar-thumb {
+    background: rgba(107, 124, 147, 0.15);
+    border-radius: 3px;
+}
+
+.terminal-float-screen::-webkit-scrollbar-thumb:hover {
+    background: rgba(107, 124, 147, 0.3);
+}
+
+.terminal-float-screen::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+.terminal-float-screen {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(107, 124, 147, 0.15) transparent;
+}
+
+/* ── Banner ── */
 .terminal-float-screen .terminal-banner {
-    font-size: 12px;
-    line-height: 1.4;
-    margin-bottom: 12px;
-    color: #10b981; /* Verde terminal */
+    font-family: "SF Mono", "JetBrains Mono", "Fira Code", monospace;
+    line-height: 1.45;
+    margin-bottom: 16px;
+    color: var(--t-accent);
+    position: relative;
+    padding-bottom: 16px;
 }
 
+.terminal-float-screen .terminal-banner::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 48px;
+    height: 1px;
+    background: var(--t-accent-muted);
+    border-radius: 0.5px;
+}
+
+/* ── Banner Typography (new structure) ── */
+.terminal-banner-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--t-text-primary);
+    margin-bottom: 2px;
+    letter-spacing: 0.02em;
+}
+
+.terminal-banner-subtitle {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--t-accent);
+    margin-bottom: 4px;
+}
+
+.terminal-banner-meta {
+    font-size: 0.7rem;
+    font-weight: 400;
+    color: var(--t-text-disabled);
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--t-border);
+    margin-bottom: 16px;
+}
+
+.terminal-banner-sep {
+    margin: 0 8px;
+    color: var(--t-text-disabled);
+    opacity: 0.5;
+}
+
+/* ── Terminal Lines ── */
 .terminal-float-screen .terminal-line {
     margin-bottom: 4px;
-    color: #e5e5e5; /* Texto claro por defecto */
+    color: var(--t-text-secondary);
+    animation: terminalLineIn 0.15s ease-out;
 }
 
+@keyframes terminalLineIn {
+    0% {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.terminal-line:hover {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 3px;
+}
+
+/* ── Inline Code ── */
 .terminal-float-screen .terminal-code {
-    background: rgba(16, 185, 129, 0.15);
-    padding: 2px 6px;
+    background: var(--t-accent-muted);
+    padding: 1px 7px;
     border-radius: 4px;
-    font-size: 12px;
-    color: #10b981;
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    font-size: 0.85em;
+    color: var(--t-accent);
+    border: 1px solid rgba(0, 200, 150, 0.15);
+    font-family: inherit;
 }
 
-/* Terminal input area */
+/* ── Input Area ── */
 .terminal-float-input-area {
-    background: #141414;
-    border-top: 1px solid #333;
-    padding: 0;
+    background: var(--t-bg-layer1);
+    border-top: 1px solid var(--t-border);
+    position: relative;
+}
+
+.terminal-float-input-area::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(0, 200, 150, 0.18) 30%,
+        rgba(79, 209, 255, 0.12) 70%,
+        transparent 100%);
 }
 
 .terminal-input-wrapper {
-    background: #1a1a1a;
-    padding: 10px 16px;
-    gap: 8px;
+    display: flex;
+    align-items: center;
+    padding: var(--t-space-3) var(--t-space-5);
+    gap: var(--t-space-2);
 }
 
 .terminal-prompt {
-    color: #10b981;
-    font-weight: bold;
-    font-family: 'Consolas', monospace;
-    font-size: 14px;
-    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-shrink: 0;
 }
 
+.terminal-prompt-icon {
+    color: var(--t-accent);
+    margin-right: 8px;
+    font-size: 0.95rem;
+}
+
+.terminal-prompt-path {
+    color: var(--t-ice);
+    font-weight: 500;
+    font-size: 0.9em;
+}
+
+/* ── Command Input ── */
 .terminal-command-input {
     flex: 1;
-    background: transparent;
-    border: none;
-    color: #e5e5e5;
-    font-family: 'Consolas', monospace;
-    font-size: 14px;
-    outline: none;
-    padding: 0;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    color: var(--t-text-primary) !important;
+    font-family: "SF Mono", "JetBrains Mono", "Fira Code", monospace !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    caret-color: var(--t-accent);
+    padding: 4px 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+}
+
+.terminal-command-input::placeholder {
+    color: var(--t-text-disabled);
+    font-style: italic;
 }
 
 .terminal-command-input:focus {
-    outline: none;
-    box-shadow: none;
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
 }
 
+/* ── Cursor ── */
 .terminal-cursor {
-    color: #10b981;
-    animation: blink 1s step-end infinite;
+    color: var(--t-accent);
+    font-weight: 400;
+    animation: cursorBreathe 1.5s ease-in-out infinite;
+    margin-left: 1px;
+    font-size: 13px;
+    line-height: 1;
 }
 
-@keyframes blink {
-    50% { opacity: 0; }
+@keyframes cursorBreathe {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
 }
 
-/* Terminal footer */
+/* ── Prompt Glow ── */
+.terminal-prompt-symbol {
+    color: var(--t-accent);
+    font-weight: 700;
+    animation: promptGlow 4s ease-in-out infinite;
+}
+
+@keyframes promptGlow {
+    0%, 100% { text-shadow: 0 0 8px rgba(0, 200, 150, 0.2); }
+    50% { text-shadow: 0 0 14px rgba(0, 200, 150, 0.35); }
+}
+
+/* ── Footer ── */
 .terminal-float-footer {
-    background: #1a1a1a;
-    border-top: 1px solid #333;
-    padding: 8px 12px;
+    background: var(--t-bg-layer1);
+    border-top: 1px solid var(--t-border);
 }
 
-.terminal-float-footer-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+/* ── Maximized ── */
+.terminal-window.window-maximized {
+    border-radius: 0 !important;
 }
 
-.terminal-float-quick-group {
-    display: flex;
-    gap: 6px;
-}
-
-.terminal-float-quick-btn {
-    width: 28px;
-    height: 28px;
-    border: none;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    background: rgba(255, 255, 255, 0.05);
-    color: white;
-    font-size: 12px;
-}
-
-.terminal-float-quick-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    transform: translateY(-1px);
-}
-
-/* Colores específicos para iconos de los botones del footer */
-.terminal-float-quick-btn .text-warning {
-    color: #fbbf24 !important;
-}
-
-.terminal-float-quick-btn .text-info {
-    color: #60a5fa !important;
-}
-
-.terminal-float-quick-btn .text-primary {
-    color: #3b82f6 !important;
-}
-
-.terminal-float-quick-btn .text-secondary {
-    color: #9ca3af !important;
-}
-
-.terminal-float-quick-btn .text-danger {
-    color: #f87171 !important;
-}
-
-.terminal-float-quick-btn .text-success {
-    color: #34d399 !important;
-}
-
-.terminal-float-divider {
-    width: 1px;
-    height: 20px;
-    background: rgba(255, 255, 255, 0.1);
-    margin: 0 8px;
-}
-
-/* Terminal maximizado - márgenes horizontales para mejor legibilidad */
 .terminal-window.window-maximized .terminal-float-screen {
     width: 100%;
-    padding: 16px 40px;
+    padding: 32px 48px;
+    font-size: 14px;
 }
 
 .terminal-window.window-maximized .terminal-float-input-area {
@@ -463,197 +715,726 @@ body.window-dragging-active * {
 }
 
 .terminal-window.window-maximized .terminal-input-wrapper {
-    padding: 10px 40px;
+    padding: 12px 48px;
 }
 
 .terminal-window.window-maximized .terminal-float-footer {
     width: 100%;
-    padding: 8px 40px;
+    padding: 8px 48px;
+}
+
+.terminal-window.window-maximized .window-header {
+    padding: 10px 24px;
 }
 
 /* =============================================================================
-   ESTILOS DE CONTENIDO DEL TERMINAL - Texto y respuestas
+   TERMINAL CONTENT — Text Rendering & Hierarchy
    ============================================================================= */
 
-/* Líneas del terminal */
+/* ── Text Hierarchy ──
+   Tier 1 (Primary):    #e6edf3  — prompts, commands, section titles
+   Tier 2 (Secondary):  #9fb0c0  — important output, responses
+   Tier 3 (Tertiary):   #6b7c93  — metadata, labels, supplementary
+   Tier 4 (Disabled):   #3d4a5c  — logs, debug, system text          */
+
 .terminal-line {
-    color: #e5e5e5;
-    margin-bottom: 2px;
+    color: var(--t-text-secondary);
+    margin-bottom: 4px;
+    animation: terminalLineIn 0.15s ease-out;
 }
 
-/* Timestamp en comandos */
+.terminal-line:hover {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 3px;
+}
+
+/* Timestamp — Tier 4 */
 .terminal-timestamp {
-    color: #6b7280;
-    font-size: 11px;
+    color: var(--t-text-disabled);
+    font-size: 0.65rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.03em;
 }
 
-/* Símbolo del prompt */
+/* Prompt — Tier 1 (protagonist) */
 .terminal-prompt-symbol {
-    color: #10b981;
-    font-weight: bold;
+    color: var(--t-accent);
+    font-weight: 700;
+    animation: promptGlow 4s ease-in-out infinite;
 }
 
-/* Icono del prompt */
 .terminal-prompt-icon {
-    color: #10b981;
-    margin-right: 4px;
+    color: var(--t-accent);
+    margin-right: 8px;
+    font-size: 0.75rem;
+    opacity: 0.65;
 }
 
-/* Path del prompt */
 .terminal-prompt-path {
-    color: #3b82f6;
+    color: var(--t-ice);
     font-weight: 500;
 }
 
-/* Texto del comando ingresado */
+/* Command text — Tier 1 */
 .terminal-cmd-text {
-    color: #22d3ee;
+    color: var(--t-text-primary);
     font-weight: 500;
 }
 
-/* Líneas de respuesta del dispositivo */
+/* Response lines — Tier 2 */
 .terminal-response-line {
-    color: #10b981;
-    padding-left: 8px;
+    color: var(--t-text-secondary);
+    padding-left: 16px;
+    border-left: 2px solid transparent;
+    transition: border-left-color 0.15s ease;
 }
 
-/* Respuestas de éxito */
+.terminal-response-line:hover {
+    border-left-color: rgba(107, 124, 147, 0.15);
+    background: rgba(255, 255, 255, 0.015);
+}
+
+/* Success — Tier 2 */
 .terminal-response-success {
-    color: #22c55e !important;
+    color: var(--t-accent) !important;
     font-weight: 500;
 }
 
-/* Respuestas de error */
+/* Error — Tier 2 */
 .terminal-response-error {
-    color: #ef4444 !important;
+    color: var(--t-red) !important;
     font-weight: 500;
 }
 
-/* Respuestas de advertencia */
+/* Warning — Tier 2 */
 .terminal-response-warning {
-    color: #f59e0b !important;
+    color: var(--t-amber) !important;
     font-weight: 500;
 }
 
-/* Texto de error completo */
+/* Error text */
 .terminal-error-text {
-    color: #ef4444;
+    color: var(--t-red);
 }
 
-/* Línea de error */
+/* Error line */
 .terminal-error-line {
-    background: rgba(239, 68, 68, 0.1);
-    padding: 4px 8px;
-    border-left: 3px solid #ef4444;
+    background: var(--t-red-muted);
+    padding: 8px 12px;
+    border-left: 2px solid var(--t-red);
+    border-radius: 0 4px 4px 0;
 }
 
-/* Iconos de estado */
+/* Status icons — no glow */
 .terminal-success-icon {
-    color: #22c55e;
-    margin-right: 4px;
+    color: var(--t-accent);
+    margin-right: 6px;
+    font-size: 0.75rem;
 }
 
 .terminal-error-icon {
-    color: #ef4444;
-    margin-right: 4px;
+    color: var(--t-red);
+    margin-right: 6px;
+    font-size: 0.75rem;
 }
 
 .terminal-warning-icon {
-    color: #f59e0b;
-    margin-right: 4px;
+    color: var(--t-amber);
+    margin-right: 6px;
+    font-size: 0.75rem;
 }
 
-/* Indentación */
+/* Indentation */
 .terminal-indent {
     display: inline-block;
-    width: 8px;
+    width: 16px;
 }
 
-/* Respuestas vacías o sin salida */
+/* Empty response — Tier 4 */
 .terminal-empty-response {
-    color: #6b7280;
+    color: var(--t-text-disabled);
     font-style: italic;
 }
 
-/* Separador entre comandos */
+/* Separator */
 .terminal-separator {
-    height: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    height: 16px;
+    border-bottom: 1px solid var(--t-border);
     margin: 8px 0;
+    position: relative;
 }
 
-/* Área de contenido del terminal */
+.terminal-separator::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+    width: 32px;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(0, 200, 150, 0.15), transparent);
+}
+
+/* Content area */
 .terminal-content-area {
-    margin-top: 8px;
+    margin-top: 16px;
 }
 
-/* Status indicator */
+/* ── Status Indicator ── */
 .status-pulse {
     display: inline-block;
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
-    background: #6b7280;
+    background: var(--t-text-disabled);
+    transition: all 0.3s ease;
+    vertical-align: middle;
 }
 
 .status-pulse.status-connected {
-    background: #22c55e;
-    box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
-    animation: pulse-glow 2s ease-in-out infinite;
+    background: var(--t-accent);
+    box-shadow: 0 0 6px rgba(0, 200, 150, 0.35);
+    animation: statusPulse 3s ease-in-out infinite;
 }
 
 .status-pulse.status-disconnected {
-    background: #ef4444;
+    background: var(--t-red);
+    box-shadow: 0 0 4px rgba(255, 107, 107, 0.3);
 }
 
-@keyframes pulse-glow {
+@keyframes statusPulse {
     0%, 100% {
         opacity: 1;
+        box-shadow: 0 0 6px rgba(0, 200, 150, 0.35);
     }
     50% {
-        opacity: 0.5;
+        opacity: 0.6;
+        box-shadow: 0 0 3px rgba(0, 200, 150, 0.2);
     }
 }
 
 .status-text {
-    color: #9ca3af;
-    font-size: 12px;
+    color: var(--t-text-tertiary);
+    font-size: 0.65rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
 }
 
-/* Clases de color de Bootstrap aplicadas al terminal */
+/* ── Bootstrap Overrides inside Terminal ── */
 .terminal-line .text-success {
-    color: #10b981 !important;
+    color: var(--t-accent) !important;
 }
 
 .terminal-line .text-info {
-    color: #3b82f6 !important;
+    color: var(--t-ice) !important;
 }
 
 .terminal-line .text-warning {
-    color: #f59e0b !important;
+    color: var(--t-amber) !important;
 }
 
 .terminal-line .text-danger {
-    color: #ef4444 !important;
+    color: var(--t-red) !important;
 }
 
 .terminal-line .text-light {
-    color: #e5e5e5 !important;
+    color: var(--t-text-primary) !important;
 }
 
 .terminal-line .text-muted {
-    color: #9ca3af !important;
+    color: var(--t-text-tertiary) !important;
 }
 
 .terminal-line .fw-bold {
     font-weight: 700 !important;
 }
 
-/* Estilo para elementos Small dentro del terminal */
 .terminal-line small,
 .terminal-line .small {
-    color: #d1d5db;
-    font-size: 0.875em;
+    color: var(--t-text-tertiary);
+    font-size: 0.85em;
+}
+
+/* ── All FA icons inside terminal — uniform sizing ── */
+.terminal-line i.fas,
+.terminal-line i.far {
+    font-size: 0.75rem;
+    width: 20px;
+    text-align: center;
+    margin-right: 6px;
+    opacity: 0.65;
+}
+
+/* ── Keyboard Shortcut Badges ── */
+.terminal-kbd {
+    display: inline-block;
+    background: rgba(107, 124, 147, 0.08);
+    border: 1px solid rgba(107, 124, 147, 0.15);
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-size: 0.68rem;
+    color: var(--t-text-tertiary);
+    font-family: inherit;
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+/* ── Window States ── */
+.terminal-window.window-dragging {
+    opacity: 0.98;
+    box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.5),
+        0 40px 80px rgba(0, 0, 0, 0.6),
+        0 0 100px -30px rgba(0, 200, 150, 0.03);
+    transition: none !important;
+}
+
+.terminal-window.window-active {
+    box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.5),
+        0 25px 80px rgba(0, 0, 0, 0.55),
+        0 0 0 1px rgba(0, 200, 150, 0.06);
+}
+
+/* ── Scrollbar (window body) ── */
+.terminal-window .window-body::-webkit-scrollbar,
+.terminal-window .terminal-float-screen::-webkit-scrollbar {
+    width: 6px;
+}
+
+.terminal-window .window-body::-webkit-scrollbar-track,
+.terminal-window .terminal-float-screen::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.terminal-window .window-body::-webkit-scrollbar-thumb,
+.terminal-window .terminal-float-screen::-webkit-scrollbar-thumb {
+    background: rgba(107, 124, 147, 0.1);
+    border-radius: 3px;
+}
+
+.terminal-window .window-body::-webkit-scrollbar-thumb:hover,
+.terminal-window .terminal-float-screen::-webkit-scrollbar-thumb:hover {
+    background: rgba(107, 124, 147, 0.25);
+}
+
+/* =============================================================================
+   STATUS BAR — Persistent Telemetry Strip
+   ============================================================================= */
+
+.terminal-status-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--t-space-3);
+    padding: 6px var(--t-space-4);
+    background: var(--t-bg-layer3);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--t-border);
+    font-family: "SF Mono", "JetBrains Mono", "Fira Code", monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.02em;
+    min-height: 28px;
+    position: relative;
+}
+
+.terminal-status-bar::before {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(0, 200, 150, 0.08) 30%,
+        rgba(79, 209, 255, 0.05) 70%,
+        transparent 100%);
+}
+
+.terminal-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--t-text-tertiary);
+    white-space: nowrap;
+    transition: color 0.2s ease;
+}
+
+.terminal-status-badge[data-state="connected"] {
+    color: var(--t-accent);
+}
+
+.terminal-status-badge[data-state="disconnected"] {
+    color: var(--t-red);
+}
+
+.terminal-status-badge[data-state="streaming"] {
+    color: var(--t-ice);
+}
+
+.terminal-status-badge[data-state="idle"] {
+    color: var(--t-text-disabled);
+    opacity: 0.28;
+}
+
+.terminal-status-badge[data-state="error"] {
+    color: var(--t-amber);
+}
+
+.terminal-badge-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--t-text-disabled);
+    flex-shrink: 0;
+    transition: background 0.2s ease;
+}
+
+.terminal-status-badge[data-state="connected"] .terminal-badge-dot {
+    background: var(--t-accent);
+    animation: statusPulse 3s ease-in-out infinite;
+}
+
+.terminal-status-badge[data-state="disconnected"] .terminal-badge-dot {
+    background: var(--t-red);
+}
+
+.terminal-status-badge[data-state="streaming"] .terminal-badge-dot {
+    background: var(--t-ice);
+    animation: streamingPulse 1.5s ease-in-out infinite;
+}
+
+.terminal-status-badge[data-state="error"] .terminal-badge-dot {
+    background: var(--t-amber);
+    animation: errorPulse 1.5s ease-in-out infinite;
+}
+
+.terminal-status-badge[data-state="idle"] .terminal-badge-dot {
+    background: var(--t-text-disabled);
+    opacity: 0.28;
+}
+
+@keyframes streamingPulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 4px rgba(79, 209, 255, 0.4); }
+    50% { opacity: 0.5; box-shadow: 0 0 2px rgba(79, 209, 255, 0.2); }
+}
+
+@keyframes errorPulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 4px rgba(210, 153, 34, 0.4); }
+    50% { opacity: 0.5; box-shadow: 0 0 2px rgba(210, 153, 34, 0.15); }
+}
+
+.terminal-badge-label {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--t-text-disabled);
+}
+
+.terminal-badge-value {
+    color: inherit;
+}
+
+.terminal-status-sep {
+    color: var(--t-text-disabled);
+    opacity: 0.3;
+    margin: 0 2px;
+}
+
+/* =============================================================================
+   INSTRUMENT GRAMMAR — 6 Visual Roles
+   Command / Section / Value / Label / Meta / Status
+   ============================================================================= */
+
+.t-role-command {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--t-text-primary);
+    opacity: 1;
+}
+
+.t-role-section {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--t-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    opacity: 1;
+}
+
+.t-role-value {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--t-text-secondary);
+    opacity: 0.72;
+}
+
+.t-role-label {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--t-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.48;
+}
+
+.t-role-meta {
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--t-text-disabled);
+    font-variant-numeric: tabular-nums;
+    opacity: 0.28;
+}
+
+.t-role-status {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 1;
+}
+
+.t-role-status.t-status-ok { color: var(--t-accent); }
+.t-role-status.t-status-err { color: var(--t-red); }
+.t-role-status.t-status-warn { color: var(--t-amber); }
+.t-role-status.t-status-info { color: var(--t-ice); }
+
+/* ── Semantic Status Card (for STATUS command) ── */
+.terminal-status-card {
+    border-left: 2px solid var(--t-accent-muted);
+    padding: var(--t-space-2) 0 var(--t-space-2) var(--t-space-3);
+    margin: var(--t-space-2) 0;
+}
+
+.terminal-status-row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--t-space-2);
+    margin-bottom: var(--t-space-1);
+    font-family: "SF Mono", "JetBrains Mono", "Fira Code", monospace;
+}
+
+.terminal-status-row-label {
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--t-text-disabled);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    min-width: 72px;
+    opacity: 0.48;
+}
+
+.terminal-status-row-value {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--t-text-secondary);
+    opacity: 0.72;
+}
+
+/* =============================================================================
+   VISUAL CADENCE — Spacing Between Zones
+   Header:12 → 0 → Status:6 → 0 → Screen:24/16 → 0 → Input:12 → 0 → Footer:8
+   ============================================================================= */
+
+.terminal-window .window-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.terminal-window .window-header {
+    padding: var(--t-space-3) var(--t-space-4);
+    margin-bottom: 0;
+}
+
+.terminal-float-screen {
+    padding: var(--t-space-5) var(--t-space-5) var(--t-space-4);
+}
+
+.terminal-input-wrapper {
+    padding: var(--t-space-3) var(--t-space-5);
+}
+
+.terminal-float-footer {
+    padding: var(--t-space-2) var(--t-space-3);
+}
+
+/* ── Command Group Spacing ── */
+.terminal-line-group {
+    margin-bottom: var(--t-space-2);
+}
+
+.terminal-line-group .terminal-line {
+    margin-bottom: var(--t-space-1);
+}
+
+.terminal-line-group .terminal-line:last-child {
+    margin-bottom: 0;
+}
+
+.terminal-line-group + .terminal-line-group {
+    margin-top: var(--t-space-2);
+}
+
+/* =============================================================================
+   SURFACE DEPTH — 4-Layer System
+   Layer 4 (header): lightest, glass blur(32px) — in header section above
+   Layer 3 (status):  elevated, blur(8px) — in status-bar section above
+   Layer 2 (screen):  deep, gradients — in screen section above
+   Layer 1 (input):   surface level — in input section above
+   ============================================================================= */
+
+/* Surface depth styles are set in their respective component sections above using --t-bg-layerN variables */
+
+/* =============================================================================
+   OVERLAYS — Scanlines + Noise
+   ============================================================================= */
+
+.terminal-float-screen::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1;
+    mix-blend-mode: overlay;
+    opacity: 0.35;
+}
+
+.terminal-float-screen > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* =============================================================================
+   ADAPTIVE UI STATES — [data-system-state]
+   ============================================================================= */
+
+.terminal-window[data-system-state="disconnected"] .terminal-status-bar {
+    background: rgba(255, 107, 107, 0.04);
+}
+
+.terminal-window[data-system-state="disconnected"] .window-header::after {
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 107, 107, 0.08) 50%,
+        transparent 100%);
+}
+
+.terminal-window[data-system-state="streaming"] .terminal-prompt-symbol {
+    animation: promptGlow 1.5s ease-in-out infinite;
+}
+
+.terminal-window[data-system-state="streaming"] .terminal-cursor {
+    animation: cursorBreathe 0.8s ease-in-out infinite;
+}
+
+.terminal-window[data-system-state="error"] .terminal-float-screen::before {
+    opacity: 0.5;
+}
+
+/* =============================================================================
+   GROUPED FOOTER — Left/Right Button Groups
+   ============================================================================= */
+
+.terminal-float-footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.terminal-footer-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.terminal-footer-group-left {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.terminal-footer-group-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.terminal-float-quick-btn {
+    width: auto;
+    min-width: 28px;
+    height: 28px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: transparent;
+    color: var(--t-text-tertiary);
+    font-size: 0.75rem;
+    padding: 0 8px;
+    font-family: "SF Mono", "JetBrains Mono", "Fira Code", monospace;
+}
+
+.terminal-float-quick-btn:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--t-border-bright);
+    color: var(--t-text-secondary);
+}
+
+.terminal-float-quick-btn:active {
+    transform: scale(0.96);
+}
+
+.terminal-float-quick-btn .btn-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.02em;
+    opacity: 0;
+    max-width: 0;
+    overflow: hidden;
+    transition: max-width 0.2s ease, opacity 0.15s ease;
+    white-space: nowrap;
+}
+
+.terminal-float-quick-btn:hover .btn-label {
+    opacity: 0.55;
+    max-width: 60px;
+}
+
+.terminal-float-quick-btn .text-warning {
+    color: var(--t-amber) !important;
+}
+
+.terminal-float-quick-btn .text-info {
+    color: var(--t-ice) !important;
+}
+
+.terminal-float-quick-btn .text-primary {
+    color: #388bfd !important;
+}
+
+.terminal-float-quick-btn .text-secondary {
+    color: var(--t-text-tertiary) !important;
+}
+
+.terminal-float-quick-btn .text-danger {
+    color: var(--t-red) !important;
+}
+
+.terminal-float-quick-btn .text-success {
+    color: var(--t-accent) !important;
+}
+
+.terminal-footer-divider {
+    width: 1px;
+    height: 16px;
+    background: var(--t-border-bright);
+    margin: 0 6px;
 }
 
 /* =============================================================================
@@ -775,11 +1556,11 @@ body.window-dragging-active * {
 }
 
 .wizard-step-label {
-    font-size: 12px;
+    font-size: 13px;
     color: #64748b;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
     transition: all 0.3s ease;
 }
 
@@ -961,8 +1742,8 @@ body.window-dragging-active * {
 .chart-footer .btn-outline-secondary {
     border-color: rgba(255, 255, 255, 0.2);
     color: rgba(255, 255, 255, 0.8);
-    font-size: 12px;
-    padding: 4px 12px;
+    font-size: 0.75rem;
+    padding: 5px 14px;
 }
 
 .chart-footer .btn-outline-secondary:hover {

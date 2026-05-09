@@ -6,8 +6,8 @@
 .calibration-window .form-control {
     border: 2px solid #e2e8f0;
     border-radius: 8px;
-    padding: 10px 14px;
-    font-size: 1rem;
+    padding: 11px 15px;
+    font-size: 1.05rem;
     transition: all 0.2s ease;
 }
 
@@ -30,8 +30,8 @@
 }
 
 #cal-wizard-gain-panel .badge {
-    font-size: 0.9rem;
-    padding: 6px 12px;
+    font-size: 0.95rem;
+    padding: 7px 14px;
 }
 
 /* Botón de iniciar calibración */
@@ -63,9 +63,9 @@
 
 /* Botones de acción en cada paso */
 .wizard-action-btn {
-    min-width: 140px;
+    min-width: 150px;
     font-weight: 600;
-    padding: 10px 20px;
+    padding: 11px 22px;
     border-radius: 8px;
     transition: all 0.2s ease;
 }
@@ -199,13 +199,13 @@
     
     .wizard-step-indicator,
     .wizard-step-number {
-        width: 32px;
-        height: 32px;
-        font-size: 13px;
+        width: 34px;
+        height: 34px;
+        font-size: 14px;
     }
     
     .wizard-step-label {
-        font-size: 10px;
+        font-size: 0.7rem;
     }
     
     .wizard-step-connector {

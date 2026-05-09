@@ -71,7 +71,7 @@ body {
 }
 
 .navbar-brand-text {
-    font-size: 1.25rem;
+    font-size: 1.35rem;
     font-weight: 600;
     margin-left: 0.5rem;
 }
@@ -131,7 +131,7 @@ body {
 
 .sidebar-text {
     margin-left: 0.75rem;
-    font-size: 0.9rem;
+    font-size: 1rem;
 }
 
 /* Secciones del sidebar */
@@ -178,8 +178,8 @@ body {
 /* Badges en sidebar */
 .sidebar-badge {
     margin-left: auto;
-    font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+    padding: 0.3rem 0.6rem;
     border-radius: 0.25rem;
 }
 
@@ -205,7 +205,7 @@ body {
 
 /* Label de sección */
 .sidebar-section-label {
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     letter-spacing: 0.1em;
     font-weight: 600;
 }
@@ -319,7 +319,7 @@ body {
 }
 
 .connection-status-text {
-    font-size: 0.85rem;
+    font-size: 0.95rem;
     font-weight: 500;
     color: rgba(255, 255, 255, 0.9);
     display: block;
@@ -329,7 +329,7 @@ body {
 }
 
 .connection-device-id {
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     color: rgba(255, 255, 255, 0.5);
     white-space: nowrap;
     overflow: hidden;
@@ -383,53 +383,144 @@ body {
 }
 
 /* =============================================================================
-   BOTÓN FLOTANTE DE TERMINAL
+   BOTON FLOTANTE DE TERMINAL — Instrumento Cientifico
    ============================================================================= */
 
 .floating-terminal-container {
     position: fixed;
-    bottom: 30px;
-    right: 30px;
+    bottom: 24px;
+    right: 24px;
     z-index: 1040;
+}
+
+.floating-terminal-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--t-bg-elevated, #0e1525);
+    border: 1px solid rgba(0, 200, 150, 0.12);
+    color: var(--t-text-tertiary, #6b7c93);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+        0 4px 16px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.floating-terminal-btn:hover {
+    transform: scale(1.06);
+    border-color: rgba(0, 200, 150, 0.2);
+    color: var(--t-accent, #00c896);
+    box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(0, 200, 150, 0.15),
+        0 0 20px rgba(0, 200, 150, 0.06);
+}
+
+.floating-terminal-btn:active {
+    transform: scale(0.96);
+}
+
+@keyframes terminal-pulse {
+    0%, 100% {
+        box-shadow:
+            0 4px 16px rgba(0, 0, 0, 0.4),
+            0 0 0 1px rgba(0, 0, 0, 0.3),
+            0 0 16px rgba(0, 200, 150, 0.04);
+    }
+    50% {
+        box-shadow:
+            0 4px 16px rgba(0, 0, 0, 0.4),
+            0 0 0 1px rgba(0, 0, 0, 0.3),
+            0 0 24px rgba(0, 200, 150, 0.08);
+    }
+}
+
+.floating-terminal-btn {
+    animation: terminal-pulse 4s ease-in-out infinite;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .floating-terminal-container {
+        bottom: 16px;
+        right: 16px;
+    }
+    
+    .floating-terminal-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 16px;
+    }
 }
 
 .floating-terminal-btn {
     width: 56px;
     height: 56px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    color: white;
+    background: linear-gradient(135deg, #161b22 0%, #21262d 100%);
+    border: 1px solid rgba(63, 185, 80, 0.2);
+    color: rgba(201, 209, 217, 0.9);
     font-size: 22px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
+    box-shadow:
+        0 4px 16px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.floating-terminal-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.06), transparent 60%);
+    pointer-events: none;
 }
 
 .floating-terminal-btn:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-    background: linear-gradient(135deg, #334155 0%, #475569 100%);
+    transform: scale(1.08);
+    box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(63, 185, 80, 0.3),
+        0 0 30px rgba(63, 185, 80, 0.1);
+    border-color: rgba(63, 185, 80, 0.35);
+    color: #e6edf3;
+}
+
+.floating-terminal-btn:active {
+    transform: scale(0.96);
 }
 
 /* Animación de pulso */
 @keyframes terminal-pulse {
-    0% {
-        box-shadow: 0 4px 15px rgba(0, 255, 100, 0.4);
+    0%, 100% {
+        box-shadow:
+            0 4px 16px rgba(0, 0, 0, 0.4),
+            0 0 0 1px rgba(0, 0, 0, 0.3),
+            0 0 20px rgba(63, 185, 80, 0.08);
     }
     50% {
-        box-shadow: 0 4px 25px rgba(0, 255, 100, 0.6);
-    }
-    100% {
-        box-shadow: 0 4px 15px rgba(0, 255, 100, 0.4);
+        box-shadow:
+            0 4px 16px rgba(0, 0, 0, 0.4),
+            0 0 0 1px rgba(0, 0, 0, 0.3),
+            0 0 30px rgba(63, 185, 80, 0.15);
     }
 }
 
 .floating-terminal-btn {
-    animation: terminal-pulse 2s infinite;
+    animation: terminal-pulse 3s ease-in-out infinite;
 }
 
 /* Responsive */
@@ -461,7 +552,7 @@ body {
     color: rgba(255, 255, 255, 0.75) !important;
     border-radius: 10px;
     margin: 2px 8px;
-    padding: 12px 16px !important;
+    padding: 13px 17px !important;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
@@ -568,28 +659,33 @@ body {
 }
 
 .footer-surface {
-    background: #f8fafc;
-    border-top: 1px solid #e5e7eb;
-    box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.06);
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    border-top: 1px solid #d4af37;
+    box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.06);
+    color: #1f2937;
 }
 
 .footer-top-line {
-    height: 2px;
+    height: 3px;
     width: 100%;
-    background: linear-gradient(90deg, transparent, #d4af37, transparent);
+    background: linear-gradient(90deg, transparent, #d4af37 15%, #d4af37 85%, transparent);
 }
 
-/* Enlaces del footer con efecto hover elegante */
 .footer-link {
     display: flex;
     align-items: center;
-    color: #374151 !important;
+    color: #1f2937 !important;
     text-decoration: none !important;
     padding: 0.6rem 0;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border-left: 2px solid transparent;
     padding-left: 0.5rem;
     margin-left: -0.5rem;
+}
+
+.footer-link span,
+.footer-link * {
+    color: inherit !important;
 }
 
 .footer-link:hover {
@@ -599,59 +695,64 @@ body {
     transform: translateX(8px);
 }
 
-.footer-link:hover i {
+.footer-link:hover i,
+.footer-link:hover span {
     color: #111827 !important;
     transform: scale(1.1);
+}
+
+.footer-link i,
+.footer-kbd i,
+.footer-surface .fa,
+.footer-surface .fab,
+.footer-surface .fas {
+    color: #d4af37 !important;
 }
 
 /* Teclas de atajo estilo premium */
 .footer-kbd {
     background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
-    border: 1px solid #e5e7eb;
+    border: 1.5px solid #d4af37;
     border-radius: 6px;
     box-shadow: 0 2px 4px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
     color: #0f172a;
     font-family: 'SFMono-Regular', 'Consolas', 'Monaco', monospace;
-    font-size: 0.8rem;
-    font-weight: 600;
-    padding: 0.4rem 0.8rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 0.35rem 0.7rem;
     display: inline-block;
     text-align: center;
-    min-width: 2.2rem;
+    min-width: 2rem;
     transition: all 0.3s ease;
+    letter-spacing: 0.03em;
 }
 
 .footer-kbd:hover {
     background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
     color: #0f172a;
-    border-color: #d4af37;
+    border-color: #b8941f;
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(212, 175, 55, 0.35);
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
 }
 
 /* Link de licencia con hover */
 .footer-license-link:hover {
-    color: #b8941f !important;
+    color: #1d4ed8 !important;
     text-decoration: underline !important;
 }
 
 /* Animación del corazón */
 @keyframes heartbeat {
-    0%, 100% {
-        transform: scale(1);
-    }
-    25% {
-        transform: scale(1.1);
-    }
-    50% {
-        transform: scale(1);
-    }
+    0%, 100% { transform: scale(1); }
+    25% { transform: scale(1.1); }
+    50% { transform: scale(1); }
 }
 
 .footer h6 {
     position: relative;
-    padding-bottom: 0.5rem;
+    padding-bottom: 0.6rem;
     display: inline-block;
+    margin-bottom: 0.25rem;
 }
 
 .footer h6::after {
@@ -659,10 +760,36 @@ body {
     position: absolute;
     bottom: 0;
     left: 0;
-    width: 40px;
-    height: 2px;
+    width: 48px;
+    height: 2.5px;
     background: linear-gradient(90deg, #d4af37, #b8941f);
     border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.footer h6:hover::after {
+    width: 100%;
+}
+
+/* Separador entre columnas en desktop */
+@media (min-width: 992px) {
+    .footer .col-lg-2:not(:last-of-type),
+    .footer .col-lg-4:not(:last-of-type) {
+        border-right: 1px solid #e5e7eb;
+        padding-right: 2rem;
+    }
+}
+
+/* Copyright bar */
+.footer-content {
+    font-size: 0.85rem;
+}
+
+/* Badges del footer */
+.footer-surface .badge,
+.footer-surface [class*="badge"] {
+    font-size: 0.75rem;
+    font-weight: 600;
 }
 
 
@@ -760,11 +887,11 @@ body {
     border: 1px solid rgba(255,255,255,0.12);
     background: transparent;
     color: rgba(255,255,255,0.55);
-    font-size: 11px;
+    font-size: 0.75rem;
     cursor: pointer;
     transition: background 0.18s, color 0.18s, border-color 0.18s;
     white-space: nowrap;
-    line-height: 1.4;
+    line-height: 1.5;
 }
 
 .lang-btn:hover {
@@ -786,7 +913,7 @@ body {
 }
 
 .lang-name {
-    font-size: 10.5px;
+    font-size: 0.7rem;
 }
 
 /* En pantallas muy pequeñas ocultamos el nombre y sólo dejamos la bandera */

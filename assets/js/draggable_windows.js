@@ -379,7 +379,7 @@
             updateWindowPosition(element, state);
             element.style.width = (state.prevWidth || state.width) + 'px';
             element.style.height = (state.prevHeight || state.height) + 'px';
-            element.style.borderRadius = '12px';
+            element.style.borderRadius = '14px';
         }
         
         // Actualizar icono

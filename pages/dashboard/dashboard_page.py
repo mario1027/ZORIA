@@ -123,12 +123,12 @@ def create_empty_figure(title="Sin datos", theme='dark'):
             yref="paper",
             x=0.5,
             y=0.5,
-            font=dict(size=14, color=annotation_color)
+            font=dict(size=16, color=annotation_color)
         )],
         plot_bgcolor=bg_color,
         paper_bgcolor=bg_color,
-        font=dict(color=text_color, size=12, family="Arial, sans-serif"),
-        title_font=dict(color=text_color, size=16)
+        font=dict(color=text_color, size=14, family="Arial, sans-serif"),
+        title_font=dict(color=text_color, size=18)
     )
     return fig
 
@@ -265,8 +265,8 @@ def create_bode_plot(param, z_mag, phase, negative_phase=False, theme='dark'):
         height=500,
         plot_bgcolor=bg_color,
         paper_bgcolor=bg_color,
-        font=dict(color=text_color, size=12, family="Arial, sans-serif"),
-        title_font=dict(color=text_color, size=16),
+        font=dict(color=text_color, size=14, family="Arial, sans-serif"),
+        title_font=dict(color=text_color, size=18),
         showlegend=True,
         hovermode="x unified",
         hoverlabel=dict(
@@ -386,8 +386,8 @@ def create_nyquist_plot(z_real, z_imag, freq=None, theme='dark'):
         margin=dict(l=60, r=60, t=60, b=60),
         plot_bgcolor=bg_color,
         paper_bgcolor=bg_color,
-        font=dict(color=text_color, size=12, family="Arial, sans-serif"),
-        title_font=dict(color=text_color, size=16),
+        font=dict(color=text_color, size=14, family="Arial, sans-serif"),
+        title_font=dict(color=text_color, size=18),
         hovermode="closest",
         hoverlabel=dict(
             bgcolor=bg_color,
@@ -504,8 +504,8 @@ def create_bode_plot_from_dataset(dataset, negative_phase=False, theme='dark'):
         height=500,
         plot_bgcolor=bg_color,
         paper_bgcolor=bg_color,
-        font=dict(color=text_color, size=12, family="Arial, sans-serif"),
-        title_font=dict(color=text_color, size=16),
+        font=dict(color=text_color, size=14, family="Arial, sans-serif"),
+        title_font=dict(color=text_color, size=18),
         showlegend=True,
         hovermode="x unified",
         hoverlabel=dict(
@@ -594,8 +594,8 @@ def create_nyquist_plot_from_dataset(dataset, theme='dark'):
         margin=dict(l=60, r=60, t=60, b=60),
         plot_bgcolor=bg_color,
         paper_bgcolor=bg_color,
-        font=dict(color=text_color, size=12, family="Arial, sans-serif"),
-        title_font=dict(color=text_color, size=16),
+        font=dict(color=text_color, size=14, family="Arial, sans-serif"),
+        title_font=dict(color=text_color, size=18),
         hovermode="closest",
         hoverlabel=dict(
             bgcolor=bg_color,

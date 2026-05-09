@@ -36,7 +36,7 @@ def footer():
                                                 '',
                                                 **{'data-i18n': 'footer.description'},
                                                 style={
-                                                    'color': '#4b5563',
+                                                    'color': '#1f2937',
                                                     'fontSize': '0.95rem',
                                                     'lineHeight': '1.7',
                                                     'marginBottom': '1.5rem'
@@ -61,7 +61,7 @@ def footer():
                                                         style={
                                                             'background': 'rgba(212, 175, 55, 0.12)',
                                                             'border': '1px solid rgba(212, 175, 55, 0.35)',
-                                                            'color': '#7c5b00',
+                                                            'color': '#1e40af',
                                                             'padding': '0.4rem 0.9rem',
                                                             'borderRadius': '6px',
                                                             'fontSize': '0.75rem',
@@ -102,7 +102,7 @@ def footer():
                                                             'fontSize': '1rem'
                                                         }
                                                     ),
-                                                    html.Span("Dashboard", style={'fontSize': '0.95rem'})
+                                                    html.Span("Dashboard", style={'color': '#1f2937', 'fontSize': '0.95rem'})
                                                 ],
                                                 href="/",
                                                 className="footer-link"
@@ -117,7 +117,7 @@ def footer():
                                                             'fontSize': '1rem'
                                                         }
                                                     ),
-                                                    html.Span('', **{'data-i18n': 'footer.nav_simulator'}, style={'fontSize': '0.95rem'})
+                                                    html.Span("Simulador RLC", **{'data-i18n': 'footer.nav_simulator'}, style={'color': '#1f2937', 'fontSize': '0.95rem'})
                                                 ],
                                                 href="/simulator",
                                                 className="footer-link"
@@ -132,7 +132,7 @@ def footer():
                                                             'fontSize': '1rem'
                                                         }
                                                     ),
-                                                    html.Span('', **{'data-i18n': 'footer.nav_calib'}, style={'fontSize': '0.95rem'})
+                                                    html.Span("Calibración", **{'data-i18n': 'footer.nav_calib'}, style={'color': '#1f2937', 'fontSize': '0.95rem'})
                                                 ],
                                                 href="/calibration",
                                                 className="footer-link"
@@ -147,7 +147,7 @@ def footer():
                                                             'fontSize': '1rem'
                                                         }
                                                     ),
-                                                    html.Span('', **{'data-i18n': 'footer.nav_docs'}, style={'fontSize': '0.95rem'})
+                                                    html.Span("Documentación", **{'data-i18n': 'footer.nav_docs'}, style={'color': '#1f2937', 'fontSize': '0.95rem'})
                                                 ],
                                                 href="/documentacion",
                                                 className="footer-link"
@@ -183,7 +183,7 @@ def footer():
                                                             'fontSize': '1rem'
                                                         }
                                                     ),
-                                                    html.Span("GitHub", style={'fontSize': '0.95rem'})
+                                                    html.Span("GitHub", style={'color': '#1f2937', 'fontSize': '0.95rem'})
                                                 ],
                                                 href="https://github.com/mario1027/ZORIA",
                                                 target="_blank",
@@ -199,7 +199,7 @@ def footer():
                                                             'fontSize': '1rem'
                                                         }
                                                     ),
-                                                    html.Span("ADMX2001", style={'fontSize': '0.95rem'})
+                                                    html.Span("ADMX2001", style={'color': '#1f2937', 'fontSize': '0.95rem'})
                                                 ],
                                                 href="https://www.analog.com/en/products/admx2001.html",
                                                 target="_blank",
@@ -215,7 +215,7 @@ def footer():
                                                             'fontSize': '1rem'
                                                         }
                                                     ),
-                                                    html.Span("Wiki Analog", style={'fontSize': '0.95rem'})
+                                                    html.Span("Wiki Analog", style={'color': '#1f2937', 'fontSize': '0.95rem'})
                                                 ],
                                                 href="https://wiki.analog.com/eval-admx2001",
                                                 target="_blank",
@@ -247,19 +247,19 @@ def footer():
                                                     html.Div(
                                                         [
                                                             html.Kbd("Alt", className="footer-kbd"),
-                                                            html.Span("+", style={'color': '#9ca3af', 'margin': '0 0.4rem'}),
+                                                            html.Span("+", style={'color': '#6b7280', 'margin': '0 0.4rem'}),
                                                             html.Kbd("T", className="footer-kbd")
                                                         ],
                                                         style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '0.4rem'}
                                                     ),
-                                                    html.Span('', **{'data-i18n': 'footer.terminal'}, style={'color': '#4b5563', 'fontSize': '0.9rem'})
+                                                    html.Span("Terminal", **{'data-i18n': 'footer.terminal'}, style={'color': '#1f2937', 'fontSize': '0.9rem'})
                                                 ],
                                                 style={'marginBottom': '1rem'}
                                             ),
                                             html.Div(
                                                 [
                                                     html.Kbd("Esc", className="footer-kbd", style={'marginBottom': '0.4rem'}),
-                                                    html.Span('', **{'data-i18n': 'footer.close'}, style={'color': '#4b5563', 'fontSize': '0.9rem'})
+                                                    html.Span("Cerrar", **{'data-i18n': 'footer.close'}, style={'color': '#1f2937', 'fontSize': '0.9rem'})
                                                 ],
                                                 style={'marginBottom': '1rem'}
                                             ),
@@ -268,12 +268,12 @@ def footer():
                                                     html.Div(
                                                         [
                                                             html.Kbd("Ctrl", className="footer-kbd"),
-                                                            html.Span("+", style={'color': '#9ca3af', 'margin': '0 0.4rem'}),
+                                                            html.Span("+", style={'color': '#6b7280', 'margin': '0 0.4rem'}),
                                                             html.Kbd("L", className="footer-kbd")
                                                         ],
                                                         style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '0.4rem'}
                                                     ),
-                                                    html.Span('', **{'data-i18n': 'footer.clear'}, style={'color': '#4b5563', 'fontSize': '0.9rem'})
+                                                    html.Span("Limpiar", **{'data-i18n': 'footer.clear'}, style={'color': '#1f2937', 'fontSize': '0.9rem'})
                                                 ]
                                             )
                                         ]
@@ -303,17 +303,17 @@ def footer():
                                             html.Span(
                                                 "© 2024-2026 ZORIA",
                                                 style={
-                                                    'color': '#4b5563',
+                                                    'color': '#1f2937',
                                                     'fontSize': '0.9rem'
                                                 }
                                             ),
-                                            html.Span(" · ", style={'color': '#9ca3af', 'margin': '0 0.5rem'}),
+                                            html.Span(" · ", style={'color': '#6b7280', 'margin': '0 0.5rem'}),
                                             html.A(
                                                 "MIT License",
                                                 href="https://opensource.org/licenses/MIT",
                                                 target="_blank",
                                                 style={
-                                                    'color': '#7c5b00',
+                                                    'color': '#1e40af',
                                                     'textDecoration': 'none',
                                                     'fontSize': '0.9rem',
                                                     'transition': 'all 0.3s ease'
@@ -327,7 +327,7 @@ def footer():
                                         [
                                             html.Span(
                                                 "Mario Montero · Juan Alvarez · Francisco Racedo",
-                                                style={'color': '#4b5563', 'fontSize': '0.9rem'}
+                                                style={'color': '#1f2937', 'fontSize': '0.9rem'}
                                             ),
                                         ],
                                         className='col-lg-6 text-center'

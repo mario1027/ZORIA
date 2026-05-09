@@ -1,0 +1,81 @@
+/* =============================================================================
+   typography-scale.css — Escala tipográfica central de ZORIA
+   Aumenta el tamaño base ~15% usando rem para escalado fluido.
+   No modifica colores, fuentes, layouts ni decoraciones.
+   ============================================================================= */
+
+/* ── Escala global ─────────────────────────────────────────────────────────── */
+html {
+    font-size: 115%;                   /* 18.4px vs 16px default — ~15% más */
+}
+
+body {
+    line-height: 1.5;
+}
+
+/* ── Mínimos de accesibilidad ─────────────────────────────────────────────── */
+/* WCAG 2.1 AA: texto pequeño ≥ 12px, cuerpo ≥ 16px    */
+/* Con html 115%: 0.65rem ≈ 12px, 0.87rem ≈ 16px       */
+
+small, .small, .text-muted, legend, .form-text {
+    font-size: 0.75rem !important;     /* ≈ 13.8px — jamás baja de 12px */
+}
+
+label, .form-label, .btn, input, select, textarea, .form-control {
+    font-size: 0.92rem !important;     /* ≈ 16.9px */
+}
+
+p, li, td, th, .card-text, .alert {
+    font-size: 0.95rem;                /* ≈ 17.5px */
+}
+
+/* ── Ajuste de espaciado proporcional ─────────────────────────────────────── */
+/* Global: aumenta gap y padding ~15% donde el texto crece */
+
+.btn {
+    line-height: 1.45;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+.form-control {
+    line-height: 1.5;
+    padding: 0.5rem 0.75rem;
+}
+
+/* ── Prevenir recorte de texto en contenedores ────────────────────────────── */
+.btn, .btn-label, .nav-link, .sweep-action-btn, .wizard-action-btn,
+.connection-btn, .cal-wizard-control-btn, .window-control-btn {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Gráficos (Plotly) — no escalar más de lo necesario ───────────────────── */
+.js-plotly-plot .plotly .main-svg text {
+    font-size: inherit;                /* Plotly usa su propia escala inline */
+}
+
+/* ── Tablas ────────────────────────────────────────────────────────────────── */
+.table th, .table td {
+    font-size: 0.9rem;
+    padding: 0.6rem 0.75rem;
+}
+
+/* ── Mantener jerarquía visual ───────────────────────────────────────────── */
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.75rem; }
+h4 { font-size: 1.5rem; }
+h5 { font-size: 1.25rem; }
+h6 { font-size: 1.1rem; }
+
+/* En móvil, ajustar sin perder jerarquía */
+@media (max-width: 768px) {
+    h1 { font-size: 2rem; }
+    h2 { font-size: 1.65rem; }
+    h3 { font-size: 1.4rem; }
+    h4 { font-size: 1.25rem; }
+    h5 { font-size: 1.1rem; }
+    h6 { font-size: 1rem; }
+}

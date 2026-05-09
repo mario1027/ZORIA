@@ -276,7 +276,7 @@ def register_simulator_callbacks(app):
                 margin=dict(l=60, r=60, t=50, b=50),
                 plot_bgcolor=bg_color,
                 paper_bgcolor=bg_color,
-                font=dict(color=text_color, size=12, family="Arial, sans-serif")
+                font=dict(color=text_color, size=14, family="Arial, sans-serif")
             )
 
             # Crear gráfico de Nyquist con colormap jet basado en frecuencia
@@ -336,7 +336,7 @@ def register_simulator_callbacks(app):
                 margin=dict(l=60, r=60, t=50, b=50),
                 plot_bgcolor=bg_color,
                 paper_bgcolor=bg_color,
-                font=dict(color=text_color, size=12, family="Arial, sans-serif")
+                font=dict(color=text_color, size=14, family="Arial, sans-serif")
             )
 
             info_content = [
@@ -367,12 +367,12 @@ def register_simulator_callbacks(app):
                     yref="paper",
                     x=0.5,
                     y=0.5,
-                    font=dict(size=14, color=text_color)
+                    font=dict(size=16, color=text_color)
                 )],
                 plot_bgcolor=bg_color,
                 paper_bgcolor=bg_color,
-                font=dict(color=text_color, size=12, family="Arial, sans-serif"),
-                title_font=dict(color=text_color, size=16)
+                font=dict(color=text_color, size=14, family="Arial, sans-serif"),
+                title_font=dict(color=text_color, size=18)
             )
             return empty_fig, empty_fig, html.Div([html.P("Error en el cálculo")])
 

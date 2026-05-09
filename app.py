@@ -76,6 +76,7 @@ EXTERNAL_STYLESHEETS = [
     # Tema VOLT Bootstrap 5 (local)
     "/assets/vendor/css/volt.min.css",
     # Estilos locales de la aplicación
+    "/assets/css/typography-scale.css",
     "/assets/css/navigation.css",
     "/assets/css/mobile-nav.css",
     "/assets/css/scichart-themes.css",
@@ -548,6 +549,22 @@ def register_global_terminal_callbacks(app):
         prevent_initial_call=True
     )
     
+    # Clientside callback: sync data-system-state from badge-connection data-state
+    app.clientside_callback(
+        """
+        function(conState) {
+            var terminal = document.getElementById('command-modal');
+            if (terminal) {
+                terminal.setAttribute('data-system-state', conState || 'idle');
+            }
+            return window.dash_clientside.no_update;
+        }
+        """,
+        Output('terminal-drag-init', 'data', allow_duplicate=True),
+        Input('badge-connection', 'data-state'),
+        prevent_initial_call=True
+    )
+    
     # Callback clientside para auto-scroll del terminal cuando se actualiza el output
     app.clientside_callback(
         """
@@ -574,27 +591,122 @@ def register_global_terminal_callbacks(app):
         Input('command-output', 'children')
     )
     
-    # Callback para actualizar indicador de estado del terminal
+    # Callback para actualizar indicador de estado del terminal + badges + system-state
     @app.callback(
-        [Output('terminal-status-dot', 'className'),
-         Output('terminal-status-text', 'children')],
+        [Output('terminal-status-text', 'children'),
+         Output('terminal-port-label', 'children'),
+         Output('badge-connection-value', 'children'),
+         Output('badge-connection', 'data-state'),
+         Output('badge-port-value', 'children'),
+         Output('badge-port', 'data-state'),
+         Output('badge-baud-value', 'children'),
+         Output('badge-baud', 'data-state'),
+         Output('badge-sweep-value', 'children'),
+         Output('badge-sweep', 'data-state')],
         Input('command-modal', 'style'),
         prevent_initial_call=True
     )
     def update_terminal_status(style):
-        """Actualiza el indicador visual de conexión del terminal"""
-        from lib.device_state import device_state
-        
+        """Actualiza indicador de conexion, badges de telemetria y system-state"""
         if style and style.get('display') == 'flex':
-            # Verificar estado sin forzar (usa caché para evitar conflictos)
             is_conn, status_msg, port = device_state.verify_connection(force=False)
+            is_streaming = device_state.is_streaming_in_progress()
+            is_sweep = device_state.is_sweep_in_progress()
             
-            if is_conn:
-                port_text = f" ({port})" if port else ""
-                return "status-pulse status-connected", f"conectado{port_text}"
+            if is_streaming or is_sweep:
+                status_text = "streaming"
+                port_text = port or "\u2014"
+                con_state = "streaming"
+                port_state = "connected" if port else "idle"
+                sweep_val = "active" if is_sweep else "\u2014"
+                sweep_state = "streaming" if is_sweep else "idle"
+                baud_val = "115200" if is_conn else "\u2014"
+                baud_state = "connected" if is_conn else "idle"
+            elif is_conn:
+                status_text = "connected"
+                port_text = port or "ADMX2001"
+                con_state = "connected"
+                port_state = "connected" if port else "idle"
+                sweep_val = "\u2014"
+                sweep_state = "idle"
+                baud_val = "115200"
+                baud_state = "connected"
             else:
-                return "status-pulse status-disconnected", "desconectado"
-        return "status-pulse", ""
+                status_text = "disconnected"
+                port_text = "\u2014"
+                con_state = "disconnected"
+                port_state = "disconnected"
+                sweep_val = "\u2014"
+                sweep_state = "disconnected"
+                baud_val = "\u2014"
+                baud_state = "disconnected"
+            
+            return (status_text, port_text,
+                    status_text, con_state,
+                    port_text, port_state,
+                    baud_val, baud_state,
+                    sweep_val, sweep_state)
+        
+        return ("", "\u2014",
+                "\u2014", "idle",
+                "\u2014", "idle",
+                "\u2014", "idle",
+                "\u2014", "idle")
+    
+    # Periodic update of terminal status bar badges
+    @app.callback(
+        [Output('terminal-status-text', 'children', allow_duplicate=True),
+         Output('terminal-port-label', 'children', allow_duplicate=True),
+         Output('badge-connection-value', 'children', allow_duplicate=True),
+         Output('badge-connection', 'data-state', allow_duplicate=True),
+         Output('badge-port-value', 'children', allow_duplicate=True),
+         Output('badge-port', 'data-state', allow_duplicate=True),
+         Output('badge-baud-value', 'children', allow_duplicate=True),
+         Output('badge-baud', 'data-state', allow_duplicate=True),
+         Output('badge-sweep-value', 'children', allow_duplicate=True),
+         Output('badge-sweep', 'data-state', allow_duplicate=True)],
+        Input('connection-monitor-interval', 'n_intervals'),
+        prevent_initial_call=True
+    )
+    def update_terminal_badges_periodic(n_intervals):
+        """Actualiza badges de telemetria del terminal periodicamente"""
+        is_conn, status_msg, port = device_state.verify_connection(force=False)
+        is_streaming = device_state.is_streaming_in_progress()
+        is_sweep = device_state.is_sweep_in_progress()
+        
+        if is_streaming or is_sweep:
+            status_text = "streaming"
+            port_text = port or "\u2014"
+            con_state = "streaming"
+            port_state = "connected" if port else "idle"
+            sweep_val = "active" if is_sweep else "\u2014"
+            sweep_state = "streaming" if is_sweep else "idle"
+            baud_val = "115200" if is_conn else "\u2014"
+            baud_state = "connected" if is_conn else "idle"
+        elif is_conn:
+            status_text = "connected"
+            port_text = port or "ADMX2001"
+            con_state = "connected"
+            port_state = "connected" if port else "idle"
+            sweep_val = "\u2014"
+            sweep_state = "idle"
+            baud_val = "115200"
+            baud_state = "connected"
+        else:
+            status_text = "disconnected"
+            port_text = "\u2014"
+            con_state = "disconnected"
+            port_state = "disconnected"
+            sweep_val = "\u2014"
+            sweep_state = "disconnected"
+            baud_val = "\u2014"
+            baud_state = "disconnected"
+        
+        return (status_text, port_text,
+                status_text, con_state,
+                port_text, port_state,
+                baud_val, baud_state,
+                sweep_val, sweep_state)
     
     # Callback de streaming - Poll de nuevas líneas cada 100ms
     @app.callback(
@@ -831,7 +943,7 @@ def register_global_terminal_callbacks(app):
             # Mostrar en terminal que se envió la contraseña (oculta)
             current_output.append(
                 html.Div([
-                    html.Span(f"[{timestamp}] ➜ ", className="terminal-prompt"),
+                    html.Span(f"[{timestamp}] ❯ ", className="terminal-prompt"),
                     html.Span("*" * len(password), className="text-muted"),  # Ocultar contraseña
                     html.Span(" (password)", className="text-muted fst-italic ms-2")
                 ], className="terminal-line")
@@ -1046,7 +1158,7 @@ def register_global_terminal_callbacks(app):
         cmd_block = html.Div([
             html.Div([
                 html.Span(f"[{timestamp}] ", className="terminal-timestamp"),
-                html.Span("➜ ", className="terminal-prompt-symbol"),
+                html.Span("❯ ", className="terminal-prompt-symbol"),
                 html.Span(command, className="terminal-cmd-text")
             ], className="terminal-line")
         ])

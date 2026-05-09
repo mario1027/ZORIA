@@ -45,7 +45,7 @@
 .cal-wizard-title {
     display: flex;
     align-items: center;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     font-weight: 600;
 }
 
@@ -108,8 +108,8 @@
 }
 
 .cal-step-icon {
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
     background: #e2e8f0;
     color: #64748b;
@@ -117,7 +117,7 @@
     align-items: center;
     justify-content: center;
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 1rem;
     transition: all 0.3s ease;
     border: 2px solid transparent;
 }
@@ -152,7 +152,7 @@
 }
 
 .cal-step-label {
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     color: #64748b;
     font-weight: 500;
     white-space: nowrap;
@@ -289,9 +289,9 @@
 }
 
 .cal-indicator {
-    padding: 6px 16px;
+    padding: 7px 18px;
     border-radius: 20px;
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     font-weight: 600;
     color: white;
 }
@@ -403,7 +403,7 @@
     }
     
     .cal-step-label {
-        font-size: 0.65rem;
+        font-size: 0.75rem;
     }
     
     .cal-diagram-container {

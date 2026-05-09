@@ -2,8 +2,8 @@
 .sweep-controls .form-label {
     font-weight: 600;
     color: #495057;
-    margin-bottom: 0.5rem;
-    font-size: 0.875rem;
+    margin-bottom: 0.6rem;
+    font-size: 1rem;
 }
 
 .sweep-controls .form-control {
@@ -22,8 +22,8 @@
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    padding: 0.45rem 0.85rem;
-    font-size: 0.82rem;
+    padding: 0.55rem 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
     border-radius: 0.5rem;
     letter-spacing: 0.01em;
@@ -53,12 +53,12 @@
 
 /* ── Barra de estado del barrido ─────────────────────────────────────────── */
 .sweep-status-bar {
-    padding: 0.55rem 0.85rem;
+    padding: 0.65rem 1rem;
     border-radius: 0.5rem;
     background: #f8f9fa;
     border: 1px solid #e9ecef;
-    font-size: 0.83rem;
-    min-height: 2.5rem;
+    font-size: 0.95rem;
+    min-height: 2.75rem;
 }
 
 /* Estado "corriendo" */
@@ -103,7 +103,7 @@
         margin-bottom: 1rem;
     }
     .sweep-controls .form-label {
-        font-size: 0.8rem;
+        font-size: 0.9rem;
     }
 }
 
