@@ -4,7 +4,6 @@ __pycache__/
 *$py.class
 *.so
 .Python
-build/
 develop-eggs/
 dist/
 downloads/
@@ -16,16 +15,31 @@ lib/python*/
 *.egg
 MANIFEST
 
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# Environment
+# Environments
 venv/
 ENV/
 env/
 .venv
+__pypackages__/
+pip-wheel-metadata/
+.env
+.env.*
 
-# IDE
+# Packaging
+build/
+wheelhouse/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Test and cache
+.pytest_cache/
+.mypy_cache/
+.cache/
+htmlcov/
+coverage.xml
+
+# IDE and editor
 .vscode/
 .idea/
 *.swp
@@ -40,7 +54,8 @@ Thumbs.db
 *.log
 *.csv
 data/
+.opencode
+opencode.json
 
-
-performarce github
-.github
+# Local metadata
+.github/
