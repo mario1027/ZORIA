@@ -90,7 +90,7 @@
         document.addEventListener('keydown', handleKeydown, true);
         
         initialized = true;
-        console.log('[KeyboardShortcuts] ✅ Atajos de teclado inicializados');
+        console.log('[KeyboardShortcuts]  Atajos de teclado inicializados');
         console.log('[KeyboardShortcuts] Disponibles:');
         console.log('  - Alt+T: Abrir/Cerrar Terminal CLI');
     }
@@ -105,7 +105,7 @@
         
         document.removeEventListener('keydown', handleKeydown, true);
         initialized = false;
-        console.log('[KeyboardShortcuts] ⚠️ Atajos de teclado desregistrados');
+        console.log('[KeyboardShortcuts]  Atajos de teclado desregistrados');
     }
     
     // Exportar a window para acceso global

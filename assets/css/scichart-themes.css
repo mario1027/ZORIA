@@ -1,0 +1,204 @@
+/* =============================================================================
+   scichart-themes.css — Temas de gráficos científicos para ZORIA
+   Usa los tokens de zoria-tokens.css para mantener coherencia visual.
+   Soporta dark (default) y light via [data-theme].
+   ============================================================================= */
+
+/* ── DARK THEME (default) ──────────────────────────────────────────────────── */
+
+.sc-chart {
+    --sc-bg: var(--z-chart-bg);
+    --sc-grid: var(--z-chart-grid);
+    --sc-text: var(--z-chart-text);
+    --sc-magnitude: var(--z-chart-magnitude);
+    --sc-phase: var(--z-chart-phase);
+    --sc-nyquist: var(--z-chart-nyquist);
+    --sc-border: var(--z-color-border);
+    --sc-radius: var(--z-radius-md);
+    --sc-font: var(--z-font-sans);
+    --sc-mono: var(--z-font-mono);
+}
+
+/* ── Contenedores de gráficos ───────────────────────────────────────────────── */
+
+.sc-chart .card {
+    background-color: var(--z-color-bg-card);
+    border: 1px solid var(--z-color-border);
+    border-radius: var(--z-radius-md);
+    box-shadow: var(--z-shadow-md);
+    overflow: hidden;
+}
+
+.sc-chart .card-header {
+    background-color: var(--z-color-bg-elevated);
+    border-bottom: 1px solid var(--z-color-border);
+    padding: var(--z-space-3) var(--z-space-4);
+    color: var(--z-color-text-primary);
+    font-family: var(--z-font-sans);
+    font-weight: var(--z-font-semibold);
+}
+
+.sc-chart .card-body {
+    padding: var(--z-space-2);
+    background-color: var(--z-color-bg-card);
+}
+
+.sc-chart .card-body .js-plotly-plot {
+    border-radius: var(--z-radius-sm);
+}
+
+/* ── Gráficos vacíos (sin datos) ───────────────────────────────────────────── */
+
+.sc-chart-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    color: var(--z-color-text-tertiary);
+    font-family: var(--z-font-sans);
+    text-align: center;
+    padding: var(--z-space-8);
+}
+
+.sc-chart-empty-icon {
+    font-size: 3rem;
+    margin-bottom: var(--z-space-4);
+    opacity: 0.4;
+}
+
+.sc-chart-empty-title {
+    font-size: var(--z-text-lg);
+    font-weight: var(--z-font-medium);
+    color: var(--z-color-text-secondary);
+    margin-bottom: var(--z-space-2);
+}
+
+.sc-chart-empty-hint {
+    font-size: var(--z-text-sm);
+    color: var(--z-color-text-tertiary);
+}
+
+/* ── Barra de estado del barrido ─────────────────────────────────────────────── */
+
+.sweep-status-bar {
+    background-color: var(--z-color-bg-elevated);
+    border-color: var(--z-color-border);
+    color: var(--z-color-text-primary);
+}
+
+.sweep-status-bar.running {
+    background-color: var(--z-color-info-subtle);
+    border-color: var(--z-color-primary);
+}
+
+.sweep-status-bar.completed {
+    background-color: var(--z-color-success-subtle);
+    border-color: var(--z-color-success);
+}
+
+.sweep-status-bar.error {
+    background-color: var(--z-color-danger-subtle);
+    border-color: var(--z-color-danger);
+}
+
+/* ── Botones de acción del barrido ──────────────────────────────────────────── */
+
+.sweep-action-btn {
+    border-radius: var(--z-radius-sm);
+    font-weight: var(--z-font-semibold);
+    transition: transform var(--z-duration-fast), box-shadow var(--z-duration-fast), background-color var(--z-duration-normal);
+}
+
+.sweep-action-btn:hover {
+    box-shadow: var(--z-shadow-md);
+}
+
+.sweep-action-btn:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+.sweep-action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.sweep-action-btn:focus-visible {
+    box-shadow: var(--z-focus-ring, 0 0 0 0.2rem rgba(59, 130, 246, 0.5));
+}
+
+/* ── Labels y inputs de sweep ───────────────────────────────────────────────── */
+
+.sweep-controls .form-label {
+    color: var(--z-color-text-secondary);
+    font-weight: var(--z-font-semibold);
+}
+
+.sweep-controls .form-control {
+    background-color: var(--z-color-bg-input);
+    border-color: var(--z-color-border);
+    color: var(--z-color-text-primary);
+    border-radius: var(--z-radius-sm);
+}
+
+.sweep-controls .form-control:focus {
+    border-color: var(--z-color-primary);
+    box-shadow: 0 0 0 0.2rem var(--z-color-primary-subtle);
+}
+
+/* ── Dropdown de Plotly/Dash ────────────────────────────────────────────────── */
+
+.sweep-controls .dash-dropdown,
+.sc-chart .dash-dropdown {
+    --dd-bg: var(--z-color-bg-input);
+    --dd-border: var(--z-color-border);
+    --dd-text: var(--z-color-text-primary);
+}
+
+/* ── Contenedor principal del dashboard ─────────────────────────────────────── */
+
+.sc-chart.sc-theme-dark {
+    background-color: var(--z-color-bg-primary);
+    color: var(--z-color-text-primary);
+}
+
+.sc-chart.sc-theme-light {
+    background-color: var(--z-color-bg-primary);
+    color: var(--z-color-text-primary);
+}
+
+/* ── Hover labels de Plotly ──────────────────────────────────────────────────── */
+
+.sc-chart .hovertext {
+    font-family: var(--z-font-mono) !important;
+    font-size: 0.82rem !important;
+}
+
+/* ── Modo maximizado (ventana arrastrable) ──────────────────────────────────── */
+
+.chart-window .window-body {
+    background-color: var(--z-chart-bg);
+}
+
+.chart-footer .btn-outline-secondary {
+    border-color: var(--z-color-border);
+    color: var(--z-color-text-secondary);
+}
+
+.chart-footer .btn-outline-secondary:hover {
+    border-color: var(--z-color-border-hover);
+    color: var(--z-color-text-primary);
+    background-color: var(--z-color-bg-hover);
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────────── */
+
+@media (max-width: 576px) {
+    .sweep-controls .form-control {
+        font-size: var(--z-text-sm);
+        background-color: var(--z-color-bg-input);
+    }
+}

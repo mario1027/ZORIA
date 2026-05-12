@@ -135,3 +135,27 @@
         margin: 1rem auto;
     }
 }
+
+/* =============================================================================
+   DUAL THEME — Modal de conexión dark mode overrides
+   ============================================================================= */
+
+:not([data-theme="light"]) .modal-connect-compact {
+    background: var(--z-color-bg-card, #1e293b) !important;
+    color: var(--z-color-text-primary, #f8fafc);
+}
+
+:not([data-theme="light"]) .auto-connect-status-area {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    background: var(--z-color-bg-surface, #0f172a) !important;
+}
+
+:not([data-theme="light"]) #detected-port {
+    background: rgba(148, 163, 184, 0.15) !important;
+    color: var(--z-color-text-primary, #f8fafc) !important;
+}
+
+:not([data-theme="light"]) #detected-port.has-device {
+    background: rgba(16, 185, 129, 0.15) !important;
+    color: #10b981 !important;
+}

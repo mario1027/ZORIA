@@ -36,7 +36,7 @@ def language_picker() -> html.Div:
     return html.Div(
         children=[
             html.Span(
-                '🌐',
+                '',
                 className='lang-globe',
                 title='',
                 **{'data-i18n-title': 'ui.lang_picker'},

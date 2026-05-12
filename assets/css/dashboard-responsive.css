@@ -1,15 +1,13 @@
 /* Dashboard Responsive Fixes */
 
-/* Sidebar responsivo */
+/* Sidebar responsivo — el ancho se define en navigation.css (220px) */
 .sidebar {
-    width: 390px;
     min-height: 100vh;
     position: fixed;
     top: 0;
     left: 0;
     z-index: 9999 !important;
     transition: transform 0.3s ease;
-    background-color: #343a40 !important;
 }
 
 /* En desktop, sidebar visible */
@@ -104,17 +102,17 @@
     }
 }
 
-/* En desktop, aplicar margen para sidebar */
+/* En desktop, aplicar margen para sidebar (250px = ancho de sidebar en navigation.css) */
 @media (min-width: 992px) {
     .main-content {
-        margin-left: 280px;
+        margin-left: 250px !important;
         padding: 20px;
     }
     
     /* Footer con margen para no quedar debajo del sidebar */
     .footer {
-        margin-left: 280px !important;
-        width: calc(100% - 280px) !important;
+        margin-left: 250px !important;
+        width: calc(100% - 250px) !important;
         position: relative;
         z-index: 1;
         display: block;
@@ -209,31 +207,26 @@
     }
 }
 
-/* Títulos responsivos */
-h1 {
-    font-size: 2.65rem;
-}
+/* Títulos responsivos — typography-scale.css es la fuente de verdad para h1-h6.
+   Solo sobreescribimos con media queries para breakpoints específicos. */
 
 @media (max-width: 768px) {
-    h1 {
-        font-size: 2.1rem;
-    }
+    h1 { font-size: 2rem; }
+    h2 { font-size: 1.65rem; }
+    h3 { font-size: 1.4rem; }
+    h4 { font-size: 1.25rem; }
+    h5 { font-size: 1.1rem; }
+    h6 { font-size: 1rem; }
 }
 
 @media (max-width: 576px) {
-    h1 {
-        font-size: 1.8rem;
-    }
+    h1 { font-size: 1.8rem; }
+    h2 { font-size: 1.5rem; }
+    h3 { font-size: 1.2rem; }
 }
 
-h5 {
-    font-size: 1.35rem;
-}
-
-@media (max-width: 576px) {
-    h5 {
-        font-size: 1.15rem;
-    }
+@media (max-width: 360px) {
+    h1 { font-size: 1.5rem; }
 }
 
 /* Modales responsivos */
@@ -337,4 +330,13 @@ body {
         font-size: 0.8rem;
         padding: 0.4rem 0.8rem;
     }
+}
+/* ── BODY THEME OVERRIDE (last rule wins over Volt duplication) ── */
+body {
+    background-color: var(--z-color-bg-primary, #0f172a) !important;
+    color: var(--z-color-text-primary, #f8fafc) !important;
+}
+[data-theme="light"] body {
+    background-color: var(--z-color-bg-primary) !important;
+    color: var(--z-color-text-primary) !important;
 }

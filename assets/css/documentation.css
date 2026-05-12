@@ -559,3 +559,45 @@ div:has(> a) > a:hover {
         margin-bottom: 20px;
     }
 }
+
+/* =============================================================================
+   DUAL THEME — Documentation page dark mode overrides
+   ============================================================================= */
+
+:not([data-theme="light"]) .diagram-card {
+    background: var(--z-color-bg-card, #1e293b) !important;
+    border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+:not([data-theme="light"]) .custom-tabs .tab {
+    background-color: var(--z-color-bg-card, #1e293b) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: var(--z-color-primary, #3b82f6) !important;
+}
+
+:not([data-theme="light"]) .custom-tabs .tab--selected {
+    background-color: var(--z-color-primary, #3b82f6) !important;
+    color: #ffffff !important;
+    border-color: var(--z-color-primary, #3b82f6) !important;
+}
+
+:not([data-theme="light"]) .custom-tabs .tabs-container {
+    background-color: var(--z-color-bg-card, #1e293b) !important;
+    border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+:not([data-theme="light"]) .doc-tab {
+    background: var(--z-color-bg-card, #1e293b) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    color: var(--z-color-text-primary, #f8fafc) !important;
+}
+
+:not([data-theme="light"]) .doc-tab:hover {
+    border-color: #d4af37 !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4) !important;
+}
+
+:not([data-theme="light"]) .doc-tab-selected {
+    background: var(--z-color-bg-card, #1e293b) !important;
+    border-color: #d4af37 !important;
+}

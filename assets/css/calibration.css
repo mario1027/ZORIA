@@ -147,7 +147,7 @@
 }
 
 .cal-step-completed .cal-step-icon::before {
-    content: "✓" !important;
+    content: "\f00c" !important;
     font-size: 1.2rem;
 }
 
@@ -343,14 +343,14 @@
     align-items: flex-start;
     gap: 12px;
     padding: 16px;
-    background: #f8fafc;
+    background: var(--z-color-bg-elevated, #f8fafc);
     border-radius: 8px;
     border-left: 4px solid #3b82f6;
     transition: all 0.2s ease;
 }
 
 .cal-guide-item:hover {
-    background: #f1f5f9;
+    background: var(--z-color-bg-card, #f1f5f9);
     transform: translateX(4px);
 }
 
@@ -437,4 +437,25 @@
 
 .cal-wizard-body::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
+}
+
+/* =============================================================================
+   DUAL THEME — Calibration wizard dark mode overrides
+   ============================================================================= */
+
+:not([data-theme="light"]) .cal-wizard-body {
+    background: var(--z-color-bg-primary, #0f172a) !important;
+}
+
+:not([data-theme="light"]) .cal-wizard-progress {
+    background: var(--z-color-bg-card, #1e293b) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+:not([data-theme="light"]) .cal-wizard-body::-webkit-scrollbar-track {
+    background: var(--z-color-bg-surface, #0f172a) !important;
+}
+
+:not([data-theme="light"]) .cal-wizard-body::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.3) !important;
 }

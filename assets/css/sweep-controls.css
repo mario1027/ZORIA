@@ -1,39 +1,60 @@
 /* Estilos específicos para controles de barrido */
 .sweep-controls .form-label {
     font-weight: 600;
-    color: #495057;
-    margin-bottom: 0.6rem;
-    font-size: 1rem;
+    color: var(--z-color-text-secondary, #495057);
+    margin-bottom: var(--z-space-2, 0.5rem);
+    font-size: var(--z-text-sm, 0.8rem);
 }
 
 .sweep-controls .form-control {
-    border-radius: 0.375rem;
-    border: 1px solid #ced4da;
+    border-radius: var(--z-radius-sm, 0.375rem);
+    border: 1px solid var(--z-color-border, #ced4da);
     transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 
 .sweep-controls .form-control:focus {
-    border-color: #80bdff;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    border-color: var(--z-color-primary, #80bdff);
+    box-shadow: 0 0 0 0.2rem var(--z-color-primary-subtle, rgba(0, 123, 255, 0.25));
 }
 
 /* ── Botones de acción del barrido ───────────────────────────────────────── */
 .sweep-action-btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    padding: 0.55rem 1rem;
-    font-size: 0.95rem;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.1rem;
+    font-size: var(--z-text-sm, 0.85rem);
     font-weight: 600;
-    border-radius: 0.5rem;
-    letter-spacing: 0.01em;
+    border-radius: var(--z-radius-sm, 0.5rem);
+    letter-spacing: 0.02em;
     transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.15s ease;
     white-space: nowrap;
+    overflow: visible;
+    min-width: 6rem;
+    line-height: 1.4;
+}
+
+/* Label — siempre visible, hereda color del botón */
+.sweep-action-btn .btn-label {
+    display: inline !important;
+    overflow: visible !important;
+    white-space: nowrap;
+    color: inherit !important;
+    font-size: inherit;
+    font-weight: inherit;
+    pointer-events: none;
+    margin-left: 0.15rem;
+}
+
+.sweep-action-btn i {
+    font-size: 0.9em;
+    flex-shrink: 0;
 }
 
 .sweep-action-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
 .sweep-action-btn:active {
@@ -41,60 +62,47 @@
     box-shadow: none;
 }
 
-/* Etiqueta de texto dentro del botón — oculta en pantallas muy pequeñas */
+.sweep-action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.sweep-action-btn:focus-visible {
+    box-shadow: var(--z-focus-ring, 0 0 0 0.2rem rgba(59, 130, 246, 0.5));
+}
+
+/* Etiqueta de texto dentro del botón — oculta solo en pantallas muy pequeñas */
 @media (max-width: 400px) {
     .sweep-action-btn .btn-label {
-        display: none;
+        display: none !important;
     }
     .sweep-action-btn {
         padding: 0.45rem 0.7rem;
+        min-width: 0;
     }
 }
 
-/* ── Barra de estado del barrido ─────────────────────────────────────────── */
-.sweep-status-bar {
-    padding: 0.65rem 1rem;
-    border-radius: 0.5rem;
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    font-size: 0.95rem;
-    min-height: 2.75rem;
-}
-
-/* Estado "corriendo" */
-.sweep-status-bar.running {
-    background: #e8f4fd;
-    border-color: #bee5fb;
-}
-
-.sweep-status-bar.running #sweep-status-icon {
-    color: #0d6efd !important;
-    animation: pulse-icon 1s ease-in-out infinite;
-}
-
-/* Estado "completado" */
-.sweep-status-bar.completed {
-    background: #d1fae5;
-    border-color: #a7f3d0;
-}
-
-.sweep-status-bar.completed #sweep-status-icon {
-    color: #059669 !important;
-}
-
-/* Estado "error" */
-.sweep-status-bar.error {
-    background: #fee2e2;
-    border-color: #fca5a5;
-}
-
-.sweep-status-bar.error #sweep-status-icon {
-    color: #dc2626 !important;
+/* En pantallas medianas, reducir padding pero mantener el label */
+@media (max-width: 576px) {
+    .sweep-action-btn {
+        padding: 0.45rem 0.8rem;
+        min-width: 5rem;
+        font-size: var(--z-text-xs, 0.75rem);
+    }
 }
 
 @keyframes pulse-icon {
     0%, 100% { opacity: 1; }
     50%       { opacity: 0.4; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sweep-status-bar.running #sweep-status-icon {
+        animation: none;
+        opacity: 1;
+    }
 }
 
 /* ── Ajustes responsive ──────────────────────────────────────────────────── */
@@ -120,4 +128,127 @@
     .sweep-controls .card-body {
         padding: 1.5rem 1rem;
     }
+}
+
+/* ── Gráficos Plotly: fondo consistente con el tema ───────────────── */
+/* El gráfico vacío de Plotly tiene fondo blanco por defecto —
+   aquí forzamos el color de fondo del contenedor antes de que Plotly renderice */
+.dash-graph {
+    background-color: #0D213A;  /* dark chart_bg */
+}
+
+[data-theme="light"] .dash-graph {
+    background-color: #FFFFFF;
+}
+
+/* El contenedor inner de Plotly también puede tener fondo blanco */
+.dash-graph .js-plotly-plot,
+.dash-graph .plot-container {
+    background-color: inherit;
+}
+
+/* SVG background color override cuando el bg no se ha cargado */
+.dash-graph svg.main-svg {
+    background: transparent !important;
+}
+
+/* Plotly renderiza un <rect class="bg"> para el paper_bgcolor.
+   Lo forzamos a heredar del tema en lugar del valor de la figura */
+:not([data-theme="light"]) .dash-graph svg.main-svg rect.bg {
+    fill: #0D213A !important;
+}
+[data-theme="light"] .dash-graph svg.main-svg rect.bg {
+    fill: #FFFFFF !important;
+}
+
+/* ── Botones de acción — override de colores Bootstrap ─────────────────────
+   Reemplaza btn-primary/danger/success/outline-info por estilos semánticos
+   propios, más sutiles y consistentes con el sistema de diseño.               */
+
+/* Iniciar (btn-primary) — azul sutil */
+.sweep-action-btn.btn-primary {
+    background-color: rgba(59, 130, 246, 0.15) !important;
+    border: 1px solid rgba(59, 130, 246, 0.5) !important;
+    color: #60a5fa !important;
+}
+.sweep-action-btn.btn-primary:hover:not(:disabled) {
+    background-color: rgba(59, 130, 246, 0.28) !important;
+    border-color: rgba(59, 130, 246, 0.75) !important;
+    color: #93c5fd !important;
+}
+
+/* Detener (btn-danger) — rojo sutil */
+.sweep-action-btn.btn-danger {
+    background-color: rgba(239, 68, 68, 0.12) !important;
+    border: 1px solid rgba(239, 68, 68, 0.45) !important;
+    color: #f87171 !important;
+}
+.sweep-action-btn.btn-danger:hover:not(:disabled) {
+    background-color: rgba(239, 68, 68, 0.25) !important;
+    border-color: rgba(239, 68, 68, 0.7) !important;
+    color: #fca5a5 !important;
+}
+
+/* Guardar (btn-success) — verde sutil */
+.sweep-action-btn.btn-success {
+    background-color: rgba(34, 197, 94, 0.12) !important;
+    border: 1px solid rgba(34, 197, 94, 0.45) !important;
+    color: #4ade80 !important;
+}
+.sweep-action-btn.btn-success:hover:not(:disabled) {
+    background-color: rgba(34, 197, 94, 0.25) !important;
+    border-color: rgba(34, 197, 94, 0.7) !important;
+    color: #86efac !important;
+}
+
+/* Cargar (btn-outline-info) — cyan/slate sutil */
+.sweep-action-btn.btn-outline-info {
+    background-color: transparent !important;
+    border: 1px solid rgba(148, 163, 184, 0.4) !important;
+    color: #94a3b8 !important;
+}
+.sweep-action-btn.btn-outline-info:hover:not(:disabled) {
+    background-color: rgba(148, 163, 184, 0.12) !important;
+    border-color: rgba(148, 163, 184, 0.65) !important;
+    color: #cbd5e1 !important;
+}
+
+/* Light mode — mismos colores semánticos pero con fondo ligeramente más opaco */
+[data-theme="light"] .sweep-action-btn.btn-primary {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+    border-color: rgba(59, 130, 246, 0.45) !important;
+    color: #2563eb !important;
+}
+[data-theme="light"] .sweep-action-btn.btn-primary:hover:not(:disabled) {
+    background-color: rgba(59, 130, 246, 0.2) !important;
+    color: #1d4ed8 !important;
+}
+
+[data-theme="light"] .sweep-action-btn.btn-danger {
+    background-color: rgba(239, 68, 68, 0.08) !important;
+    border-color: rgba(220, 38, 38, 0.4) !important;
+    color: #dc2626 !important;
+}
+[data-theme="light"] .sweep-action-btn.btn-danger:hover:not(:disabled) {
+    background-color: rgba(220, 38, 38, 0.18) !important;
+    color: #b91c1c !important;
+}
+
+[data-theme="light"] .sweep-action-btn.btn-success {
+    background-color: rgba(22, 163, 74, 0.08) !important;
+    border-color: rgba(22, 163, 74, 0.4) !important;
+    color: #16a34a !important;
+}
+[data-theme="light"] .sweep-action-btn.btn-success:hover:not(:disabled) {
+    background-color: rgba(22, 163, 74, 0.18) !important;
+    color: #15803d !important;
+}
+
+[data-theme="light"] .sweep-action-btn.btn-outline-info {
+    border-color: rgba(71, 85, 105, 0.35) !important;
+    color: #475569 !important;
+}
+[data-theme="light"] .sweep-action-btn.btn-outline-info:hover:not(:disabled) {
+    background-color: rgba(71, 85, 105, 0.08) !important;
+    color: #334155 !important;
 }

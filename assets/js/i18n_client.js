@@ -245,7 +245,13 @@
     }
 
     var dict = window.ZORIA_TRANSLATIONS;
-    if (!dict || Object.keys(dict).length === 0) return;
+    /* Si no hay traducciones, usar fallback embebido (i18n_fallback_es.js) */
+    if (!dict || Object.keys(dict).length === 0) {
+      if (window._ZORIA_FALLBACK_TRANSLATIONS) {
+        window.ZORIA_TRANSLATIONS = window._ZORIA_FALLBACK_TRANSLATIONS;
+        dict = window.ZORIA_TRANSLATIONS;
+      } else { return; }
+    }
 
     /* Levantar el bloqueo anti-FOUC SOLO después de que React ya renderizó.
        _reactRendered se marca a true en el MutationObserver (primer render de Dash).
@@ -511,8 +517,10 @@
   function onDomReady() {
     startObserver();
     _bindSidebarConfigButton();
-    /* Aplica inmediatamente si ya tenemos traducciones del caché */
-    if (Object.keys(window.ZORIA_TRANSLATIONS).length > 0) {
+    /* Aplica inmediatamente si ya tenemos traducciones del caché o fallback */
+    var hasTrans = Object.keys(window.ZORIA_TRANSLATIONS).length > 0;
+    var hasFallback = !!(window._ZORIA_FALLBACK_TRANSLATIONS);
+    if (hasTrans || hasFallback) {
       applyTranslations(_currentLang);
     }
     /* Retries para capturar renders tardíos de Dash.
@@ -567,5 +575,34 @@
     }
     return window.dash_clientside.no_update;
   };
+
+  window.dash_clientside.zoria.applyTheme = function (theme) {
+    var newTheme = (theme === 'light') ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    return newTheme;
+  };
+
+  /* ── 9. Keyboard shortcuts ─────────────────────────────────────────────── */
+  document.addEventListener('keydown', function (e) {
+    /* Ctrl+Enter → Start sweep */
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      var sweepBtn = document.getElementById('sweep-btn');
+      if (sweepBtn && !sweepBtn.disabled) {
+        e.preventDefault();
+        sweepBtn.click();
+      }
+    }
+    /* Escape → Close sweep modal if open */
+    if (e.key === 'Escape') {
+      var sweepModal = document.getElementById('sweep-modal');
+      if (sweepModal && sweepModal.style.display !== 'none') {
+        var cancelBtn = document.getElementById('cancel-sweep-modal-btn');
+        if (cancelBtn) {
+          e.preventDefault();
+          cancelBtn.click();
+        }
+      }
+    }
+  });
 
 })();

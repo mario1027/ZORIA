@@ -130,7 +130,7 @@ def probe_range(device, label, f_start_hz, f_end_hz, n_list, verbose=False):
         # Si recibimos 0 o muy pocos (<10) dos veces seguidas, el device
         # está en mal estado — abortar el rango.
         if n_got <= 10 and n_req >= 50:
-            print(f'  {YELLOW}⚠ Dispositivo en mal estado — abortando rango{RESET}')
+            print(f'  {YELLOW} Dispositivo en mal estado — abortando rango{RESET}')
             _abort(device)
             time.sleep(1.0)
             break

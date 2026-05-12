@@ -37,8 +37,8 @@ CYAN    = '\033[96m'
 BOLD    = '\033[1m'
 RESET   = '\033[0m'
 
-PASSED = f'{GREEN}✅ PASS{RESET}'
-FAILED = f'{RED}❌ FAIL{RESET}'
+PASSED = f'{GREEN} PASS{RESET}'
+FAILED = f'{RED} FAIL{RESET}'
 SKIP   = f'{YELLOW}⏭  SKIP{RESET}'
 
 # ---------------------------------------------------------------------------
@@ -180,7 +180,7 @@ def suite_a_acquisition_time():
             assert min_ms <= ms <= max_ms, (
                 f'{desc}: {ms:.1f} ms fuera de rango [{min_ms}, {max_ms}]'
             )
-            R.ok(f'A2.{cases.index((freq,min_ms,max_ms,desc))+1:02d}  {desc}: {ms:.1f} ms ✓')
+            R.ok(f'A2.{cases.index((freq,min_ms,max_ms,desc))+1:02d}  {desc}: {ms:.1f} ms ')
         except AssertionError as e:
             R.fail(f'A2 {desc}', str(e))
 
@@ -846,14 +846,14 @@ def main():
                     port = usb[0].device
 
         if not port:
-            print(f'  {YELLOW}⚠️  No se detectó puerto — Suite B omitida{RESET}')
+            print(f'  {YELLOW}  No se detectó puerto — Suite B omitida{RESET}')
             print('     Conecta el ADMX2001 o usa --port /dev/ttyUSBx')
         else:
             print(f'  Conectando a {port}…')
             try:
                 from lib.admx2001 import ADMX2001
                 device = ADMX2001(port)
-                print(f'  ✅ Conectado a {port}\n')
+                print(f'   Conectado a {port}\n')
 
                 # Si --full, añadir banda de baja frecuencia
                 if args.full and not args.quick:
@@ -873,7 +873,7 @@ def main():
                 R.fail('Conexión hardware', str(e))
                 traceback.print_exc()
     else:
-        print(f'\n  {YELLOW}ℹ️  Suite B (hardware) omitida — usa --hw para ejecutarla{RESET}')
+        print(f'\n  {YELLOW}ℹ  Suite B (hardware) omitida — usa --hw para ejecutarla{RESET}')
         print(f'     Hardware detectado en: /dev/ttyUSB0' if True else '')
 
     # ── RESUMEN ──────────────────────────────────────────────────────────

@@ -114,7 +114,7 @@
         // Configurar controles de ventana
         setupWindowControls(windowId);
         
-        console.log(`[DraggableWindows] ✅ Ventana ${windowId} inicializada correctamente`);
+        console.log(`[DraggableWindows]  Ventana ${windowId} inicializada correctamente`);
         
         return true;
     }
@@ -307,7 +307,7 @@
         
         // Marcar como configurado
         element.dataset.controlsConfigured = 'true';
-        console.log(`[DraggableWindows] ✅ Controles configurados para: ${windowId}`);
+        console.log(`[DraggableWindows]  Controles configurados para: ${windowId}`);
     }
     
     /**
@@ -399,9 +399,107 @@
         const winData = windows.get(windowId);
         if (!winData) return;
         
+        // Restore focus to previously focused element
+        if (winData.previousFocus) {
+            try { winData.previousFocus.focus(); } catch(e) {}
+            winData.previousFocus = null;
+        }
+        
         winData.element.style.display = 'none';
+        disableFocusTrap(windowId);
         console.log(`[DraggableWindows] Ventana cerrada: ${windowId}`);
     }
+    
+    // ── Focus Trapping ────────────────────────────────────────────────────────
+    // When a draggable window is open, Tab/Shift+Tab should cycle only within it.
+    // Escape should close the topmost window.
+    
+    let focusTrapHandler = null;
+    let escapeHandler = null;
+    let trappedWindowId = null;
+    
+    function getFocusableElements(container) {
+        return Array.from(container.querySelectorAll(
+            'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), ' +
+            'select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )).filter(function(el) {
+            return el.offsetWidth > 0 && el.offsetHeight > 0;
+        });
+    }
+    
+    function enableFocusTrap(windowId) {
+        const winData = windows.get(windowId);
+        if (!winData || !winData.element) return;
+        
+        // Save previously focused element
+        winData.previousFocus = document.activeElement;
+        trappedWindowId = windowId;
+        
+        // Focus trap handler
+        focusTrapHandler = function(e) {
+            if (e.key !== 'Tab') return;
+            var focusable = getFocusableElements(winData.element);
+            if (focusable.length === 0) return;
+            
+            var first = focusable[0];
+            var last = focusable[focusable.length - 1];
+            
+            if (e.shiftKey) {
+                if (document.activeElement === first || !winData.element.contains(document.activeElement)) {
+                    e.preventDefault();
+                    last.focus();
+                }
+            } else {
+                if (document.activeElement === last || !winData.element.contains(document.activeElement)) {
+                    e.preventDefault();
+                    first.focus();
+                }
+            }
+        };
+        
+        // Escape handler
+        escapeHandler = function(e) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                closeWindow(trappedWindowId);
+            }
+        };
+        
+        document.addEventListener('keydown', focusTrapHandler, true);
+        document.addEventListener('keydown', escapeHandler, true);
+        
+        // Focus first element
+        var focusable = getFocusableElements(winData.element);
+        if (focusable.length > 0) {
+            setTimeout(function() { focusable[0].focus(); }, 100);
+        }
+    }
+    
+    function disableFocusTrap(windowId) {
+        if (trappedWindowId !== windowId) return;
+        if (focusTrapHandler) {
+            document.removeEventListener('keydown', focusTrapHandler, true);
+            focusTrapHandler = null;
+        }
+        if (escapeHandler) {
+            document.removeEventListener('keydown', escapeHandler, true);
+            escapeHandler = null;
+        }
+        trappedWindowId = null;
+    }
+    
+    // ── Touch cancel handling ──────────────────────────────────────────────
+    // Clean up drag state if touch is cancelled (notification, system gesture)
+    document.addEventListener('touchcancel', function(e) {
+        if (activeWindow) {
+            var winData = windows.get(activeWindow);
+            if (winData && winData.state && winData.state.isDragging) {
+                winData.state.isDragging = false;
+                document.body.classList.remove('window-dragging-active');
+            }
+        }
+    }, { passive: true });
     
     /**
      * Muestra una ventana

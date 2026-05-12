@@ -51,8 +51,8 @@ BOLD   = '\033[1m'
 DIM    = '\033[2m'
 RESET  = '\033[0m'
 
-PASSED = f'{GREEN}✅ PASS{RESET}'
-FAILED = f'{RED}❌ FAIL{RESET}'
+PASSED = f'{GREEN} PASS{RESET}'
+FAILED = f'{RED} FAIL{RESET}'
 SKIP   = f'{YELLOW}⏭  SKIP{RESET}'
 
 # ---------------------------------------------------------------------------
@@ -755,16 +755,16 @@ def main():
     # Detectar y conectar al hardware
     port = args.port or _detect_port()
     if not port:
-        print(f'\n{RED}❌ No se detectó hardware. Conecta el ADMX2001 o usa --port{RESET}')
+        print(f'\n{RED} No se detectó hardware. Conecta el ADMX2001 o usa --port{RESET}')
         sys.exit(1)
 
     print(f'\n  Conectando a {port}…')
     try:
         from lib.admx2001 import ADMX2001
         device = ADMX2001(port)
-        print(f'  {GREEN}✅ Conectado a {port}{RESET}')
+        print(f'  {GREEN} Conectado a {port}{RESET}')
     except Exception as e:
-        print(f'\n{RED}❌ Error conectando a {port}: {e}{RESET}')
+        print(f'\n{RED} Error conectando a {port}: {e}{RESET}')
         traceback.print_exc()
         sys.exit(1)
 

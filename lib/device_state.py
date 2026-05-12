@@ -277,23 +277,23 @@ class DeviceState:
                         if time.time() - start_time > max_time:
                             # Solo reportar timeout si NO vimos el prompt (no terminamos correctamente)
                             if not prompt_seen:
-                                logger.error(f"[Streaming] ⏱️ Timeout global después de {line_count} líneas (sin ver prompt)")
+                                logger.error(f"[Streaming] ⏱ Timeout global después de {line_count} líneas (sin ver prompt)")
                                 with self._streaming_lock:
                                     self._streaming_buffer.append({
                                         'type': 'error',
-                                        'line': f'⏱️ Timeout: esperaba prompt después de {line_count} líneas'
+                                        'line': f'⏱ Timeout: esperaba prompt después de {line_count} líneas'
                                     })
                             break
                         
                         # Leer datos disponibles
                         if device.serial.in_waiting > 0:
                             chunk = device.serial.read(device.serial.in_waiting).decode('utf-8', errors='ignore')
-                            logger.info(f"[Streaming] 📦 Chunk ({len(chunk)} bytes): {repr(chunk[:200])}")
+                            logger.info(f"[Streaming]  Chunk ({len(chunk)} bytes): {repr(chunk[:200])}")
                             response_buffer += chunk
                             
                             # Detectar prompt EN EL BUFFER (puede no tener \n después)
                             if 'ADMX2001>' in response_buffer:
-                                logger.info(f"[Streaming] ⏹️ Prompt detectado en el buffer")
+                                logger.info(f"[Streaming] ⏹ Prompt detectado en el buffer")
                                 prompt_seen = True
                             
                             # Procesar líneas completas
@@ -303,19 +303,19 @@ class DeviceState:
                                 # Limpiar códigos ANSI y espacios
                                 line_clean = ansi_escape.sub('', line).strip()
                                 
-                                logger.info(f"[Streaming] 🔍 Procesando línea: '{line_clean[:100]}'")
+                                logger.info(f"[Streaming]  Procesando línea: '{line_clean[:100]}'")
                                 
                                 # PRIMERA LÍNEA: Filtrar eco del comando
                                 if not first_line_processed:
                                     first_line_processed = True
                                     # Caso 1: Línea completa es el eco
                                     if line_clean == cmd_echo:
-                                        logger.info(f"[Streaming] ✂️ Eco exacto detectado y filtrado: '{line_clean}'")
+                                        logger.info(f"[Streaming]  Eco exacto detectado y filtrado: '{line_clean}'")
                                         continue
                                     # Caso 2: Línea empieza con el eco (sin salto de línea después del eco)
                                     elif line_clean.startswith(cmd_echo):
                                         line_clean = line_clean[len(cmd_echo):].strip()
-                                        logger.info(f"[Streaming] ✂️ Eco removido del inicio, línea resultante: '{line_clean[:80]}'")
+                                        logger.info(f"[Streaming]  Eco removido del inicio, línea resultante: '{line_clean[:80]}'")
                                         # Si después de remover el eco queda vacío, continuar
                                         if not line_clean:
                                             continue
@@ -334,10 +334,10 @@ class DeviceState:
                                             'index': line_count
                                         })
                                     line_count += 1
-                                    logger.info(f"[Streaming] ✅ Línea {line_count} agregada: '{line_clean[:80]}'")
+                                    logger.info(f"[Streaming]  Línea {line_count} agregada: '{line_clean[:80]}'")
                                 else:
                                     # Log líneas vacías para debugging
-                                    logger.warning(f"[Streaming] ⚠️ Línea vacía detectada y OMITIDA (después de limpieza). Línea original: {repr(line)}")
+                                    logger.warning(f"[Streaming]  Línea vacía detectada y OMITIDA (después de limpieza). Línea original: {repr(line)}")
                             
                             # Si vimos el prompt, procesar buffer restante ANTES de salir
                             if prompt_seen and response_buffer:
@@ -351,17 +351,17 @@ class DeviceState:
                                             'index': line_count
                                         })
                                     line_count += 1
-                                    logger.info(f"[Streaming] ✅ Línea final {line_count} agregada desde buffer restante")
-                                logger.info(f"[Streaming] 🏁 Finalizado correctamente - Total: {line_count} líneas")
+                                    logger.info(f"[Streaming]  Línea final {line_count} agregada desde buffer restante")
+                                logger.info(f"[Streaming]  Finalizado correctamente - Total: {line_count} líneas")
                                 break
 
                         # Si se pidió detener, salir cuando no haya datos pendientes
                         if self._stop_requested.is_set() and self._stop_requested_at:
                             if time.time() - self._stop_requested_at > 1.5:
-                                logger.info("[Streaming] 🛑 Stop solicitado - timeout de salida")
+                                logger.info("[Streaming]  Stop solicitado - timeout de salida")
                                 break
                         if self._stop_requested.is_set() and device.serial.in_waiting == 0:
-                            logger.info("[Streaming] 🛑 Stop solicitado - finalizando lectura")
+                            logger.info("[Streaming]  Stop solicitado - finalizando lectura")
                             break
                         else:
                             # No hay datos, esperar

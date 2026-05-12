@@ -366,7 +366,7 @@ class ADMX2001:
             # Verificar si hay prompt ADMX2001> o respuesta a *idn
             if 'ADMX2001>' in prompt_response or 'Analog Devices' in prompt_response:
                 self.is_connected = True
-                logger.info(f"✅ Conectado exitosamente @ {baudrate} baud")
+                logger.info(f" Conectado exitosamente @ {baudrate} baud")
                 return
             else:
                 raise ConnectionError(f"No se recibió respuesta del dispositivo. Respuesta: {repr(prompt_response[:200])}")
@@ -473,7 +473,7 @@ class ADMX2001:
                     # Leer y descartar datos residuales
                     if self.serial.in_waiting > 0:
                         stale_data = self.serial.read(self.serial.in_waiting)
-                        logger.warning(f"⚠️ Buffer contenía {len(stale_data)} bytes residuales (descartados)")
+                        logger.warning(f" Buffer contenía {len(stale_data)} bytes residuales (descartados)")
                         logger.debug(f"   Datos descartados: {repr(stale_data[:100])}")
                     
                     # Reset buffers
@@ -608,7 +608,7 @@ class ADMX2001:
                             else:
                                 # in_waiting reportó datos pero read() retornó vacío
                                 consecutive_empty_reads += 1
-                                logger.warning(f"⚠️ in_waiting={in_waiting} pero read() retornó vacío (intento {consecutive_empty_reads})")
+                                logger.warning(f" in_waiting={in_waiting} pero read() retornó vacío (intento {consecutive_empty_reads})")
                                 
                                 if consecutive_empty_reads > 5:
                                     logger.error("Demasiadas lecturas vacías, posible problema de puerto")
@@ -703,16 +703,16 @@ class ADMX2001:
                         
                         if line:
                             response_lines.append(line)
-                            logger.debug(f"Línea [{idx}] ✓ AGREGADA")
+                            logger.debug(f"Línea [{idx}]  AGREGADA")
                         else:
-                            logger.debug(f"Línea [{idx}] ✗ DESCARTADA (vacía)")
+                            logger.debug(f"Línea [{idx}]  DESCARTADA (vacía)")
                 
                 if response_lines:
-                    logger.info(f"✅ Total líneas en respuesta: {len(response_lines)}")
+                    logger.info(f" Total líneas en respuesta: {len(response_lines)}")
                     for idx, line in enumerate(response_lines[:10]):
                         logger.info(f"   [{idx}] '{line[:100]}'")
                 else:
-                    logger.warning(f"⚠️ RESPUESTA VACÍA después de procesar buffer de {len(response_buffer)} chars")
+                    logger.warning(f" RESPUESTA VACÍA después de procesar buffer de {len(response_buffer)} chars")
                 
                 # Restaurar timeout
                 self.serial.timeout = original_timeout
@@ -1387,10 +1387,10 @@ class ADMX2001:
                         line_lower = line.lower()
                         if ('error' in line_lower and ':' in line_lower) or line_lower.startswith('error'):
                             error_lines.append(line)
-                            logger.warning(f"⚠️ Línea de error durante sweep: {line}")
+                            logger.warning(f" Línea de error durante sweep: {line}")
                             if 'adc saturated' in line_lower or 'measurement failed' in line_lower:
                                 saturation_detected = True
-                                logger.error("❌ Saturación ADC detectada durante sweep")
+                                logger.error(" Saturación ADC detectada durante sweep")
                                 break
                         
                         # Log cada 10 puntos para no saturar
@@ -1412,7 +1412,7 @@ class ADMX2001:
                                     # ── Timestamp real del punto ────────────
                                     point_timestamps.append(time.time())
                                     # ────────────────────────────────────────
-                                    logger.debug(f"✓ Datos: {line[:60]}...")
+                                    logger.debug(f" Datos: {line[:60]}...")
 
                                     # CALLBACK INMEDIATO para streaming real-time
                                     if point_callback:
@@ -1440,7 +1440,7 @@ class ADMX2001:
 
                             if self.serial.in_waiting == 0:
                                 # No hay más datos - el dispositivo terminó
-                                logger.info(f"✓ Sweep completado - {len(all_data_lines)} puntos recibidos")
+                                logger.info(f" Sweep completado - {len(all_data_lines)} puntos recibidos")
                                 break
                             else:
                                 # Hay más datos - continuar leyendo

@@ -1534,7 +1534,7 @@ body.window-dragging-active * {
 /* Icono de check para pasos completados */
 .wizard-step.completed .wizard-step-indicator::after,
 .wizard-step.completed .wizard-step-number::after {
-    content: "✓";
+    content: "\f00c";
     position: absolute;
     font-size: 18px;
     font-weight: bold;
@@ -1779,3 +1779,47 @@ body.window-dragging-active * {
 }
 
 /* Eliminación de estilos antiguos incompatibles - Ahora se usa .chart-window */
+
+/* =============================================================================
+   DUAL THEME — Light / Dark overrides para ventanas arrastrables
+   ============================================================================= */
+
+/* Dark mode (default): ventana blanca debe ser oscura */
+:not([data-theme="light"]) .draggable-window:not(.terminal-window) {
+    background: var(--z-color-bg-card, #1e293b) !important;
+    box-shadow:
+        0 25px 50px -12px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+    color: var(--z-color-text-primary, #f8fafc);
+}
+
+/* Window header en dark mode */
+:not([data-theme="light"]) .window-header:not(.terminal-window .window-header) {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+    color: #f8fafc !important;
+}
+
+/* Chart window en dark mode */
+:not([data-theme="light"]) .chart-window {
+    background: var(--z-color-bg-card, #1e293b) !important;
+}
+
+/* Light mode: explícito para chart-window */
+[data-theme="light"] .draggable-window:not(.terminal-window) {
+    background: #ffffff !important;
+    box-shadow:
+        0 25px 50px -12px rgba(0, 0, 0, 0.2),
+        0 0 0 1px rgba(0, 0, 0, 0.06) !important;
+    color: #0f172a;
+}
+
+[data-theme="light"] .window-header:not(.terminal-window .window-header) {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
+    border-bottom-color: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .window-header .window-title {
+    color: #0f172a !important;
+}

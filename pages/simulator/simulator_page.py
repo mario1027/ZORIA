@@ -3,6 +3,7 @@ Página del Simulador RLC integrada en la aplicación multi-página
 Usando el estilo de la plantilla Volt con navegación avanzada
 """
 from dash import html, Input, Output, State, dcc
+from dash.exceptions import PreventUpdate
 from dash_spa import register_page
 import plotly.graph_objects as go
 import numpy as np
@@ -23,6 +24,7 @@ from pages.common.mobile_nav import mobileNavBar
 from pages.common.footer import footer
 from pages.common.terminal_component import global_terminal_component
 from pages.common.floating_terminal_button import floating_terminal_button
+from lib.design_tokens import get_theme as get_design_theme
 
 # Función helper para prints seguros (maneja BrokenPipeError)
 def safe_print(message):
@@ -36,9 +38,6 @@ CIRCUIT_INFO = get_circuit_info()
 
 # Layout principal con navegación compartida
 layout = html.Div([
-    # Store para el tema de los gráficos del simulador
-    dcc.Store(id="simulator-theme-store", data={"theme": "dark"}, storage_type="local"),
-    
     # Mobile Navbar (solo visible en móvil)
     mobileNavBar(),
     
@@ -73,7 +72,7 @@ layout = html.Div([
                         ], className="col-12 col-md-6 d-flex justify-content-md-end align-items-center")
                     ], className="row align-items-center py-4"),
 
-                    # ✅ PRIORIDAD #1: GRÁFICOS PRIMERO (70% altura visual)
+                    # PRIORIDAD #1: GRÁFICOS PRIMERO (70% altura visual)
                     html.Div([
                         # Diagrama de Bode
                         html.Div([
@@ -86,7 +85,7 @@ layout = html.Div([
                         ], className="col-12 col-lg-6 mb-4")
                     ], className="row"),
                     
-                    # ✅ PRIORIDAD #2: CONFIGURACIÓN COMPACTA (30% altura visual)
+                    # PRIORIDAD #2: CONFIGURACIÓN COMPACTA (30% altura visual)
                     html.Div([
                         # Configuración de circuito
                         html.Div([
@@ -163,16 +162,17 @@ def register_simulator_callbacks(app):
          Input("freq-start", "value"),
          Input("freq-end", "value"),
          Input("freq-points", "value"),
-         Input("simulator-theme-store", "data")],
+         Input("theme-store", "data")],
         prevent_initial_call=False
     )
     def calculate_impedance(n_clicks, circuit_type, R, L, C, f_start, f_end, n_points, theme_data):
-        safe_print(f"🚀 BOTÓN PRESIONADO: n_clicks = {n_clicks}")
-        safe_print(f"📊 Datos recibidos: circuit_type={circuit_type}, R={R}, L={L}, C={C}")
+        safe_print(f" BOTÓN PRESIONADO: n_clicks = {n_clicks}")
+        safe_print(f"Datos recibidos: circuit_type={circuit_type}, R={R}, L={L}, C={C}")
 
-        # Obtener el tema actual
-        theme = theme_data.get('theme', 'dark') if theme_data else 'dark'
-        safe_print(f"🎨 Tema actual: {theme}")
+        theme = theme_data if theme_data else 'dark'
+        if isinstance(theme, dict):
+            theme = theme.get('theme', 'dark')
+        safe_print(f"Tema actual: {theme}")
 
         CIRCUIT_INFO = get_circuit_info()
 
@@ -200,21 +200,7 @@ def register_simulator_callbacks(app):
             bode_data = calc.get_bode_data(Z)
             nyquist_data = calc.get_nyquist_data(Z)
 
-            # Definir colores basados en el tema
-            if theme == 'light':
-                mag_color = '#00BFFF'  # Cyan más oscuro para light theme
-                phase_color = '#FF1493'  # Pink más oscuro para light theme
-                nyquist_color = '#FF8C00'  # Orange más oscuro para light theme
-                bg_color = '#FFFFFF'
-                grid_color = '#E0E0E0'
-                text_color = '#333333'
-            else:  # dark theme
-                mag_color = '#00FFFF'  # Cyan brillante para dark theme
-                phase_color = '#FF69B4'  # Pink para dark theme
-                nyquist_color = '#FFA500'  # Orange para dark theme
-                bg_color = '#0D213A'
-                grid_color = '#1F3D68'
-                text_color = '#6495ED'
+            t = get_design_theme(theme)
 
             bode_fig = go.Figure()
             bode_fig.add_trace(go.Scatter(
@@ -222,7 +208,7 @@ def register_simulator_callbacks(app):
                 y=bode_data["magnitude_db"],
                 mode="lines",
                 name="Magnitud |Z|",
-                line=dict(color=mag_color, width=2),
+                line=dict(color=t['chart_magnitude'], width=2),
                 yaxis="y1"
             ))
             bode_fig.add_trace(go.Scatter(
@@ -230,69 +216,67 @@ def register_simulator_callbacks(app):
                 y=bode_data["phase_deg"],
                 mode="lines",
                 name="Fase φ",
-                line=dict(color=phase_color, width=2),
+                line=dict(color=t['chart_phase'], width=2),
                 yaxis="y2"
             ))
 
             bode_fig.update_layout(
-                title={"text": f"Diagrama de Bode - {CIRCUIT_INFO[circuit_type]['name']}", "font": {"size": 16, "color": text_color}},
+                title={"text": f"Diagrama de Bode - {CIRCUIT_INFO[circuit_type]['name']}", "font": {"size": 16, "color": t['text_primary']}},
                 xaxis=dict(
                     title="Frecuencia (Hz)",
                     type="log",
                     range=[np.log10(max(0.1, f_start)), np.log10(f_end)],
                     showgrid=True,
-                    gridcolor=grid_color,
-                    linecolor=text_color,
-                    tickcolor=text_color,
-                    tickfont=dict(color=text_color),
-                    title_font=dict(color=text_color),
-                    # Etiquetas explícitas para toda la banda 0.2 Hz – 10 MHz
+                    gridcolor=t['chart_grid'],
+                    linecolor=t['chart_text'],
+                    tickcolor=t['chart_text'],
+                    tickfont=dict(color=t['chart_text']),
+                    title_font=dict(color=t['chart_text']),
                     tickvals=[0.2, 1, 10, 100, 1e3, 1e4, 1e5, 1e6, 1e7],
                     ticktext=["0.2", "1", "10", "100", "1k", "10k", "100k", "1M", "10M"],
                 ),
                 yaxis=dict(
-                    title=dict(text="Magnitud |Z| (dB)", font=dict(color=mag_color)),
-                    tickfont={"color": mag_color},
+                    title=dict(text="Magnitud |Z| (dB)", font=dict(color=t['chart_magnitude'])),
+                    tickfont={"color": t['chart_magnitude']},
                     side="left",
                     showgrid=True,
-                    gridcolor=grid_color,
-                    linecolor=text_color,
-                    tickcolor=text_color,
-                    title_font=dict(color=text_color)
+                    gridcolor=t['chart_grid'],
+                    linecolor=t['chart_text'],
+                    tickcolor=t['chart_text'],
+                    title_font=dict(color=t['chart_text'])
                 ),
                 yaxis2=dict(
-                    title=dict(text="Fase φ (°)", font=dict(color=phase_color)),
-                    tickfont={"color": phase_color},
+                    title=dict(text="Fase φ (°)", font=dict(color=t['chart_phase'])),
+                    tickfont={"color": t['chart_phase']},
                     anchor="x",
                     overlaying="y",
                     side="right",
                     showgrid=False,
-                    linecolor=text_color,
-                    tickcolor=text_color,
-                    title_font=dict(color=text_color)
+                    linecolor=t['chart_text'],
+                    tickcolor=t['chart_text'],
+                    title_font=dict(color=t['chart_text'])
                 ),
                 legend=dict(x=0.7, y=0.95),
                 height=450,
                 margin=dict(l=60, r=60, t=50, b=50),
-                plot_bgcolor=bg_color,
-                paper_bgcolor=bg_color,
-                font=dict(color=text_color, size=14, family="Arial, sans-serif")
+                plot_bgcolor=t['chart_bg'],
+                paper_bgcolor=t['chart_bg'],
+                font=dict(color=t['text_primary'], size=14, family="Fira Sans, Arial, sans-serif"),
+                title_font=dict(color=t['text_primary'], size=18)
             )
 
-            # Crear gráfico de Nyquist con colormap jet basado en frecuencia
+            # Crear gráfico de Nyquist con colormap basado en frecuencia
             nyquist_fig = go.Figure()
 
-            # Obtener frecuencias para el colormap
             frequencies = nyquist_data["frequencies"] if "frequencies" in nyquist_data else calc.frequencies
 
-            # Crear la traza principal con colormap jet
             nyquist_fig.add_trace(go.Scatter(
                 x=nyquist_data["real"],
-                y=-nyquist_data["imaginary"],  # Usamos -Z'' para la parte imaginaria
+                y=-nyquist_data["imaginary"],
                 mode="lines+markers",
                 name="Z(jω)",
                 line=dict(
-                    color=nyquist_color,
+                    color=t['chart_nyquist'],
                     width=2
                 ),
                 marker=dict(
@@ -309,34 +293,35 @@ def register_simulator_callbacks(app):
             ))
 
             nyquist_fig.update_layout(
-                title={"text": f"Diagrama de Nyquist - {CIRCUIT_INFO[circuit_type]['name']}", "font": {"size": 14, "color": text_color}},
+                title={"text": f"Diagrama de Nyquist - {CIRCUIT_INFO[circuit_type]['name']}", "font": {"size": 14, "color": t['text_primary']}},
                 xaxis=dict(
                     title="Parte Real Z' (Ω)",
                     showgrid=True,
                     zeroline=True,
                     autorange=True,
-                    gridcolor=grid_color,
-                    linecolor=text_color,
-                    tickcolor=text_color,
-                    tickfont=dict(color=text_color),
-                    title_font=dict(color=text_color)
+                    gridcolor=t['chart_grid'],
+                    linecolor=t['chart_text'],
+                    tickcolor=t['chart_text'],
+                    tickfont=dict(color=t['chart_text']),
+                    title_font=dict(color=t['chart_text'])
                 ),
                 yaxis=dict(
                     title="Parte Imaginaria -Z'' (Ω)",
                     showgrid=True,
                     zeroline=True,
                     autorange=True,
-                    gridcolor=grid_color,
-                    linecolor=text_color,
-                    tickcolor=text_color,
-                    tickfont=dict(color=text_color),
-                    title_font=dict(color=text_color)
+                    gridcolor=t['chart_grid'],
+                    linecolor=t['chart_text'],
+                    tickcolor=t['chart_text'],
+                    tickfont=dict(color=t['chart_text']),
+                    title_font=dict(color=t['chart_text'])
                 ),
                 height=450,
                 margin=dict(l=60, r=60, t=50, b=50),
-                plot_bgcolor=bg_color,
-                paper_bgcolor=bg_color,
-                font=dict(color=text_color, size=14, family="Arial, sans-serif")
+                plot_bgcolor=t['chart_bg'],
+                paper_bgcolor=t['chart_bg'],
+                font=dict(color=t['text_primary'], size=14, family="Fira Sans, Arial, sans-serif"),
+                title_font=dict(color=t['text_primary'], size=18)
             )
 
             info_content = [
@@ -348,15 +333,8 @@ def register_simulator_callbacks(app):
             return bode_fig, nyquist_fig, html.Div(info_content)
 
         except Exception as e:
-            safe_print(f"❌ Error: {e}")
-            # Definir colores para el error basados en el tema
-            if theme == 'light':
-                bg_color = '#FFFFFF'
-                text_color = '#333333'
-            else:
-                bg_color = '#0D213A'
-                text_color = '#6495ED'
-                
+            safe_print(f"Error: {e}")
+            t = get_design_theme(theme)
             empty_fig = go.Figure()
             empty_fig.update_layout(
                 title="Error en el cálculo",
@@ -367,39 +345,41 @@ def register_simulator_callbacks(app):
                     yref="paper",
                     x=0.5,
                     y=0.5,
-                    font=dict(size=16, color=text_color)
+                    font=dict(size=16, color=t['text_tertiary'])
                 )],
-                plot_bgcolor=bg_color,
-                paper_bgcolor=bg_color,
-                font=dict(color=text_color, size=14, family="Arial, sans-serif"),
-                title_font=dict(color=text_color, size=18)
+                plot_bgcolor=t['chart_bg'],
+                paper_bgcolor=t['chart_bg'],
+                font=dict(color=t['text_primary'], size=14, family="Fira Sans, Arial, sans-serif"),
+                title_font=dict(color=t['text_primary'], size=18)
             )
             return empty_fig, empty_fig, html.Div([html.P("Error en el cálculo")])
 
     @app.callback(
-        [Output("simulator-theme-store", "data"),
-         Output("simulator-theme-icon", "className")],
+        [Output("theme-store", "data", allow_duplicate=True),
+         Output("simulator-theme-icon", "className", allow_duplicate=True)],
         [Input("simulator-theme-toggle", "n_clicks")],
-        [State("simulator-theme-store", "data")],
+        [State("theme-store", "data")],
         prevent_initial_call=True
     )
     def toggle_simulator_theme(n_clicks, theme_data):
-        """Alterna entre tema oscuro y claro para los gráficos del simulador"""
-        if theme_data is None:
-            theme_data = {"theme": "dark"}
-        
-        current_theme = theme_data.get("theme", "dark")
+        """Alterna entre tema oscuro y claro — actualiza el theme-store global"""
+        if not n_clicks:
+            raise PreventUpdate
+        current_theme = theme_data if isinstance(theme_data, str) else 'dark'
         new_theme = "light" if current_theme == "dark" else "dark"
-        
-        # Actualizar icono
-        if new_theme == "light":
-            icon_class = "fas fa-sun"
-        else:
-            icon_class = "fas fa-moon"
-        
-        safe_print(f"🎨 Cambiando tema del simulador: {current_theme} → {new_theme}")
-        
-        return {"theme": new_theme}, icon_class
+        # Icono refleja el estado ACTUAL tras el cambio (igual que el dashboard)
+        icon_class = "fas fa-moon" if new_theme == "light" else "fas fa-sun"
+        safe_print(f"Cambiando tema global desde simulador: {current_theme} → {new_theme}")
+        return new_theme, icon_class
+
+    @app.callback(
+        Output("simulator-theme-icon", "className", allow_duplicate=True),
+        Input("theme-store", "data"),
+        prevent_initial_call=False
+    )
+    def sync_simulator_theme_icon(theme):
+        """Sincroniza el icono del simulador con el theme-store global al cargar"""
+        return "fas fa-moon" if theme == "light" else "fas fa-sun"
 
 def register_simulator_page(app):
     """Registra la página del simulador en la aplicación DashSPA"""

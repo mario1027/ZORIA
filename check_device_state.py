@@ -16,7 +16,7 @@ print(f"device: {device_state.device}")
 if device_state.device:
     print(f"puerto: {device_state.device.port}")
 else:
-    print("\n❌ device_state NO está conectado")
+    print("\n device_state NO está conectado")
     print("\nPara que la página web funcione debes:")
     print("  1. Iniciar app.py (python app.py)")
     print("  2. Abrir http://localhost:8050")

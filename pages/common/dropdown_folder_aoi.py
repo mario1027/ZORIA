@@ -157,7 +157,12 @@ def update_active_class(pathname: str, item_ids: List[Dict], folder_ids: List[Di
     for item_id in item_ids:
         href = item_id['href']
         class_name = 'nav-item'
-        if pathname.startswith(href):
+        # "/" solo activa en la raíz exacta; otras rutas usan prefix por segmento
+        if href == '/':
+            is_active = pathname == '/'
+        else:
+            is_active = pathname == href or pathname.startswith(href + '/')
+        if is_active:
             class_name += ' active'
         updated_item_classes.append(class_name)
 

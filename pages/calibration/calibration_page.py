@@ -121,7 +121,7 @@ def calibration_wizard_modal():
                             
                             # Configuración automática
                             html.Div([
-                                html.H6("🔧 Configuración Automática", className="mb-3 text-start"),
+                                html.H6("Configuración Automática", className="mb-3 text-start"),
                                 
                                 # Input de Resistencia
                                 html.Div([
@@ -175,7 +175,7 @@ def calibration_wizard_modal():
                                 
                                 html.Button([
                                     html.I(className="fas fa-play me-2"),
-                                    html.Span('', **{'data-i18n': 'cal.start_wizard'}),
+                                    html.Span('Iniciar Calibración', **{'data-i18n': 'cal.start_wizard'}),
                                 ], id='cal-wizard-start', className="btn btn-primary btn-lg w-100")
                             ], className="p-4 border rounded bg-light")
                         ], className="text-center py-4")
@@ -214,7 +214,7 @@ def calibration_wizard_modal():
                             
                             # Instrucciones detalladas
                             html.Div([
-                                html.H6("📋 Instrucciones:", className="mb-2"),
+                                html.H6("Instrucciones:", className="mb-2"),
                                 html.Ol([
                                     html.Li("Conecta H_CUR con H_POT (cable corto)"),
                                     html.Li("Conecta L_CUR con L_POT (cable corto)"),
@@ -264,7 +264,7 @@ def calibration_wizard_modal():
                             ], className="cal-diagram-container mb-4"),
                             
                             html.Div([
-                                html.H6("⚠️ Importante:", className="mb-2"),
+                                html.H6("Importante:", className="mb-2"),
                                 html.Ul([
                                     html.Li("Conecta todos los terminales juntos con un cable"),
                                     html.Li("Asegúrate de que la conexión sea firme"),
@@ -309,7 +309,7 @@ def calibration_wizard_modal():
                             ], className="cal-diagram-container mb-4"),
                             
                             html.Div([
-                                html.H6("📋 Instrucciones:", className="mb-2"),
+                                html.H6("Instrucciones:", className="mb-2"),
                                 html.Ol([
                                     html.Li("Conecta la resistencia de precisión entre H_CUR y L_POT"),
                                     html.Li(["Valor nominal: ", html.Strong(id="cal-wizard-load-instruction-value", children="1000 Ω")]),
@@ -341,20 +341,20 @@ def calibration_wizard_modal():
                             
                             # Resumen de la calibración
                             html.Div([
-                                html.H6("📊 Resumen de Calibración:", className="mb-3"),
+                                html.H6("Resumen de Calibración:", className="mb-3"),
                                 html.Div([
                                     html.Div([
-                                        html.Span("✓", className="text-success me-2"),
+                                        html.Span("", className="text-success me-2"),
                                         html.Span("Open: "),
                                         html.Span(id="cal-summary-open", children="Completado", className="text-success")
                                     ], className="mb-2"),
                                     html.Div([
-                                        html.Span("✓", className="text-success me-2"),
+                                        html.Span("", className="text-success me-2"),
                                         html.Span("Short: "),
                                         html.Span(id="cal-summary-short", children="Completado", className="text-success")
                                     ], className="mb-2"),
                                     html.Div([
-                                        html.Span("✓", className="text-success me-2"),
+                                        html.Span("", className="text-success me-2"),
                                         html.Span("Load: "),
                                         html.Span(id="cal-summary-load", children="Completado", className="text-success")
                                     ], className="mb-2"),
@@ -403,7 +403,7 @@ def calibration_wizard_modal():
                             ], className="text-center mb-4"),
                             
                             html.Div([
-                                html.H6("📋 Detalles:", className="mb-3"),
+                                html.H6("Detalles:", className="mb-3"),
                                 html.Div([
                                     html.Div([
                                         html.Div([
@@ -570,7 +570,7 @@ def calibration_page_layout():
                                             html.Td("1000 Hz"),
                                             html.Td("CH0:0, CH1:0"),
                                             html.Td([
-                                                html.Span("✓", className="text-success")
+                                                html.Span("", className="text-success")
                                             ], className="text-center"),
                                             html.Td([
                                                 html.Button([
@@ -984,7 +984,7 @@ def register_calibration_callbacks(app):
                                 html.Td(f"{freq} Hz", className="fw-bold"),
                                 html.Td(f"CH0={ch0}, CH1={ch1}"),
                                 html.Td([
-                                    html.Span("✓", className="text-success")
+                                    html.Span("", className="text-success")
                                 ], className="text-center"),
                                 html.Td([
                                     html.Button([

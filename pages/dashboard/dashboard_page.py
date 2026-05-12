@@ -28,6 +28,8 @@ from lib.utils import (
     get_preferred_usb_serial_ports,
     is_likely_admx_port,
 )
+from lib.design_tokens import get_theme as get_design_theme, create_empty_figure
+from lib.i18n import t as i18n_t
 
 # Importar componentes comunes compartidos
 from pages.common.sidebar import sideBar
@@ -101,58 +103,15 @@ def detect_admx2001_ports():
         print(f"Error detectando puertos ADMX2001: {e}")
         return []
 
-def create_empty_figure(title="Sin datos", theme='dark'):
-    """Crea una figura vacía con mensaje"""
-    # Definir colores basados en el tema
-    if theme == 'light':
-        bg_color = '#FFFFFF'
-        text_color = '#333333'
-        annotation_color = '#333333'
-    else:  # dark theme
-        bg_color = '#0D213A'
-        text_color = '#6495ED'
-        annotation_color = '#6495ED'
-    
-    fig = go.Figure()
-    fig.update_layout(
-        title=title,
-        annotations=[dict(
-            text="No hay datos disponibles",
-            showarrow=False,
-            xref="paper",
-            yref="paper",
-            x=0.5,
-            y=0.5,
-            font=dict(size=16, color=annotation_color)
-        )],
-        plot_bgcolor=bg_color,
-        paper_bgcolor=bg_color,
-        font=dict(color=text_color, size=14, family="Arial, sans-serif"),
-        title_font=dict(color=text_color, size=18)
-    )
-    return fig
-
 def create_bode_plot(param, z_mag, phase, negative_phase=False, theme='dark'):
     """Crea el diagrama de Bode"""
     print(f"create_bode_plot llamado con: param={len(param) if param else 0}, z_mag={len(z_mag) if z_mag else 0}, phase={len(phase) if phase else 0}, negative_phase={negative_phase}, theme={theme}")
     
-    # Definir colores basados en el tema
-    if theme == 'light':
-        mag_color = '#00BFFF'  # Cyan más oscuro para light theme
-        phase_color = '#FF1493'  # Pink más oscuro para light theme
-        bg_color = '#FFFFFF'
-        grid_color = '#E0E0E0'
-        text_color = '#333333'
-    else:  # dark theme
-        mag_color = '#00FFFF'  # Cyan brillante para dark theme
-        phase_color = '#FF69B4'  # Pink para dark theme
-        bg_color = '#0D213A'
-        grid_color = '#1F3D68'
-        text_color = '#6495ED'
+    t = get_design_theme(theme)
     
     if not param or not z_mag or len(param) == 0 or len(z_mag) == 0:
         print("No hay datos suficientes para crear diagrama de Bode")
-        return create_empty_figure("Diagrama de Bode - Sin datos", theme)
+        return create_empty_figure(i18n_t('dash.empty_bode'), theme)
 
     print(f"Primeros valores param: {param[:3] if len(param) > 3 else param}")
     print(f"Primeros valores z_mag: {z_mag[:3] if len(z_mag) > 3 else z_mag}")
@@ -165,7 +124,7 @@ def create_bode_plot(param, z_mag, phase, negative_phase=False, theme='dark'):
     fixed_frequency_mode = False
     fixed_frequency_hz = None
     x_values = param
-    xaxis_title = "Frecuencia (Hz)"
+    xaxis_title = i18n_t('chart.freq_hz')
     xaxis_type = "log"
 
     if len(param) > 1:
@@ -175,7 +134,7 @@ def create_bode_plot(param, z_mag, phase, negative_phase=False, theme='dark'):
             if fixed_frequency_mode:
                 fixed_frequency_hz = first_freq
                 x_values = list(range(1, len(param) + 1))
-                xaxis_title = "Trigger #"
+                xaxis_title = i18n_t('chart.trigger_num')
                 xaxis_type = "linear"
         except Exception:
             fixed_frequency_mode = False
@@ -184,25 +143,30 @@ def create_bode_plot(param, z_mag, phase, negative_phase=False, theme='dark'):
     mag_db = [20 * np.log10(max(z, 1e-12)) for z in z_mag]
     print(f"Magnitud en dB: primeros valores {mag_db[:3]}")
 
-    mag_hover = '<b>Frecuencia:</b> %{x:.2f} Hz<br><b>|Z|:</b> %{y:.2f} dB<extra></extra>'
-    phase_hover = '<b>Frecuencia:</b> %{x:.2f} Hz<br><b>Fase:</b> %{y:.2f}°<extra></extra>'
+    _lbl_freq = i18n_t('chart.hover_freq')
+    _lbl_zmag = i18n_t('chart.hover_z_mag')
+    _lbl_phase = i18n_t('chart.hover_phase')
+    _lbl_trig = i18n_t('chart.hover_trigger')
+    _lbl_fixed = i18n_t('chart.hover_fixed_freq')
+    mag_hover = f'<b>{_lbl_freq}:</b> %{{x:.2f}} Hz<br><b>{_lbl_zmag}:</b> %{{y:.2f}} dB<extra></extra>'
+    phase_hover = f'<b>{_lbl_freq}:</b> %{{x:.2f}} Hz<br><b>{_lbl_phase}:</b> %{{y:.2f}}°<extra></extra>'
     if fixed_frequency_mode and fixed_frequency_hz is not None:
         mag_hover = (
-            f'<b>Trigger:</b> %{{x}}<br><b>Frecuencia fija:</b> {fixed_frequency_hz:.2f} Hz'
-            '<br><b>|Z|:</b> %{y:.2f} dB<extra></extra>'
+            f'<b>{_lbl_trig}:</b> %{{x}}<br><b>{_lbl_fixed}:</b> {fixed_frequency_hz:.2f} Hz'
+            f'<br><b>{_lbl_zmag}:</b> %{{y:.2f}} dB<extra></extra>'
         )
         phase_hover = (
-            f'<b>Trigger:</b> %{{x}}<br><b>Frecuencia fija:</b> {fixed_frequency_hz:.2f} Hz'
-            '<br><b>Fase:</b> %{y:.2f}°<extra></extra>'
+            f'<b>{_lbl_trig}:</b> %{{x}}<br><b>{_lbl_fixed}:</b> {fixed_frequency_hz:.2f} Hz'
+            f'<br><b>{_lbl_phase}:</b> %{{y:.2f}}°<extra></extra>'
         )
 
     fig.add_trace(go.Scatter(
         x=x_values,
-        y=mag_db,  # Convertir a dB
+        y=mag_db,
         mode='lines+markers',
-        name='|Z| (dB)',
-        line=dict(color=mag_color, width=2),
-        marker=dict(size=4, color=mag_color),
+        name=i18n_t('chart.z_mag_db'),
+        line=dict(color=t['chart_magnitude'], width=2),
+        marker=dict(size=4, color=t['chart_magnitude']),
         yaxis="y1",
         hovertemplate=mag_hover
     ))
@@ -216,63 +180,62 @@ def create_bode_plot(param, z_mag, phase, negative_phase=False, theme='dark'):
             x=x_values,
             y=phase_deg,
             mode='lines+markers',
-            name='Fase (°)',
-            line=dict(color=phase_color, width=2),
-            marker=dict(size=4, color=phase_color),
+            name=i18n_t('chart.phase_deg'),
+            line=dict(color=t['chart_phase'], width=2),
+            marker=dict(size=4, color=t['chart_phase']),
             yaxis="y2",
             hovertemplate=phase_hover
         ))
 
     fig.update_layout(
-        title=f"Diagrama de Bode",
+        title=i18n_t('chart.bode_title'),
         xaxis=dict(
             title=xaxis_title,
             type=xaxis_type,
             autorange=True,
             showgrid=True,
-            gridcolor=grid_color,
-            linecolor=text_color,
-            tickcolor=text_color,
-            tickfont=dict(color=text_color),
-            title_font=dict(color=text_color),
-            # Etiquetas legibles para el rango completo 0.2 Hz–10 MHz
+            gridcolor=t['chart_grid'],
+            linecolor=t['chart_text'],
+            tickcolor=t['chart_text'],
+            tickfont=dict(color=t['chart_text']),
+            title_font=dict(color=t['chart_text']),
             tickvals=[0.2, 1, 10, 100, 1e3, 1e4, 1e5, 1e6, 1e7] if xaxis_type == "log" else None,
             ticktext=["0.2", "1", "10", "100", "1k", "10k", "100k", "1M", "10M"] if xaxis_type == "log" else None,
         ),
-        yaxis=dict(
-            title="|Z| (dB)",
-            color=mag_color,
+yaxis=dict(
+            title=i18n_t('chart.z_mag_db'),
+            color=t['chart_magnitude'],
             autorange=True,
             showgrid=True,
-            gridcolor=grid_color,
-            linecolor=text_color,
-            tickcolor=text_color,
-            tickfont=dict(color=text_color),
-            title_font=dict(color=text_color)
+            gridcolor=t['chart_grid'],
+            linecolor=t['chart_text'],
+            tickcolor=t['chart_text'],
+            tickfont=dict(color=t['chart_text']),
+            title_font=dict(color=t['chart_text'])
         ),
         yaxis2=dict(
-            title="Fase (°)",
-            color=phase_color,
+            title=i18n_t('chart.phase_deg'),
+            color=t['chart_phase'],
             overlaying="y",
             side="right",
             autorange=True,
             showgrid=False,
-            linecolor=text_color,
-            tickcolor=text_color,
-            tickfont=dict(color=text_color),
-            title_font=dict(color=text_color)
+            linecolor=t['chart_text'],
+            tickcolor=t['chart_text'],
+            tickfont=dict(color=t['chart_text']),
+            title_font=dict(color=t['chart_text'])
         ),
         height=500,
-        plot_bgcolor=bg_color,
-        paper_bgcolor=bg_color,
-        font=dict(color=text_color, size=14, family="Arial, sans-serif"),
-        title_font=dict(color=text_color, size=18),
+        plot_bgcolor=t['chart_bg'],
+        paper_bgcolor=t['chart_bg'],
+        font=dict(color=t['text_primary'], size=14, family="Fira Sans, Arial, sans-serif"),
+        title_font=dict(color=t['text_primary'], size=18),
         showlegend=True,
         hovermode="x unified",
         hoverlabel=dict(
-            bgcolor=bg_color,
-            bordercolor=text_color,
-            font=dict(color=text_color)
+            bgcolor=t['chart_bg'],
+            bordercolor=t['chart_text'],
+            font=dict(color=t['chart_text'])
         )
     )
 
@@ -282,21 +245,11 @@ def create_nyquist_plot(z_real, z_imag, freq=None, theme='dark'):
     """Crea el diagrama de Nyquist"""
     print(f"create_nyquist_plot llamado con: z_real={len(z_real) if z_real else 0}, z_imag={len(z_imag) if z_imag else 0}, freq={len(freq) if freq else 0}, theme={theme}")
     
-    # Definir colores basados en el tema
-    if theme == 'light':
-        nyquist_color = '#FF8C00'  # Orange más oscuro para light theme
-        bg_color = '#FFFFFF'
-        grid_color = '#E0E0E0'
-        text_color = '#333333'
-    else:  # dark theme
-        nyquist_color = '#FFA500'  # Orange para dark theme
-        bg_color = '#0D213A'
-        grid_color = '#1F3D68'
-        text_color = '#6495ED'
+    t = get_design_theme(theme)
     
     if not z_real or not z_imag or len(z_real) == 0 or len(z_imag) == 0:
         print("No hay datos suficientes para crear diagrama de Nyquist")
-        return create_empty_figure("Diagrama de Nyquist - Sin datos", theme)
+        return create_empty_figure(i18n_t('dash.empty_nyquist'), theme)
 
     print(f"Primeros valores z_real: {z_real[:3] if len(z_real) > 3 else z_real}")
     print(f"Primeros valores z_imag: {z_imag[:3] if len(z_imag) > 3 else z_imag}")
@@ -318,8 +271,11 @@ def create_nyquist_plot(z_real, z_imag, freq=None, theme='dark'):
         freq_log = np.log10(freq)
         
         # Crear texto personalizado para hover
+        _lbl_freq = i18n_t('chart.hover_freq')
+        _lbl_zr = i18n_t('chart.hover_z_real')
+        _lbl_zi = i18n_t('chart.hover_z_imag_neg')
         hover_text = [
-            f'Frecuencia: {f:.2f} Hz<br>Z\': {zr:.2f} Ω<br>-Z\'\': {-zi:.2f} Ω'
+            f'{_lbl_freq}: {f:.2f} Hz<br>{_lbl_zr}: {zr:.2f} Ω<br>{_lbl_zi}: {-zi:.2f} Ω'
             for f, zr, zi in zip(freq, z_real, z_imag)
         ]
         
@@ -327,15 +283,15 @@ def create_nyquist_plot(z_real, z_imag, freq=None, theme='dark'):
             x=x_data,
             y=y_data,
             mode='lines+markers',
-            name='Impedancia',
+            name=i18n_t('chart.impedance'),
             line=dict(width=2),
             marker=dict(
                 size=8,
-                color=freq_log,  # Color basado en log(frecuencia)
+                color=freq_log,
                 colorscale='Viridis',
                 showscale=True,
                 colorbar=dict(
-                    title="log₁₀(f) [Hz]",
+                    title=i18n_t('chart.log10f_hz'),
                     thickness=15,
                     len=0.7
                 )
@@ -345,54 +301,56 @@ def create_nyquist_plot(z_real, z_imag, freq=None, theme='dark'):
         ))
     else:
         # Sin información de frecuencia, usar colores fijos
+        _lbl_zr = i18n_t('chart.hover_z_real')
+        _lbl_zi = i18n_t('chart.hover_z_imag_neg')
         fig.add_trace(go.Scatter(
             x=x_data,
             y=y_data,
             mode='lines+markers',
-            name='Impedancia',
-            line=dict(color=nyquist_color, width=2),
-            marker=dict(size=6, color=nyquist_color),
-            hovertemplate='Z\': %{x:.2f} Ω<br>-Z\'\': %{y:.2f} Ω<extra></extra>'
+            name=i18n_t('chart.impedance'),
+            line=dict(color=t['chart_nyquist'], width=2),
+            marker=dict(size=6, color=t['chart_nyquist']),
+            hovertemplate=f'{_lbl_zr}: %{{x:.2f}} Ω<br>{_lbl_zi}: %{{y:.2f}} Ω<extra></extra>'
         ))
 
     fig.update_layout(
-        title=f"Diagrama de Nyquist",
+        title=i18n_t('chart.nyquist_title'),
         xaxis=dict(
-            title="Z' (Ω)",
+            title=i18n_t('chart.z_real_ohm'),
             showgrid=True,
             zeroline=True,
             autorange=True,
-            gridcolor=grid_color,
-            linecolor=text_color,
-            tickcolor=text_color,
-            tickfont=dict(color=text_color),
-            title_font=dict(color=text_color)
+            gridcolor=t['chart_grid'],
+            linecolor=t['chart_text'],
+            tickcolor=t['chart_text'],
+            tickfont=dict(color=t['chart_text']),
+            title_font=dict(color=t['chart_text'])
         ),
         yaxis=dict(
-            title="-Z'' (Ω)",
+            title=i18n_t('chart.z_imag_neg_ohm'),
             showgrid=True,
             zeroline=True,
             autorange=True,
-            gridcolor=grid_color,
-            linecolor=text_color,
-            tickcolor=text_color,
-            tickfont=dict(color=text_color),
-            title_font=dict(color=text_color)
+            gridcolor=t['chart_grid'],
+            linecolor=t['chart_text'],
+            tickcolor=t['chart_text'],
+            tickfont=dict(color=t['chart_text']),
+            title_font=dict(color=t['chart_text'])
         ),
         height=500,
         width=None,
         showlegend=True,
         autosize=True,
         margin=dict(l=60, r=60, t=60, b=60),
-        plot_bgcolor=bg_color,
-        paper_bgcolor=bg_color,
-        font=dict(color=text_color, size=14, family="Arial, sans-serif"),
-        title_font=dict(color=text_color, size=18),
+        plot_bgcolor=t['chart_bg'],
+        paper_bgcolor=t['chart_bg'],
+        font=dict(color=t['text_primary'], size=14, family="Fira Sans, Arial, sans-serif"),
+        title_font=dict(color=t['text_primary'], size=18),
         hovermode="closest",
         hoverlabel=dict(
-            bgcolor=bg_color,
-            bordercolor=text_color,
-            font=dict(color=text_color)
+            bgcolor=t['chart_bg'],
+            bordercolor=t['chart_text'],
+            font=dict(color=t['chart_text'])
         )
     )
 
@@ -402,31 +360,26 @@ def create_nyquist_plot(z_real, z_imag, freq=None, theme='dark'):
 
 def _get_trigger_plot_palette(theme='dark'):
     """Paleta de colores para superponer múltiples barridos trigger."""
-    if theme == 'light':
-        return ['#2563eb', '#dc2626', '#059669', '#d97706', '#7c3aed', '#0891b2']
-    return ['#60a5fa', '#f87171', '#34d399', '#fbbf24', '#a78bfa', '#22d3ee']
+    t = get_design_theme(theme)
+    return t['chart_trigger_palette']
 
 
 def create_bode_plot_from_dataset(dataset, negative_phase=False, theme='dark'):
     """Genera Bode desde el store, soportando overlays para Trigger 1..N."""
     if not dataset or len(dataset.get('param', [])) == 0:
-        return create_empty_figure("Diagrama de Bode - Sin datos", theme)
+        return create_empty_figure(i18n_t('dash.empty_bode'), theme)
 
     runs = dataset.get('runs') or []
     if len(runs) <= 1:
         return create_bode_plot(dataset['param'], dataset['z_mag'], dataset['phase'], negative_phase, theme)
 
-    if theme == 'light':
-        bg_color = '#FFFFFF'
-        grid_color = '#E0E0E0'
-        text_color = '#333333'
-    else:
-        bg_color = '#0D213A'
-        grid_color = '#1F3D68'
-        text_color = '#6495ED'
-
+    t = get_design_theme(theme)
     colors = _get_trigger_plot_palette(theme)
     fig = go.Figure()
+
+    _lbl_freq = i18n_t('chart.hover_freq')
+    _lbl_zmag = i18n_t('chart.hover_z_mag')
+    _lbl_phase = i18n_t('chart.hover_phase')
 
     for idx, run in enumerate(runs, start=1):
         freq = run.get('param', [])
@@ -438,7 +391,7 @@ def create_bode_plot_from_dataset(dataset, negative_phase=False, theme='dark'):
         color = colors[(idx - 1) % len(colors)]
         mag_db = [20 * np.log10(max(z, 1e-12)) for z in z_mag]
         phase_deg = [-np.degrees(p) if negative_phase else np.degrees(p) for p in phase]
-        run_label = f"Trigger {run.get('run_index', idx)}"
+        run_label = i18n_t('chart.trigger_label').replace('{n}', str(run.get('run_index', idx)))
 
         fig.add_trace(go.Scatter(
             x=freq,
@@ -449,7 +402,7 @@ def create_bode_plot_from_dataset(dataset, negative_phase=False, theme='dark'):
             marker=dict(size=4, color=color),
             yaxis='y1',
             legendgroup=run_label,
-            hovertemplate=f'<b>{run_label}</b><br><b>Frecuencia:</b> %{{x:.2f}} Hz<br><b>|Z|:</b> %{{y:.2f}} dB<extra></extra>'
+            hovertemplate=f'<b>{run_label}</b><br><b>{_lbl_freq}:</b> %{{x:.2f}} Hz<br><b>{_lbl_zmag}:</b> %{{y:.2f}} dB<extra></extra>'
         ))
 
         if phase:
@@ -457,61 +410,61 @@ def create_bode_plot_from_dataset(dataset, negative_phase=False, theme='dark'):
                 x=freq,
                 y=phase_deg,
                 mode='lines+markers',
-                name=f"{run_label} fase",
+                name=i18n_t('chart.trigger_phase').replace('{n}', str(run.get('run_index', idx))) if phase else '',
                 line=dict(color=color, width=1.5, dash='dot'),
                 marker=dict(size=3, color=color),
                 yaxis='y2',
                 legendgroup=run_label,
-                hovertemplate=f'<b>{run_label}</b><br><b>Frecuencia:</b> %{{x:.2f}} Hz<br><b>Fase:</b> %{{y:.2f}}°<extra></extra>'
+                hovertemplate=f'<b>{run_label}</b><br><b>{_lbl_freq}:</b> %{{x:.2f}} Hz<br><b>{_lbl_phase}:</b> %{{y:.2f}}°<extra></extra>'
             ))
 
     fig.update_layout(
-        title="Diagrama de Bode",
+        title=i18n_t('chart.bode_title'),
         xaxis=dict(
-            title="Frecuencia (Hz)",
+            title=i18n_t('chart.freq_hz'),
             type="log",
             autorange=True,
             showgrid=True,
-            gridcolor=grid_color,
-            linecolor=text_color,
-            tickcolor=text_color,
-            tickfont=dict(color=text_color),
-            title_font=dict(color=text_color),
+            gridcolor=t['chart_grid'],
+            linecolor=t['chart_text'],
+            tickcolor=t['chart_text'],
+            tickfont=dict(color=t['chart_text']),
+            title_font=dict(color=t['chart_text']),
             tickvals=[0.2, 1, 10, 100, 1e3, 1e4, 1e5, 1e6, 1e7],
             ticktext=["0.2", "1", "10", "100", "1k", "10k", "100k", "1M", "10M"],
         ),
         yaxis=dict(
-            title="|Z| (dB)",
+            title=i18n_t('chart.z_mag_db'),
             autorange=True,
             showgrid=True,
-            gridcolor=grid_color,
-            linecolor=text_color,
-            tickcolor=text_color,
-            tickfont=dict(color=text_color),
-            title_font=dict(color=text_color)
+            gridcolor=t['chart_grid'],
+            linecolor=t['chart_text'],
+            tickcolor=t['chart_text'],
+            tickfont=dict(color=t['chart_text']),
+            title_font=dict(color=t['chart_text'])
         ),
         yaxis2=dict(
-            title="Fase (°)",
+            title=i18n_t('chart.phase_deg'),
             overlaying="y",
             side="right",
             autorange=True,
             showgrid=False,
-            linecolor=text_color,
-            tickcolor=text_color,
-            tickfont=dict(color=text_color),
-            title_font=dict(color=text_color)
+            linecolor=t['chart_text'],
+            tickcolor=t['chart_text'],
+            tickfont=dict(color=t['chart_text']),
+            title_font=dict(color=t['chart_text'])
         ),
         height=500,
-        plot_bgcolor=bg_color,
-        paper_bgcolor=bg_color,
-        font=dict(color=text_color, size=14, family="Arial, sans-serif"),
-        title_font=dict(color=text_color, size=18),
+        plot_bgcolor=t['chart_bg'],
+        paper_bgcolor=t['chart_bg'],
+        font=dict(color=t['text_primary'], size=14, family="Fira Sans, Arial, sans-serif"),
+        title_font=dict(color=t['text_primary'], size=18),
         showlegend=True,
         hovermode="x unified",
         hoverlabel=dict(
-            bgcolor=bg_color,
-            bordercolor=text_color,
-            font=dict(color=text_color)
+            bgcolor=t['chart_bg'],
+            bordercolor=t['chart_text'],
+            font=dict(color=t['chart_text'])
         )
     )
     return fig
@@ -520,23 +473,19 @@ def create_bode_plot_from_dataset(dataset, negative_phase=False, theme='dark'):
 def create_nyquist_plot_from_dataset(dataset, theme='dark'):
     """Genera Nyquist desde el store, soportando overlays para Trigger 1..N."""
     if not dataset or len(dataset.get('param', [])) == 0:
-        return create_empty_figure("Diagrama de Nyquist - Sin datos", theme)
+        return create_empty_figure(i18n_t('dash.empty_nyquist'), theme)
 
     runs = dataset.get('runs') or []
     if len(runs) <= 1:
         return create_nyquist_plot(dataset['z_real'], dataset['z_imag'], dataset['param'], theme)
 
-    if theme == 'light':
-        bg_color = '#FFFFFF'
-        grid_color = '#E0E0E0'
-        text_color = '#333333'
-    else:
-        bg_color = '#0D213A'
-        grid_color = '#1F3D68'
-        text_color = '#6495ED'
-
+    t = get_design_theme(theme)
     colors = _get_trigger_plot_palette(theme)
     fig = go.Figure()
+
+    _lbl_freq = i18n_t('chart.hover_freq')
+    _lbl_zr = i18n_t('chart.hover_z_real')
+    _lbl_zi = i18n_t('chart.hover_z_imag_neg')
 
     for idx, run in enumerate(runs, start=1):
         freq = run.get('param', [])
@@ -546,9 +495,9 @@ def create_nyquist_plot_from_dataset(dataset, theme='dark'):
             continue
 
         color = colors[(idx - 1) % len(colors)]
-        run_label = f"Trigger {run.get('run_index', idx)}"
+        run_label = i18n_t('chart.trigger_label').replace('{n}', str(run.get('run_index', idx)))
         hover_text = [
-            f'{run_label}<br>Frecuencia: {f:.2f} Hz<br>Z\': {zr:.2f} Ω<br>-Z\'\': {-zi:.2f} Ω'
+            f'{run_label}<br>{_lbl_freq}: {f:.2f} Hz<br>{_lbl_zr}: {zr:.2f} Ω<br>{_lbl_zi}: {-zi:.2f} Ω'
             for f, zr, zi in zip(freq, z_real, z_imag)
         ]
 
@@ -564,43 +513,43 @@ def create_nyquist_plot_from_dataset(dataset, theme='dark'):
         ))
 
     fig.update_layout(
-        title="Diagrama de Nyquist",
+        title=i18n_t('chart.nyquist_title'),
         xaxis=dict(
-            title="Z' (Ω)",
+            title=i18n_t('chart.z_real_ohm'),
             showgrid=True,
             zeroline=True,
             autorange=True,
-            gridcolor=grid_color,
-            linecolor=text_color,
-            tickcolor=text_color,
-            tickfont=dict(color=text_color),
-            title_font=dict(color=text_color)
+            gridcolor=t['chart_grid'],
+            linecolor=t['chart_text'],
+            tickcolor=t['chart_text'],
+            tickfont=dict(color=t['chart_text']),
+            title_font=dict(color=t['chart_text'])
         ),
         yaxis=dict(
-            title="-Z'' (Ω)",
+            title=i18n_t('chart.z_imag_neg_ohm'),
             showgrid=True,
             zeroline=True,
             autorange=True,
-            gridcolor=grid_color,
-            linecolor=text_color,
-            tickcolor=text_color,
-            tickfont=dict(color=text_color),
-            title_font=dict(color=text_color)
+            gridcolor=t['chart_grid'],
+            linecolor=t['chart_text'],
+            tickcolor=t['chart_text'],
+            tickfont=dict(color=t['chart_text']),
+            title_font=dict(color=t['chart_text'])
         ),
         height=500,
         width=None,
         showlegend=True,
         autosize=True,
         margin=dict(l=60, r=60, t=60, b=60),
-        plot_bgcolor=bg_color,
-        paper_bgcolor=bg_color,
-        font=dict(color=text_color, size=14, family="Arial, sans-serif"),
-        title_font=dict(color=text_color, size=18),
+        plot_bgcolor=t['chart_bg'],
+        paper_bgcolor=t['chart_bg'],
+        font=dict(color=t['text_primary'], size=14, family="Fira Sans, Arial, sans-serif"),
+        title_font=dict(color=t['text_primary'], size=18),
         hovermode="closest",
         hoverlabel=dict(
-            bgcolor=bg_color,
-            bordercolor=text_color,
-            font=dict(color=text_color)
+            bgcolor=t['chart_bg'],
+            bordercolor=t['chart_text'],
+            font=dict(color=t['chart_text'])
         )
     )
     return fig
@@ -701,7 +650,7 @@ def sweep_worker(config):
         effective_tdelay = 0 if tdelay is None or tdelay < 0 else tdelay
         effective_average = 1 if average is None or average < 1 else int(average)
         
-        print(f"🔄 WORKER INICIADO - Configuración recibida:")
+        print(f"WORKER INICIADO - Configuración recibida:")
         print(f"   - Start: {start} Hz, End: {end} Hz")
         print(f"   - Puntos: {points}, Escala: {scale}")
         print(f"   - Trigger habilitado: {trigger_enabled}")
@@ -717,7 +666,7 @@ def sweep_worker(config):
         # Limpiar buffer de streaming antes de iniciar
         device_state.clear_sweep_buffer()
         device_state.start_sweep_streaming(total_stream_points)
-        print(f"📡 Streaming iniciado para {total_stream_points} puntos - buffer limpio")
+        print(f"Streaming iniciado para {total_stream_points} puntos - buffer limpio")
 
         # Configurar dispositivo para barrido
         if device_state.device:
@@ -728,43 +677,43 @@ def sweep_worker(config):
             try:
                 # Convertir display_mode a entero si viene como string
                 display_mode_int = int(display_mode) if isinstance(display_mode, str) else display_mode
-                print(f"🔧 Configurando display mode: {display_mode_int} (R-X)")
+                print(f"Configurando display mode: {display_mode_int} (R-X)")
                 device_state.device.set_display_mode(display_mode_int)
             except Exception as e:
-                print(f"⚠️ Error configurando display mode: {e}")
+                print(f"Error configurando display mode: {e}")
 
             # Forzar autorange para minimizar riesgo de saturación durante sweep
             try:
-                print("🔧 Habilitando autorange (setgain auto)")
+                print("Habilitando autorange (setgain auto)")
                 device_state.device.set_gain_auto()
             except Exception as e:
-                print(f"⚠️ Error habilitando autorange: {e}")
+                print(f"Error habilitando autorange: {e}")
 
             # Configurar average para velocidad de sweep (evita heredar average=200 de calibración)
             try:
-                print(f"🔧 Configurando average efectivo: {effective_average}")
+                print(f"Configurando average efectivo: {effective_average}")
                 device_state.device.send_command(f"average {effective_average}")
             except Exception as e:
-                print(f"⚠️ Error configurando average: {e}")
+                print(f"Error configurando average: {e}")
 
             # Configurar delays ANTES del sweep
             try:
-                print(f"🔧 Configurando measurement delay efectivo: {effective_mdelay} ms")
+                print(f"Configurando measurement delay efectivo: {effective_mdelay} ms")
                 device_state.device.set_measurement_delay(effective_mdelay)
                 time.sleep(0.0005)  # Esperar 0.5ms para estabilización del delay
-                print(f"🔧 Configurando trigger delay efectivo: {effective_tdelay} ms")
+                print(f"Configurando trigger delay efectivo: {effective_tdelay} ms")
                 device_state.device.set_trigger_delay(effective_tdelay)
             except Exception as e:
-                print(f"⚠️ Error configurando delays: {e}")
+                print(f"Error configurando delays: {e}")
 
             # Configurar magnitud ANTES del sweep
             if magnitude and magnitude != 'auto':
                 try:
                     configured_magnitude = float(magnitude) if isinstance(magnitude, str) else float(magnitude)
-                    print(f"🔧 Configurando magnitud: {configured_magnitude} V")
+                    print(f"Configurando magnitud: {configured_magnitude} V")
                     device_state.device.set_magnitude(configured_magnitude)
                 except Exception as e:
-                    print(f"⚠️ Error configurando magnitud: {e}")
+                    print(f"Error configurando magnitud: {e}")
 
             # Convertir escala
             sweep_scale = SweepScale.LOG if scale == 'log' else SweepScale.LINEAR
@@ -778,11 +727,11 @@ def sweep_worker(config):
                 BASE_MAX_SEG = max_points_per_segment(start)
 
                 if points <= BASE_MAX_SEG:
-                    print(f"📊 Barrido simple: {points} puntos")
+                    print(f"Barrido simple: {points} puntos")
                     segments = [(start, end, points)]
                 else:
                     num_segments = (points + BASE_MAX_SEG - 1) // BASE_MAX_SEG
-                    print(f"📊 Barrido segmentado: {points} pts → {num_segments} segmentos (máx {BASE_MAX_SEG} pts/seg)")
+                    print(f"Barrido segmentado: {points} pts → {num_segments} segmentos (máx {BASE_MAX_SEG} pts/seg)")
 
                     if scale == 'log':
                         all_freqs = np.logspace(np.log10(start), np.log10(end), points)
@@ -806,11 +755,11 @@ def sweep_worker(config):
                         raise RuntimeError("Sweep cancelado por el usuario")
 
                     if total_runs > 1:
-                        print(f"🔁 Trigger barrido {run_index}/{total_runs}")
+                        print(f"Trigger barrido {run_index}/{total_runs}")
                     if len(segments) > 1:
-                        print(f"🔄 Ejecutando segmento {seg_idx+1}/{len(segments)}: {seg_start:.1f}-{seg_end:.1f} Hz, {seg_points} puntos")
+                        print(f"Ejecutando segmento {seg_idx+1}/{len(segments)}: {seg_start:.1f}-{seg_end:.1f} Hz, {seg_points} puntos")
 
-                    print(f"📋 CONFIGURANDO SWEEP:")
+                    print(f"CONFIGURANDO SWEEP:")
                     print(f"   Tipo: FREQUENCY")
                     print(f"   Start: {seg_start:.1f} Hz ({seg_start/1000:.3f} kHz)")
                     print(f"   End: {seg_end:.1f} Hz ({seg_end/1000:.3f} kHz)")
@@ -825,7 +774,7 @@ def sweep_worker(config):
                         seg_points
                     )
 
-                    print(f"✅ Sweep configurado - esperando {seg_points} puntos")
+                    print(f"Sweep configurado - esperando {seg_points} puntos")
 
                     # Timeout basado en tiempo real de adquisición por frecuencia
                     seg_time = estimate_sweep_time(
@@ -837,7 +786,7 @@ def sweep_worker(config):
                     )
                     # Margen de seguridad: 3× el tiempo estimado + 60 s overhead mínimo
                     sweep_timeout = max(120, int(seg_time['total_seconds'] * 3) + 60)
-                    print(f"  ⏱ Timeout segmento: {sweep_timeout}s  "
+                    print(f"  Timeout segmento: {sweep_timeout}s  "
                           f"(estimado={seg_time['human_readable']}, "
                           f"cuello botella={seg_time['bottleneck_freq']:.4g} Hz "
                           f"→ {seg_time['bottleneck_ms']:.0f} ms/pto)")
@@ -859,9 +808,9 @@ def sweep_worker(config):
 
                                 point_counter[0] += 1
                                 if point_counter[0] % 10 == 0 or point_counter[0] == 1:
-                                    print(f"[Real-time Callback] ✅ Punto {point_counter[0]} procesado y enviado al buffer")
+                                    print(f"[Real-time Callback] Punto {point_counter[0]} procesado y enviado al buffer")
                         except Exception as e:
-                            print(f"⚠️ Error procesando punto en tiempo real: {e}")
+                            print(f"Error procesando punto en tiempo real: {e}")
 
                     import time
                     import threading
@@ -893,13 +842,13 @@ def sweep_worker(config):
 
                         if is_saturation_error and can_retry:
                             retry_magnitude = max(0.01, configured_magnitude * 0.5)
-                            print(f"⚠️ Saturación detectada en segmento {seg_idx+1}. Reintentando con magnitud {configured_magnitude}V → {retry_magnitude}V")
+                            print(f"Saturación detectada en segmento {seg_idx+1}. Reintentando con magnitud {configured_magnitude}V → {retry_magnitude}V")
                             configured_magnitude = retry_magnitude
                             try:
                                 device_state.device.set_gain_auto()
                                 device_state.device.set_magnitude(configured_magnitude)
                             except Exception as e:
-                                print(f"⚠️ Error aplicando recuperación por saturación: {e}")
+                                print(f"Error aplicando recuperación por saturación: {e}")
 
                             device_state.device.configure_sweep(
                                 SweepType.FREQUENCY,
@@ -918,7 +867,7 @@ def sweep_worker(config):
 
                     if segment_results:
                         all_results.extend(segment_results)
-                        print(f"  ✅ Segmento completado: {len(segment_results)} puntos obtenidos")
+                        print(f"  Segmento completado: {len(segment_results)} puntos obtenidos")
                         if len(segment_results) != seg_points:
                             raise RuntimeError(
                                 f"Sweep incompleto en segmento {seg_idx+1}: esperados {seg_points}, recibidos {len(segment_results)}"
@@ -926,9 +875,9 @@ def sweep_worker(config):
 
                         segment_end_point = segment_start_point + seg_points
                         final_progress_pct = int((segment_end_point / total_stream_points) * 100)
-                        print(f"  📊 Progreso automático vía streaming: {final_progress_pct}% ({segment_end_point}/{total_stream_points} puntos)")
+                        print(f"  Progreso automático vía streaming: {final_progress_pct}% ({segment_end_point}/{total_stream_points} puntos)")
                     else:
-                        print(f"  ⚠️ Segmento sin resultados")
+                        print(f"  Segmento sin resultados")
 
                 return all_results
 
@@ -937,10 +886,10 @@ def sweep_worker(config):
                 if trigger_count < 1:
                     raise ValueError("El número de triggers debe ser al menos 1")
 
-                print(f"🎯 MODO TRIGGER: {trigger_count} barridos usando Start={start} Hz, End={end} Hz, Points={points}")
+                print(f"MODO TRIGGER: {trigger_count} barridos usando Start={start} Hz, End={end} Hz, Points={points}")
                 for run_index in range(1, trigger_count + 1):
                     if stop_sweep.is_set():
-                        print("🛑 Trigger cancelado por el usuario")
+                        print("Trigger cancelado por el usuario")
                         device_state.end_sweep_streaming()
                         return
 
@@ -968,17 +917,17 @@ def sweep_worker(config):
                         'z_mag': run_data['z_mag'].copy(),
                         'phase': run_data['phase'].copy(),
                     })
-                    print(f"[Trigger Sweep] ✅ Barrido {run_index}/{trigger_count} guardado con {len(run_data['param'])} puntos")
+                    print(f"[Trigger Sweep] Barrido {run_index}/{trigger_count} guardado con {len(run_data['param'])} puntos")
 
                 results = batch_runs[-1] if batch_runs else {'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}
-                print(f"✅ Trigger completo: {len(batch_runs)} barridos obtenidos")
+                print(f"Trigger completo: {len(batch_runs)} barridos obtenidos")
             else:
                 results = execute_frequency_sweep_once()
-                print(f"✅ Barrido completo: {len(results)} puntos totales obtenidos")
+                print(f"Barrido completo: {len(results)} puntos totales obtenidos")
 
             # Consolidar resultados finales en sweep_data (ya se enviaron al streaming en tiempo real)
             sweep_phase = 'postprocess'
-            print(f"📊 Consolidando {'trigger' if trigger_enabled else 'sweep'} en datos finales...")
+            print(f"Consolidando {'trigger' if trigger_enabled else 'sweep'} en datos finales...")
             try:
                 if trigger_enabled:
                     if batch_runs:
@@ -992,7 +941,7 @@ def sweep_worker(config):
                             'runs': [dict(run) for run in batch_runs],
                             'trigger_enabled': True,
                         }
-                        print(f"✅ Consolidación trigger completada: {len(batch_runs)} barridos, {len(sweep_data['param'])} puntos en el último barrido")
+                        print(f"Consolidación trigger completada: {len(batch_runs)} barridos, {len(sweep_data['param'])} puntos en el último barrido")
                     else:
                         sweep_data = {'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': [], 'runs': [], 'trigger_enabled': True}
                 else:
@@ -1012,12 +961,12 @@ def sweep_worker(config):
                             sweep_data['z_mag'].append(z_mag)
                             sweep_data['phase'].append(phase)
 
-                    print(f"✅ Consolidación completada: {len(sweep_data['param'])} puntos finales")
+                    print(f"Consolidación completada: {len(sweep_data['param'])} puntos finales")
 
-                print(f"📊 Progreso final confirmado por streaming: 100% ({total_stream_points}/{total_stream_points} puntos)")
+                print(f"Progreso final confirmado por streaming: 100% ({total_stream_points}/{total_stream_points} puntos)")
                 
             except Exception as e:
-                print(f"❌ ERROR en procesamiento: {e}")
+                print(f"ERROR en procesamiento: {e}")
                 import traceback
                 traceback.print_exc()
                 sweep_queue.put({'error': True, 'message': f'Error procesando datos: {str(e)}'})
@@ -1027,7 +976,7 @@ def sweep_worker(config):
         
         # === FINALIZAR STREAMING ===
         device_state.end_sweep_streaming()
-        print(f"📡 Streaming finalizado")
+        print(f"Streaming finalizado")
         
         sweep_queue.put({
             'completed': True,
@@ -1046,7 +995,7 @@ def sweep_worker(config):
     finally:
         # Liberar lock de operación
         device_state._operation_lock.release()
-        print("🔓 Lock de operación liberado")
+        print("Lock de operación liberado")
 
 # ==================== COMPONENTES DE UI ====================
 # NOTA: El terminal CLI ahora es global (ver terminal_component.py)
@@ -1071,13 +1020,13 @@ def connect_modal():
                         html.I(className="fas fa-minus"),
                         id="connect-modal-minimize",
                         className="window-control-btn window-btn-minimize",
-                        title="Minimizar"
+                        title=i18n_t('ui.minimize')
                     ),
                     html.Button(
                         html.I(className="fas fa-times"),
                         id="connect-modal-close",
                         className="window-control-btn window-btn-close",
-                        title="Cerrar"
+                        title=i18n_t('generic.close')
                     ),
                 ], className="window-controls")
             ], className="window-header", id="connect-modal-header"),
@@ -1088,7 +1037,7 @@ def connect_modal():
                 html.Div([
                     html.Div([
                         html.Div(id="auto-connect-spinner", className="spinner-border spinner-border-sm text-primary me-2", style={'display': 'none'}),
-                        html.Span(id="auto-connect-status", className="fw-semibold text-primary", children="Buscando dispositivo...")
+                        html.Span('Buscando dispositivo...', id="auto-connect-status", className="fw-semibold text-primary", **{'data-i18n': 'dash.searching_device'}),
                     ], className="d-flex align-items-center justify-content-center mb-3"),
                     
                     # Barra de progreso
@@ -1123,7 +1072,7 @@ def connect_modal():
                     ),
                     html.Button([
                         html.I(className="fas fa-sync-alt me-1"),
-                        "Actualizar"
+                        html.Span("Actualizar", **{'data-i18n': 'dash.refresh_ports'})
                     ], id="refresh-ports-btn", className="btn btn-sm btn-outline-secondary w-100 mb-3", n_clicks=0)
                 ]),
                 
@@ -1131,11 +1080,11 @@ def connect_modal():
                 html.Div([
                     html.Button([
                         html.I(className="fas fa-bolt me-2"),
-                        "Conectar"
+                        html.Span("Conectar", **{'data-i18n': 'dash.connect_btn'})
                     ], id="connect-btn", className="btn btn-success w-100 mb-2"),
                     html.Button([
                         html.I(className="fas fa-power-off me-2"),
-                        "Desconectar"
+                        html.Span("Desconectar", **{'data-i18n': 'dash.disconnect_btn'})
                     ], id="disconnect-modal-btn", className="btn btn-outline-danger w-100 mb-2"),
                 ], className='action-buttons')
                 
@@ -1155,13 +1104,13 @@ def csv_modal():
                 html.Div([
                     html.Div([
                         # Botón close (esquina superior derecha)
-                        html.Button(type='button', className='btn-close ms-auto', **DISMISS),
+                        html.Button(type='button', id='csv-modal-x-btn', className='btn-close ms-auto'),
                         
                         # Título centrado
                         html.Div([
                             html.H1([
                                 html.I(className="fas fa-file-csv me-2"),
-                                "Cargar Datos CSV"
+                                html.Span("Cargar Datos CSV", **{'data-i18n': 'dash.csv_modal_title'})
                             ], className='mb-0 h4')
                         ], className='text-center mb-4 mt-md-0'),
                         
@@ -1172,7 +1121,7 @@ def csv_modal():
                                 html.H6("", className="fw-bold mb-3", **{'data-i18n': 'dash.csv_format_title'}),
                                 html.P([
                                     html.I(className="fas fa-info-circle me-2"),
-                                    "El archivo CSV debe contener las siguientes columnas:"
+                                    html.Span("El archivo CSV debe contener las siguientes columnas:", **{'data-i18n': 'dash.csv_format_desc'})
                                 ], className="text-muted small mb-2"),
                                 html.Ul([
                                     html.Li("", className="small", **{'data-i18n': 'dash.csv_col_freq'}),
@@ -1191,8 +1140,8 @@ def csv_modal():
                                     id='upload-csv',
                                     children=html.Div([
                                         html.I(className="fas fa-cloud-upload-alt me-2"),
-                                        'Arrastra y suelta o ',
-                                        html.A('selecciona un archivo', className="text-primary")
+                                        html.Span('Arrastra y suelta o ', **{'data-i18n': 'dash.csv_upload_hint'}),
+                                        html.A(html.Span('selecciona un archivo', **{'data-i18n': 'dash.csv_select_link'}), className="text-primary")
                                     ]),
                                     style={
                                         'width': '100%',
@@ -1223,11 +1172,11 @@ def csv_modal():
                             html.Div([
                                 html.Button([
                                     html.I(className="fas fa-times me-2"),
-                                    "Cancelar"
-                                ], type="button", className="btn btn-secondary me-2", **DISMISS),
+                                    html.Span("Cancelar", **{'data-i18n': 'generic.cancel'})
+                                ], id="csv-modal-cancel-btn", type="button", className="btn btn-secondary me-2"),
                                 html.Button([
                                     html.I(className="fas fa-upload me-2"),
-                                    "Cargar Datos"
+                                    html.Span("Cargar Datos", **{'data-i18n': 'dash.load_data_btn'})
                                 ], id="confirm-load-csv-btn", className="btn btn-primary")
                             ], className='d-flex gap-2 flex-wrap')
                         ])
@@ -1247,35 +1196,35 @@ def sweep_config_card_compact():
                         html.I(className="fas fa-sliders-h me-2"),
                         html.Span('', **{'data-i18n': 'dash.sweep_config'})
                     ], className="mb-0")
-                ], className="card-header border-bottom border-gray-300 p-3"),
+                ], className="card-header border-bottom border-secondary p-3"),
                 html.Div([
                     # Primera fila: Frecuencias y puntos
                     html.Div([
                         html.Div([
                             html.Label(html.Span('', **{'data-i18n': 'dash.freq_start'}), className="form-label fw-bold small mb-1"),
                             dcc.Input(id='sweep-start', type='number', value=100, min=0.2, max=10000000, step='any',
-                                      placeholder="ej: 0.2",
+                                      placeholder="",
                                       className="form-control form-control-sm"),
-                            html.Small("0.2 Hz – 10 MHz", className="form-text text-muted")
+                            html.Small("", className="form-text text-muted", **{'data-i18n': 'dash.start_freq_hint'})
                         ], className="col-6 col-md-2"),
                         html.Div([
                             html.Label(html.Span('', **{'data-i18n': 'dash.freq_end'}), className="form-label fw-bold small mb-1"),
                             dcc.Input(id='sweep-end', type='number', value=100000, min=0.2, max=10000000, step='any',
-                                      placeholder="ej: 10000000",
+                                      placeholder="",
                                       className="form-control form-control-sm"),
-                            html.Small("0.2 Hz – 10 MHz", className="form-text text-muted")
+                            html.Small("", className="form-text text-muted", **{'data-i18n': 'dash.end_freq_hint'})
                         ], className="col-6 col-md-2"),
                         html.Div([
                             html.Label(html.Span('', **{'data-i18n': 'dash.points'}), className="form-label fw-bold small mb-1"),
                             dcc.Input(id='sweep-points', type='number', value=50, min=2, step=1,
                                       className="form-control form-control-sm"),
-                            html.Small("Puntos por barrido", className="form-text text-muted")
+                            html.Small("", className="form-text text-muted", **{'data-i18n': 'dash.points_hint'})
                         ], className="col-6 col-md-2"),
                         html.Div([
                             html.Label(html.Span('', **{'data-i18n': 'dash.scale'}), className="form-label fw-bold small mb-1"),
                             dcc.Dropdown(id="sweep-scale", options=[
-                                {'label': 'Log', 'value': 'log'},
-                                {'label': 'Lineal', 'value': 'linear'}
+                                {'label': i18n_t('dash.scale_log'), 'value': 'log'},
+                                {'label': i18n_t('dash.scale_linear'), 'value': 'linear'}
                             ], value="log", clearable=False, className="mb-0")
                         ], className="col-6 col-md-2"),
                         html.Div([
@@ -1295,7 +1244,7 @@ def sweep_config_card_compact():
                                 min=0.001,
                                 max=10,
                                 step=0.001,
-                                placeholder="Ej: 0.2, 1.0",
+                                placeholder="",
                                 className="form-control form-control-sm"
                             )
                         ], className="col-6 col-md-2")
@@ -1325,38 +1274,38 @@ def sweep_config_card_compact():
                         # Botones de acción — bloque rediseñado con etiquetas visibles
                         html.Div([
                             html.Label(
-                                html.Span('', **{'data-i18n': 'dash.actions'}),
+                                html.Span('Acciones', **{'data-i18n': 'dash.actions'}),
                                 className="form-label fw-bold small mb-1 d-block"
                             ),
                             html.Div([
                                 # Iniciar barrido
                                 html.Button([
                                     html.I(className="fas fa-play"),
-                                    html.Span("Iniciar", className="btn-label ms-1")
+                                    html.Span("Iniciar", className="btn-label ms-1", **{'data-i18n': 'dash.btn_start'})
                                 ], id="sweep-btn",
                                    className="btn btn-primary sweep-action-btn",
-                                   title="Iniciar barrido de frecuencias"),
+                                   title=""),
                                 # Detener
                                 html.Button([
                                     html.I(className="fas fa-stop"),
-                                    html.Span("Detener", className="btn-label ms-1")
+                                    html.Span("Detener", className="btn-label ms-1", **{'data-i18n': 'dash.btn_stop'})
                                 ], id="cancel-sweep-btn",
                                    className="btn btn-danger sweep-action-btn",
-                                   title="Detener barrido en curso"),
+                                   title=""),
                                 # Guardar CSV
                                 html.Button([
                                     html.I(className="fas fa-floppy-disk"),
-                                    html.Span("Guardar", className="btn-label ms-1")
+                                    html.Span("Guardar", className="btn-label ms-1", **{'data-i18n': 'dash.btn_save'})
                                 ], id="save-csv-btn",
                                    className="btn btn-success sweep-action-btn",
-                                   title="Exportar datos a CSV"),
+                                   title=""),
                                 # Importar CSV
                                 html.Button([
                                     html.I(className="fas fa-folder-open"),
-                                    html.Span("Cargar", className="btn-label ms-1")
+                                    html.Span("Cargar", className="btn-label ms-1", **{'data-i18n': 'dash.btn_load'})
                                 ], id="load-csv-btn",
-                                   className="btn btn-outline-secondary sweep-action-btn",
-                                   title="Importar datos desde CSV"),
+                                   className="btn btn-outline-info sweep-action-btn",
+                                   title=""),
                             ], className="d-flex flex-wrap gap-2 align-items-center")
                         ], className="col-12 col-md-6"),
                     ], className="row g-2"),
@@ -1364,10 +1313,10 @@ def sweep_config_card_compact():
                     # Trigger + estado del barrido
                     html.Div([
                         html.Div([
-                            html.Label("Trigger", className="form-label fw-bold small mb-1 d-block"),
+                            html.Label(html.Span('Disparo', **{'data-i18n': 'dash.trigger_label'}), className="form-label fw-bold small mb-1 d-block"),
                             dcc.Checklist(
                                 id='sweep-trigger-check',
-                                options=[{'label': 'Modo trigger', 'value': 'trigger'}],
+                                options=[{'label': html.Span('Modo disparo', **{'data-i18n': 'dash.trigger_mode'}), 'value': 'trigger'}],
                                 value=[],
                                 className="form-check-inline small",
                                 inputClassName="form-check-input",
@@ -1375,10 +1324,11 @@ def sweep_config_card_compact():
                             )
                         ], className="col-12 col-md-2"),
                         html.Div([
-                            html.Label("Rango del Trigger", className="form-label fw-bold small mb-1"),
+                            html.Label(html.Span('', **{'data-i18n': 'dash.trigger_range'}), className="form-label fw-bold small mb-1"),
                             html.Small(
-                                "Usa Start / End / Points del barrido actual.",
-                                className="text-muted d-block mb-1"
+                                "",
+                                className="text-muted d-block mb-1",
+                                **{'data-i18n': 'dash.trigger_hint'}
                             ),
                             dcc.Input(
                                 id='sweep-trigger-frequency',
@@ -1391,7 +1341,7 @@ def sweep_config_card_compact():
                             )
                         ], className="col-6 col-md-2"),
                         html.Div([
-                            html.Label("# Triggers", className="form-label fw-bold small mb-1"),
+                            html.Label(html.Span('', **{'data-i18n': 'dash.trigger_count_label'}), className="form-label fw-bold small mb-1"),
                             dcc.Input(
                                 id='sweep-trigger-count',
                                 type='number',
@@ -1404,7 +1354,7 @@ def sweep_config_card_compact():
                         ], className="col-6 col-md-2"),
                         html.Div([
                             html.Small(
-                                "Si activa Trigger, se harán N mediciones consecutivas en una frecuencia fija y se guardará cada resultado.",
+                                i18n_t('dash.trigger_hint'),
                                 className="text-muted d-block pt-md-4"
                             )
                         ], className="col-12 col-md-8")
@@ -1443,7 +1393,6 @@ layout = html.Div([
         
         # Contenido principal - aprovecha todo el espacio horizontal disponible
         html.Main([
-            dcc.Location(id='url', refresh=False),
             
             # Contenedor principal con fondo
             html.Div([
@@ -1453,10 +1402,13 @@ layout = html.Div([
                         html.H2(html.Span('', **{'data-i18n': 'dash.title'}), className="h3 mb-0")
                 ], className="col-12 col-md-6 mb-2 mb-md-0"),
                 html.Div([
-                    # Solo botón de tema
+                    # Botón de tema: muestra a qué modo se CAMBIARÁ al hacer clic
                     html.Button([
-                        html.I(className="fas fa-moon", id="theme-icon")
-                    ], id="theme-toggle-btn", className="btn btn-outline-secondary", title="Cambiar tema"),
+                        html.I(className="fas fa-sun", id="theme-icon"),
+                        html.Span("Claro", className="btn-label ms-1", id="theme-toggle-label",
+                                  **{'data-i18n': 'dash.btn_theme_light'})
+                    ], id="theme-toggle-btn", className="btn btn-outline-secondary",
+                       title=i18n_t('ui.change_theme')),
                 ], className="col-12 col-md-6 d-flex justify-content-md-end align-items-center")
             ], className="row align-items-center py-4"),
 
@@ -1481,7 +1433,7 @@ layout = html.Div([
             dcc.Store(id='connect-modal-dummy', data=None),  # Dummy store para callbacks clientside
             dcc.Store(id='chart-modal-dummy', data=None),  # Dummy store para ventana de gráfico
 
-            # ✅ PRIORIDAD #1: GRÁFICOS PRIMERO (70% altura visual)
+            # PRIORIDAD #1: GRÁFICOS PRIMERO (70% altura visual)
             html.Div([
                 # Diagrama de Bode
                 html.Div([
@@ -1490,7 +1442,7 @@ layout = html.Div([
                             html.H5([
                                 html.I(className="fas fa-chart-line me-2"),
                                 html.Span('', **{'data-i18n': 'dash.bode_title'})
-                            ], className="mb-0"),
+                            ], className="mb-0 chart-title"),
                             html.Button(
                                 html.I(className="fas fa-expand"),
                                 id='maximize-bode-btn',
@@ -1500,7 +1452,9 @@ layout = html.Div([
                             )
                         ], className="d-flex justify-content-between align-items-center card-header border-bottom border-gray-300 p-3"),
                         html.Div([
-                            dcc.Graph(id='bode-plot', figure={}, style={'height': '500px'})
+                            dcc.Graph(id='bode-plot',
+                                      figure=create_empty_figure(i18n_t('dash.sweep_empty_title'), 'dark', hint=True),
+                                      style={'height': '500px'})
                         ], className="card-body p-2")
                     ], className="card border-0 shadow h-100")
                 ], className="col-12 col-lg-6 mb-4"),
@@ -1512,7 +1466,7 @@ layout = html.Div([
                             html.H5([
                                 html.I(className="fas fa-circle-notch me-2"),
                                 html.Span('', **{'data-i18n': 'dash.nyquist_title'})
-                            ], className="mb-0"),
+                            ], className="mb-0 chart-title"),
                             html.Button(
                                 html.I(className="fas fa-expand"),
                                 id='maximize-nyquist-btn',
@@ -1522,13 +1476,15 @@ layout = html.Div([
                             )
                         ], className="d-flex justify-content-between align-items-center card-header border-bottom border-gray-300 p-3"),
                         html.Div([
-                            dcc.Graph(id='nyquist-plot', figure={}, style={'height': '500px'})
+                            dcc.Graph(id='nyquist-plot',
+                                      figure=create_empty_figure(i18n_t('dash.sweep_empty_title'), 'dark', hint=True),
+                                      style={'height': '500px'})
                         ], className="card-body p-2")
                     ], className="card border-0 shadow h-100")
                 ], className="col-12 col-lg-6 mb-4")
             ], className="row"),
             
-            # ✅ PRIORIDAD #2: CONFIGURACIÓN COMPACTA (30% altura visual)
+            # PRIORIDAD #2: CONFIGURACIÓN COMPACTA (30% altura visual)
             sweep_config_card_compact(),
 
             # Modales
@@ -1543,13 +1499,13 @@ layout = html.Div([
                         html.Div([
                             html.Div([
                                 # Botón close (esquina superior derecha)
-                                html.Button(type='button', className='btn-close ms-auto', **{"data-bs-dismiss": "modal"}),
+                                html.Button(type='button', id='sweep-modal-x-btn', className='btn-close ms-auto'),
                                 
                                 # Título centrado
                                 html.Div([
                                     html.H1([
                                         html.I(className="fas fa-chart-line me-2"),
-                                        "Barrido en Progreso"
+                                        i18n_t('dash.sweep_in_progress_title')
                                     ], className='mb-0 h4')
                                 ], className='text-center mb-4 mt-md-0'),
                                 
@@ -1567,7 +1523,7 @@ layout = html.Div([
                                 html.Div([
                                     html.Button([
                                         html.I(className="fas fa-times me-2"), 
-                                        "Cancelar Barrido"
+                                        i18n_t('dash.cancel_sweep')
                                     ], id="cancel-sweep-modal-btn", className="btn btn-danger")
                                 ], className='d-grid')
                             ], className='card p-3 p-lg-4')
@@ -1591,7 +1547,7 @@ layout = html.Div([
             # Título
             html.Div([
                 html.I(className="fas fa-chart-line me-2"),
-                html.Span("", id="chart-modal-title", **{'data-i18n': 'dash.chart_maximized'}),
+                html.Span("Gráfica Maximizada", id="chart-modal-title", **{'data-i18n': 'dash.chart_maximized'}),
             ], className="window-title"),
             
             # Controles
@@ -1600,19 +1556,19 @@ layout = html.Div([
                     html.I(className="fas fa-minus"),
                     id="modal-minimize-btn",
                     className="window-control-btn window-btn-minimize",
-                    title="Minimizar"
+                    title=i18n_t('ui.minimize')
                 ),
                 html.Button(
                     html.I(className="fas fa-expand"),
                     id="modal-maximize-btn",
                     className="window-control-btn window-btn-maximize",
-                    title="Maximizar/Restaurar"
+                    title=i18n_t('ui.max_restore')
                 ),
                 html.Button(
                     html.I(className="fas fa-times"),
                     id="modal-close-btn",
                     className="window-control-btn window-btn-close",
-                    title="Cerrar (Esc)"
+                    title=i18n_t('ui.close_esc')
                 )
             ], className="window-controls")
         ], className="window-header", id="chart-modal-header-drag"),
@@ -1704,7 +1660,7 @@ def register_callbacks(app):
                 }
                 current_ports.append(port_info)
                 options.append({
-                    'label': f"✓ {port.device} - {port_info['description']}",
+                    'label': f" {port.device} - {port_info['description']}",
                     'value': port.device
                 })
 
@@ -1738,7 +1694,7 @@ def register_callbacks(app):
 
             # Si no hay puertos, mostrar mensaje
             if not options:
-                options = [{'label': '❌ No se encontraron puertos USB', 'value': '', 'disabled': True}]
+                options = [{'label': 'No se encontraron puertos USB', 'value': '', 'disabled': True}]
                 return options, '', []
             
             # Determinar valor a seleccionar
@@ -1757,7 +1713,7 @@ def register_callbacks(app):
             raise
         except Exception as e:
             logger.error(f"Error al detectar puertos seriales: {e}")
-            return [{'label': f'❌ Error: {str(e)[:40]}', 'value': '', 'disabled': True}], '', []
+            return [{'label': f'Error: {str(e)[:40]}', 'value': '', 'disabled': True}], '', []
 
     # Callback para sincronizar checkbox de fase negativa con Store
     @app.callback(
@@ -1768,7 +1724,7 @@ def register_callbacks(app):
     def update_phase_negative_store(checkbox_value):
         """Actualiza el store cuando cambia el checkbox de fase negativa"""
         is_negative = 'negative' in checkbox_value if checkbox_value else False
-        safe_print(f"📐 Fase negativa: {is_negative}")
+        safe_print(f" Fase negativa: {is_negative}")
         return is_negative
 
     # ── Callback: Estimador de tiempo de barrido en tiempo real ──────────────
@@ -1807,7 +1763,7 @@ def register_callbacks(app):
             total_s = info['total_seconds']
             if total_s > 3600:
                 color = "text-danger"
-                icon  = "⚠️"
+                icon  = ""
             elif total_s > 300:
                 color = "text-warning"
                 icon  = "⏳"
@@ -1838,15 +1794,15 @@ def register_callbacks(app):
     )
     def update_graphs_on_phase_change(negative_phase, stored_data, theme):
         """Actualiza SOLO las gráficas cuando cambia el checkbox de fase negativa"""
-        safe_print(f"🔄 Actualizando gráficas por cambio de fase - negativa: {negative_phase}")
+        safe_print(f"Actualizando gráficas por cambio de fase - negativa: {negative_phase}")
         
         if stored_data and len(stored_data.get('param', [])) > 0:
-            safe_print(f"📊 Regenerando gráficas con fase {'negativa' if negative_phase else 'positiva'}")
+            safe_print(f"Regenerando gráficas con fase {'negativa' if negative_phase else 'positiva'}")
             bode_fig = create_bode_plot_from_dataset(stored_data, negative_phase, theme)
             nyquist_fig = create_nyquist_plot_from_dataset(stored_data, theme)
             return bode_fig, nyquist_fig
         else:
-            safe_print(f"⚠️ No hay datos para actualizar gráficas")
+            safe_print(f"No hay datos para actualizar gráficas")
             raise PreventUpdate
     
     # Callback para cargar datos persistentes al navegar a la página
@@ -1861,18 +1817,18 @@ def register_callbacks(app):
     )
     def load_persistent_data(pathname, stored_data, phase_negative, theme):
         """Carga datos del Store al cargar/navegar a la página del dashboard SOLO al navegar"""
-        safe_print(f"🔄 Callback load_persistent_data - pathname: {pathname}")
+        safe_print(f"Callback load_persistent_data - pathname: {pathname}")
         
         # Si hay datos guardados, regenerar gráficas
         if stored_data and len(stored_data.get('param', [])) > 0:
-            safe_print(f"📊 Restaurando gráficas con {len(stored_data['param'])} puntos del Store")
+            safe_print(f"Restaurando gráficas con {len(stored_data['param'])} puntos del Store")
             bode_fig = create_bode_plot_from_dataset(stored_data, phase_negative, theme)
             nyquist_fig = create_nyquist_plot_from_dataset(stored_data, theme)
             return bode_fig, nyquist_fig
         else:
-            safe_print(f"📊 No hay datos en Store - mostrando gráficas vacías")
-            empty_bode = create_empty_figure("Sin datos - Ejecute un barrido", theme)
-            empty_nyquist = create_empty_figure("Sin datos - Ejecute un barrido", theme)
+            safe_print(f"No hay datos en Store - mostrando gráficas vacías")
+            empty_bode = create_empty_figure(i18n_t('dash.sweep_empty_title'), theme, hint=True)
+            empty_nyquist = create_empty_figure(i18n_t('dash.sweep_empty_title'), theme, hint=True)
             return empty_bode, empty_nyquist
     
     # Callback separado para sincronizar checkbox con Store al cargar página
@@ -1885,7 +1841,7 @@ def register_callbacks(app):
     def sync_checkbox_from_store(pathname, phase_negative):
         """Sincroniza el checkbox con el valor del Store SOLO al navegar a la página"""
         checkbox_value = ['negative'] if phase_negative else []
-        safe_print(f"🔄 Sincronizando checkbox desde Store: {checkbox_value} (pathname: {pathname})")
+        safe_print(f"Sincronizando checkbox desde Store: {checkbox_value} (pathname: {pathname})")
         return checkbox_value
 
     @app.callback(
@@ -1920,11 +1876,11 @@ def register_callbacks(app):
     )
     def close_modal_after_delay(n):
         """Cierra el modal 1 segundo después de completarse el barrido al 100%"""
-        safe_print(f"⏱️ Modal close interval fired: n_intervals = {n}")
+        safe_print(f"Modal close interval fired: n_intervals = {n}")
         
         if n and n > 0:
             # El intervalo se disparó, cerrar modal
-            safe_print("✅ Cerrando modal después de 1 segundo de delay")
+            safe_print("Cerrando modal después de 1 segundo de delay")
             return {'display': 'none'}, 'modal fade', True  # Cerrar modal y deshabilitar intervalo
         
         # No cerrar aún
@@ -1970,14 +1926,17 @@ def register_callbacks(app):
         function(style) {
             if (style && (style.display === 'flex' || style.display === 'block')) {
                 // Dar tiempo a que el DOM se actualice
-                setTimeout(function() {
-                    if (window.DraggableWindows && !window.DraggableWindows.isInitialized('connect-modal')) {
-                        window.DraggableWindows.init('connect-modal', 'connect-modal-header', {width: 380, height: 420});
-                        window.DraggableWindows.show('connect-modal');
-                    } else if (window.DraggableWindows) {
-                        window.DraggableWindows.show('connect-modal');
-                    }
-                }, 100);
+setTimeout(function() {
+                     if (window.DraggableWindows && !window.DraggableWindows.isInitialized('connect-modal')) {
+                         window.DraggableWindows.init('connect-modal', 'connect-modal-header', {width: 380, height: 420});
+                         window.DraggableWindows.show('connect-modal');
+                     } else if (window.DraggableWindows) {
+                         window.DraggableWindows.show('connect-modal');
+                     }
+                     if (typeof enableFocusTrap === 'function') {
+                         enableFocusTrap('connect-modal');
+                     }
+                 }, 100);
             }
             return 1;
         }
@@ -2032,12 +1991,12 @@ def register_callbacks(app):
                     device_state.device.close()
                 device_state.set_device(None, False)
                 logger.info("Dispositivo desconectado desde modal")
-                return ("Desconectado", "connection-pulse disconnected",
+                return (i18n_t('conn.disconnected'), "connection-pulse disconnected",
                         "ADMX2001", True, False, False, {'display': 'none'})
             except Exception as e:
                 logger.error(f"Error desconectando: {e}")
                 # NO activar error modal - desconexión fallida no es crítica
-                return ("Error", "connection-pulse error",
+                return (i18n_t('conn.error'), "connection-pulse error",
                         "ADMX2001", True, False, False, {'display': 'none'})
         
         # ===== CONEXIÓN MANUAL =====
@@ -2045,13 +2004,13 @@ def register_callbacks(app):
             if not port or port == '':
                 logger.warning("Intento de conexión sin puerto seleccionado")
                 # NO activar error modal - solo es una validación de formulario
-                return ("Seleccione puerto", "connection-pulse disconnected",
+                return (i18n_t('conn.select_port'), "connection-pulse disconnected",
                         "ADMX2001", True, False, False, {'display': 'flex'})
             
             # Adquirir lock para evitar conexiones simultáneas
             if not device_state._operation_lock.acquire(blocking=False):
                 logger.warning("Otra operación en curso, saltando conexión manual")
-                return ("Ocupado", "connection-pulse disconnected",
+                return (i18n_t('conn.busy'), "connection-pulse disconnected",
                         "ADMX2001", True, False, False, {'display': 'flex'})
             
             try:
@@ -2060,13 +2019,13 @@ def register_callbacks(app):
                 device_state.set_device(new_device, True)
                 new_device.set_mdelay(1)
                 new_device.set_tdelay(0)
-                logger.info(f"✅ Conectado a {port}")
-                return ("Conectado", "connection-pulse connected",
+                logger.info(f"Conectado a {port}")
+                return (i18n_t('conn.connected'), "connection-pulse connected",
                     port, False, False, True, {'display': 'none'})
             except Exception as e:
                 logger.error(f"Error conectando manualmente: {e}")
                 # SÍ activar error modal - falló una conexión manual explícita
-                return ("Error", "connection-pulse error",
+                return (i18n_t('conn.error'), "connection-pulse error",
                     "ADMX2001", True, True, False, {'display': 'flex'})
             finally:
                 # Liberar lock de operación
@@ -2120,7 +2079,8 @@ def register_callbacks(app):
         [Input('sweep-interval', 'n_intervals'),
          Input('sweep-btn', 'n_clicks'),
          Input('cancel-sweep-btn', 'n_clicks'),
-         Input('cancel-sweep-modal-btn', 'n_clicks')],  # 4 inputs - phase NO es Input
+         Input('cancel-sweep-modal-btn', 'n_clicks'),
+         Input('sweep-modal-x-btn', 'n_clicks')],  # 5 inputs - phase NO es Input
         [State('sweep-start', 'value'),
          State('sweep-end', 'value'),
          State('sweep-points', 'value'),
@@ -2137,7 +2097,7 @@ def register_callbacks(app):
          State('theme-store', 'data')],
         prevent_initial_call=True
     )
-    def manage_sweep(n_intervals, sweep_clicks, cancel_clicks, cancel_modal_clicks,
+    def manage_sweep(n_intervals, sweep_clicks, cancel_clicks, cancel_modal_clicks, x_close_clicks,
                      start, end, points, scale, display_mode, mdelay, tdelay, magnitude,
                      trigger_options, trigger_frequency, trigger_count,
                      negative_phase, stored_data, theme):
@@ -2158,8 +2118,8 @@ def register_callbacks(app):
             bode_fig = create_bode_plot_from_dataset(stored_data, negative_phase, theme)
             nyquist_fig = create_nyquist_plot_from_dataset(stored_data, theme)
         else:
-            bode_fig = create_empty_figure("Sin datos", theme)
-            nyquist_fig = create_empty_figure("Sin datos", theme)
+            bode_fig = create_empty_figure(theme=theme)
+            nyquist_fig = create_empty_figure(theme=theme)
         
         stored_data = stored_data or {'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}
         total_points = points or 50
@@ -2176,7 +2136,7 @@ def register_callbacks(app):
         has_active_sweep = thread_alive or queue_has_messages
         interval_disabled = not has_active_sweep  # Disabled = True cuando NO hay sweep activo
         
-        print(f"📊 Estado: Thread alive={thread_alive}, Queue has msgs={queue_has_messages}, Active sweep={has_active_sweep}, Interval disabled={interval_disabled}")
+        print(f"Estado: Thread alive={thread_alive}, Queue has msgs={queue_has_messages}, Active sweep={has_active_sweep}, Interval disabled={interval_disabled}")
 
         # CRÍTICO: Mantener modal CERRADO hasta que haya mensajes en la cola
         # Esto evita que el usuario vea el modal durante la fase de adquisición del hardware
@@ -2190,7 +2150,7 @@ def register_callbacks(app):
                 modal_class = 'modal fade show'
                 progress_style = {'width': f'{sweep_progress}%'}
                 progress_text = f"{sweep_progress}%"
-                status_text = "Procesando..."
+                status_text = i18n_t('dash.status.processing')
                 sweep_completed = False  # Flag local para detectar completado en ESTA ejecución
                 
                 # Usar progreso anterior
@@ -2224,9 +2184,9 @@ def register_callbacks(app):
                             progress_text = "100%"  # texto mostrado
                             
                             if data.get('mode') == 'trigger':
-                                status_text = f"✅ Trigger completado: {data.get('runs', 1)} barridos ({data['points']} puntos en el último)"
+                                status_text = i18n_t('dash.trigger_completed').replace('{n}', str(data.get('runs', 1))).replace('{pts}', str(data['points']))
                             else:
-                                status_text = f"✅ Barrido completado: {data['points']} puntos"
+                                status_text = i18n_t('dash.sweep_completed_points').replace('{n}', str(data['points']))
                             sweep_completed = True  # Marcar que el sweep se completó
                             sweep_completed_successfully = True  # Marcar que se completó exitosamente
                             
@@ -2237,13 +2197,13 @@ def register_callbacks(app):
                             
                             # CRÍTICO: Marcar sweep como NO en progreso para detener polling
                             device_state.end_sweep_streaming()
-                            print(f"📡 Sweep streaming finalizado desde callback (redundancia)")
+                            print(f"Sweep streaming finalizado desde callback (redundancia)")
                             
-                            print(f"🎉 BARRIDO COMPLETADO: 100% - cerrando modal inmediatamente")
+                            print(f"BARRIDO COMPLETADO: 100% - cerrando modal inmediatamente")
                             # Forzar actualización inmediata de gráficos cuando se completa el sweep
                             if sweep_data and sweep_data.get('param') and len(sweep_data['param']) > 0:
                                 try:
-                                    print(f"📊 ACTUALIZANDO GRÁFICAS FINALES: {len(sweep_data['param'])} puntos")
+                                    print(f"ACTUALIZANDO GRÁFICAS FINALES: {len(sweep_data['param'])} puntos")
                                     bode_fig = create_bode_plot_from_dataset(sweep_data, negative_phase, theme)
                                     nyquist_fig = create_nyquist_plot_from_dataset(sweep_data, theme)
                                     graphs_updated = True  # Marcar que las gráficas se actualizaron
@@ -2257,31 +2217,31 @@ def register_callbacks(app):
                                         'runs': [dict(run) for run in sweep_data.get('runs', [])],
                                         'trigger_enabled': sweep_data.get('trigger_enabled', False),
                                     }
-                                    print(f"✅ STORED_DATA ACTUALIZADO: {len(stored_data['param'])} puntos")
+                                    print(f"STORED_DATA ACTUALIZADO: {len(stored_data['param'])} puntos")
                                     # Activar trigger para mostrar alerta de sweep completado
                                     sweep_completed_trigger = True
                                 except Exception as e:
-                                    print(f"❌ ERROR actualizando gráficas: {e}")
-                                    bode_fig = create_empty_figure("Error en gráfico de Bode", theme)
-                                    nyquist_fig = create_empty_figure("Error en gráfico de Nyquist", theme)
+                                    print(f"ERROR actualizando gráficas: {e}")
+                                    bode_fig = create_empty_figure(i18n_t('dash.empty_bode_error'), theme)
+                                    nyquist_fig = create_empty_figure(i18n_t('dash.empty_nyquist_error'), theme)
                                     sweep_completed_trigger = False
                             
                             # RETORNAR INMEDIATAMENTE con modal cerrado
                             interval_disabled = True  # Detener interval
                             streaming_interval_disabled = True  # Detener streaming
-                            print(f"🔒 RETORNANDO: Modal cerrado, intervals detenidos, {len(stored_data['param'])} puntos guardados")
+                            print(f" RETORNANDO: Modal cerrado, intervals detenidos, {len(stored_data['param'])} puntos guardados")
                             return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, str(progress_value), status_text, status_text, stored_data, sweep_completed_trigger, interval_disabled, modal_close_interval_disabled, streaming_interval_disabled)
 
                         elif 'error' in data:
                             error_phase = data.get('phase', 'unknown')
                             if error_phase == 'config':
-                                print(f"❌ Error durante CONFIGURACIÓN de sweep: {data.get('message', '')}")
+                                print(f"Error durante CONFIGURACIÓN de sweep: {data.get('message', '')}")
                             elif error_phase == 'acquisition':
-                                print(f"❌ Error durante ADQUISICIÓN de sweep: {data.get('message', '')}")
+                                print(f"Error durante ADQUISICIÓN de sweep: {data.get('message', '')}")
                             elif error_phase == 'postprocess':
-                                print(f"❌ Error durante POSTPROCESADO de sweep: {data.get('message', '')}")
+                                print(f"Error durante POSTPROCESADO de sweep: {data.get('message', '')}")
                             else:
-                                print(f"❌ Error en sweep (fase no clasificada): {data.get('message', '')}")
+                                print(f"Error en sweep (fase no clasificada): {data.get('message', '')}")
 
                             # CERRAR MODAL Y DETENER TODO cuando hay error
                             modal_style = {'display': 'none'}
@@ -2290,14 +2250,14 @@ def register_callbacks(app):
                             progress_value = 0
                             progress_style = {'width': '0%'}
                             progress_text = "0%"
-                            status_text = f"❌ Error ({error_phase}): {data['message']}"
+                            status_text = f"Error ({error_phase}): {data['message']}"
                             interval_disabled = True  # Detener interval
                             streaming_interval_disabled = True  # Detener streaming
                             modal_close_interval_disabled = True  # No necesita cerrar (ya cerrado)
                             
                             # Detener sweep streaming
                             device_state.end_sweep_streaming()
-                            print(f"❌ Error en sweep - modal cerrado, intervals detenidos")
+                            print(f"Error en sweep - modal cerrado, intervals detenidos")
 
                     except Exception as e:
                         # Si hay error procesando el mensaje, simplemente mantener estado actual
@@ -2313,10 +2273,10 @@ def register_callbacks(app):
                     traceback.print_exc()
                 except (BrokenPipeError, IOError):
                     pass  # Ignorar si no se puede imprimir
-                empty_bode = create_empty_figure("Error")
-                empty_nyquist = create_empty_figure("Error")
+                empty_bode = create_empty_figure(i18n_t('dash.empty_bode_error'))
+                empty_nyquist = create_empty_figure(i18n_t('dash.empty_nyquist_error'))
                 return (empty_bode, empty_nyquist, {'display': 'none'}, 'modal fade', {'width': '0%'}, "0%", "0",
-                        f"❌ Error interno: {str(e)}", f"❌ Error interno: {str(e)}",
+                        f"Error interno: {str(e)}", f"Error interno: {str(e)}",
                         {'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}, False)
 
         try:
@@ -2326,7 +2286,7 @@ def register_callbacks(app):
             if triggered == 'sweep-btn':
                 # Usar device_state global en lugar de variables locales
                 if not device_state.device or not device_state.is_connected:
-                    status_text = "❌ Dispositivo no conectado"
+                    status_text = i18n_t('dash.err_no_device')
                     progress_style = {'width': '0%'}
                     progress_text = "0%"
                     modal_style = {'display': 'none'}
@@ -2343,7 +2303,7 @@ def register_callbacks(app):
                     trigger_count = int(trigger_count) if trigger_count is not None else 1
                     
                     # Log de los parámetros que se van a usar
-                    print(f"🔧 PARÁMETROS DEL BARRIDO:")
+                    print(f"PARÁMETROS DEL BARRIDO:")
                     print(f"   - Frecuencia inicial: {start} Hz")
                     print(f"   - Frecuencia final: {end} Hz")
                     print(f"   - Número de puntos: {points}")
@@ -2360,7 +2320,7 @@ def register_callbacks(app):
                     max_freq = 10000000
 
                     if start < min_freq or start > max_freq:
-                        status_text = f"❌ Frecuencia inicial debe estar entre {min_freq} Hz y {max_freq/1000000} MHz"
+                        status_text = i18n_t('dash.freq_range_error').replace('{which}', i18n_t('dash.freq_start_label')).replace('{min}', str(min_freq)).replace('{max}', str(max_freq/1000000))
                         progress_style = {'width': '0%'}
                         progress_text = "0%"
                         modal_style = {'display': 'none'}
@@ -2368,7 +2328,7 @@ def register_callbacks(app):
                         return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, "0", status_text, status_text, stored_data, False, True, True, True)  # interval disabled, modal-close-interval disabled, streaming disabled
 
                     if end < min_freq or end > max_freq:
-                        status_text = f"❌ Frecuencia final debe estar entre {min_freq} Hz y {max_freq/1000000} MHz"
+                        status_text = i18n_t('dash.freq_range_error').replace('{which}', i18n_t('dash.freq_end_label')).replace('{min}', str(min_freq)).replace('{max}', str(max_freq/1000000))
                         progress_style = {'width': '0%'}
                         progress_text = "0%"
                         modal_style = {'display': 'none'}
@@ -2377,7 +2337,7 @@ def register_callbacks(app):
 
                     if trigger_enabled:
                         if trigger_count < 1:
-                            status_text = "❌ El número de triggers debe ser mayor o igual a 1"
+                            status_text = i18n_t('dash.err_trigger_count')
                             progress_style = {'width': '0%'}
                             progress_text = "0%"
                             modal_style = {'display': 'none'}
@@ -2385,7 +2345,7 @@ def register_callbacks(app):
                             return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, "0", status_text, status_text, stored_data, False, True, True, True)
 
                     if not trigger_enabled and (start >= end or points < 2):
-                        status_text = "❌ Parámetros inválidos"
+                        status_text = i18n_t('dash.err_invalid_params')
                         progress_style = {'width': '0%'}
                         progress_text = "0%"
                         modal_style = {'display': 'none'}
@@ -2409,8 +2369,8 @@ def register_callbacks(app):
 
                     # Prevenir inicio de barrido si ya hay uno activo
                     if sweep_thread and sweep_thread.is_alive():
-                        print(f"⚠️ BARRIDO YA EN PROGRESO - Ignorando solicitud duplicada")
-                        status_text = "⚠️ Barrido ya en progreso..."
+                        print(f"BARRIDO YA EN PROGRESO - Ignorando solicitud duplicada")
+                        status_text = i18n_t('dash.status.already_running')
                         # Retornar estado actual sin cambios - mantener streaming activo
                         return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, str(progress_value), status_text, status_text, stored_data, False, False, True, False)  # interval enabled, modal-close disabled, streaming ENABLED
                     
@@ -2419,18 +2379,18 @@ def register_callbacks(app):
 
                     # Limpiar datos previos para que el nuevo sweep inicie con gráficas vacías
                     stored_data = {'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}
-                    bode_fig = create_empty_figure("Sin datos", theme)
-                    nyquist_fig = create_empty_figure("Sin datos", theme)
+                    bode_fig = create_empty_figure(theme=theme)
+                    nyquist_fig = create_empty_figure(theme=theme)
                     
                     # Mantener stored_data para que los gráficos NO desaparezcan
                     # Los nuevos puntos llegarán vía poll_sweep_streaming
-                    print(f"✅ Iniciando thread de barrido con configuración:")
+                    print(f"Iniciando thread de barrido con configuración:")
                     print(f"   Config completa: {config}")
                     sweep_thread = threading.Thread(target=sweep_worker, args=(config,), daemon=True)
                     sweep_progress = 0  # Reiniciar progreso solo cuando se inicia un nuevo thread
                     sweep_completed_successfully = False  # Resetear estado de completado
                     sweep_thread.start()
-                    print(f"🚀 Thread de barrido iniciado correctamente")
+                    print(f" Thread de barrido iniciado correctamente")
 
                     modal_style = {'display': 'block'}
                     modal_class = 'modal fade show'
@@ -2438,9 +2398,9 @@ def register_callbacks(app):
                     progress_style = {'width': '0%'}  # Inicializar estilo de progreso
                     progress_text = "0%"  # Inicializar texto de progreso
                     if trigger_enabled:
-                        status_text = f"Iniciando trigger: {trigger_count} barridos sobre el rango configurado..."
+                        status_text = i18n_t('dash.starting_trigger_msg').replace('{n}', str(trigger_count))
                     else:
-                        status_text = "Iniciando barrido..."
+                        status_text = i18n_t('dash.status.starting')
                     interval_disabled = False  # HABILITAR interval durante el barrido
                     streaming_interval_disabled = False  # HABILITAR interval de streaming durante el barrido
                     modal_close_interval_disabled = True  # Deshabilitar modal-close al inicio
@@ -2450,7 +2410,7 @@ def register_callbacks(app):
                     return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, str(progress_value), status_text, status_text, stored_data, False, interval_disabled, modal_close_interval_disabled, streaming_interval_disabled)
 
                 except Exception as e:
-                    status_text = f"❌ Error: {str(e)}"
+                    status_text = i18n_t('dash.error_detail').replace('{err}', str(e))
                     progress_style = {'width': '0%'}
                     progress_text = "0%"
                     modal_style = {'display': 'none'}
@@ -2458,7 +2418,7 @@ def register_callbacks(app):
                     return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, "0", status_text, status_text, stored_data, False, True, True, True)  # interval disabled, modal-close disabled, streaming disabled
 
             # Detener sweep
-            elif triggered in ['cancel-sweep-btn', 'cancel-sweep-modal-btn']:
+            elif triggered in ['cancel-sweep-btn', 'cancel-sweep-modal-btn', 'sweep-modal-x-btn']:
                 stop_sweep.set()
                 modal_style = {'display': 'none'}
                 modal_class = 'modal fade'
@@ -2470,7 +2430,7 @@ def register_callbacks(app):
                 modal_close_interval_disabled = True  # Deshabilitar modal-close al cancelar
                 progress_value = 0
                 progress_text = "0%"
-                status_text = "Barrido cancelado"
+                status_text = i18n_t('dash.status.cancelled')
                 sweep_completed_successfully = False  # Resetear estado de completado
                 
                 # RETORNAR INMEDIATAMENTE después de cancelar
@@ -2489,9 +2449,9 @@ def register_callbacks(app):
             if 'modal_class' not in locals():
                 modal_class = 'modal fade show'
             if 'status_text' not in locals():
-                status_text = "Procesando..."
+                status_text = i18n_t('dash.status.processing')
             if 'status_text' not in locals():
-                status_text = "Procesando..." if has_active_sweep else "Listo"
+                status_text = i18n_t('dash.status.processing') if has_active_sweep else i18n_t('dash.status.ready')
             if 'modal_style' not in locals():
                 modal_style = {'display': 'block'} if has_active_sweep else {'display': 'none'}
             if 'modal_class' not in locals():
@@ -2502,7 +2462,7 @@ def register_callbacks(app):
                 # Habilitar streaming solo si hay un sweep activo
                 streaming_interval_disabled = not has_active_sweep
             
-            print(f"🔍 Valores finales - Progress: {progress_value}%, Style width: {progress_style.get('width')}, Text: {progress_text}")
+            print(f" Valores finales - Progress: {progress_value}%, Style width: {progress_style.get('width')}, Text: {progress_text}")
             
             # Actualizar gráficos con la mejor fuente de datos disponible
             # PRIORIDAD: stored_data > sweep_data (stored_data es persistente después del sweep)
@@ -2523,16 +2483,16 @@ def register_callbacks(app):
                     source_name = 'ninguna'
                 
                 if data_source and len(data_source.get('param', [])) > 0:
-                    print(f"📊 Generando gráficas con {len(data_source['param'])} puntos (fuente: {source_name})")
+                    print(f"Generando gráficas con {len(data_source['param'])} puntos (fuente: {source_name})")
                     bode_fig = create_bode_plot_from_dataset(data_source, negative_phase, theme)
                     nyquist_fig = create_nyquist_plot_from_dataset(data_source, theme)
                 else:
-                    safe_print(f"⚠️ No hay datos disponibles - manteniendo gráficas actuales")
+                    safe_print(f"No hay datos disponibles - manteniendo gráficas actuales")
             else:
-                safe_print(f"📊 Gráficas ya actualizadas durante procesamiento - mantener")
+                safe_print(f"Gráficas ya actualizadas durante procesamiento - mantener")
             
             # Log de control del interval para debugging
-            safe_print(f"🔄 Return interval state - Thread alive: {sweep_thread and sweep_thread.is_alive()}, Queue empty: {sweep_queue.empty()}, Interval disabled: {interval_disabled}")
+            safe_print(f"Return interval state - Thread alive: {sweep_thread and sweep_thread.is_alive()}, Queue empty: {sweep_queue.empty()}, Interval disabled: {interval_disabled}")
             
             # Determinar si debe activarse el intervalo de cierre del modal
             # Solo se activa cuando el sweep se completa exitosamente (100%)
@@ -2540,7 +2500,7 @@ def register_callbacks(app):
             if 'modal_close_interval_disabled' not in locals():
                 modal_close_interval_disabled = not sweep_completed  # False cuando sweep completo (habilitar intervalo)
             
-            print(f"🔔 Modal close interval: disabled={modal_close_interval_disabled}, sweep_completed={sweep_completed}")
+            print(f" Modal close interval: disabled={modal_close_interval_disabled}, sweep_completed={sweep_completed}")
             
             # CRÍTICO: Si no hay mensaje en la cola Y el sweep está en progreso, NO actualizar progreso
             # Dejar que poll_sweep_streaming sea el ÚNICO que actualice durante el sweep
@@ -2556,10 +2516,10 @@ def register_callbacks(app):
 
         except (BrokenPipeError, IOError):
             # Ignorar errores de pipe roto (terminal cerrado)
-            empty_bode = create_empty_figure("Error")
-            empty_nyquist = create_empty_figure("Error")
+            empty_bode = create_empty_figure(i18n_t('dash.empty_bode_error'))
+            empty_nyquist = create_empty_figure(i18n_t('dash.empty_nyquist_error'))
             return (empty_bode, empty_nyquist, {'display': 'none'}, 'modal fade', {'width': '0%'}, "0%", "0",
-                    "❌ Error de comunicación", "❌ Error de comunicación",
+                    i18n_t('dash.err_communication'), i18n_t('dash.err_communication'),
                     {'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}, False, True, True, True)  # all intervals disabled
         except Exception as e:
             try:
@@ -2568,16 +2528,17 @@ def register_callbacks(app):
                 traceback.print_exc()
             except (BrokenPipeError, IOError):
                 pass  # Ignorar si no se puede imprimir
-            empty_bode = create_empty_figure("Error")
-            empty_nyquist = create_empty_figure("Error")
+            empty_bode = create_empty_figure(i18n_t('dash.empty_bode_error'))
+            empty_nyquist = create_empty_figure(i18n_t('dash.empty_nyquist_error'))
             return (empty_bode, empty_nyquist, {'display': 'none'}, 'modal fade', {'width': '0%'}, "0%", "0",
-                    f"❌ Error interno: {str(e)}", f"❌ Error interno: {str(e)}",
+                    i18n_t('dash.internal_error').replace('{err}', str(e)), i18n_t('dash.internal_error').replace('{err}', str(e)),
                     {'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}, False, True, True, True)  # all inte rvals disabled
 
-    # Callback para alternar tema de gráficos
+    # Callback para alternar tema de gráficos y página completa
     @app.callback(
         [Output('theme-store', 'data'),
          Output('theme-icon', 'className'),
+         Output('theme-toggle-label', 'children'),
          Output('bode-plot', 'figure', allow_duplicate=True),
          Output('nyquist-plot', 'figure', allow_duplicate=True)],
         Input('theme-toggle-btn', 'n_clicks'),
@@ -2587,39 +2548,48 @@ def register_callbacks(app):
         prevent_initial_call=True
     )
     def toggle_chart_theme(n_clicks, current_theme, stored_data, negative_phase):
-        """Alterna entre tema oscuro y claro para los gráficos"""
+        """Alterna entre tema oscuro y claro para los gráficos y la UI completa"""
+        if not n_clicks:
+            raise PreventUpdate
         if current_theme == 'dark':
             new_theme = 'light'
-            icon_class = 'fas fa-sun'
+            # En light mode → el botón mostrará opción de volver a oscuro
+            icon_class = 'fas fa-moon'
+            label = i18n_t('dash.btn_theme_dark')
         else:
             new_theme = 'dark'
-            icon_class = 'fas fa-moon'
-        
-        print(f"🎨 Cambiando tema de gráficos: {current_theme} → {new_theme}")
-        
+            # En dark mode → el botón mostrará opción de cambiar a claro
+            icon_class = 'fas fa-sun'
+            label = i18n_t('dash.btn_theme_light')
+
+        logger.info(f"Cambiando tema: {current_theme} → {new_theme}")
+
         # Actualizar gráficos con el nuevo tema si hay datos
         if stored_data and len(stored_data.get('param', [])) > 0:
             bode_fig = create_bode_plot_from_dataset(stored_data, negative_phase, new_theme)
             nyquist_fig = create_nyquist_plot_from_dataset(stored_data, new_theme)
         else:
-            bode_fig = create_empty_figure("Sin datos - Ejecute un barrido", new_theme)
-            nyquist_fig = create_empty_figure("Sin datos - Ejecute un barrido", new_theme)
-        
-        return new_theme, icon_class, bode_fig, nyquist_fig
-    
-    # Callback para actualizar icono del tema al cargar página
+            bode_fig = create_empty_figure(i18n_t('dash.sweep_empty_title'), new_theme, hint=True)
+            nyquist_fig = create_empty_figure(i18n_t('dash.sweep_empty_title'), new_theme, hint=True)
+
+        return new_theme, icon_class, label, bode_fig, nyquist_fig
+
+    # Callback para actualizar icono y label del tema al cargar página
     @app.callback(
-        Output('theme-icon', 'className', allow_duplicate=True),
-        Input('url', 'pathname'),
-        State('theme-store', 'data'),
+        [Output('theme-icon', 'className', allow_duplicate=True),
+         Output('theme-toggle-label', 'children', allow_duplicate=True)],
+        [Input('url', 'pathname'),
+         Input('theme-store', 'data')],
         prevent_initial_call=False
     )
     def update_theme_icon_on_load(pathname, theme):
-        """Actualiza el icono del botón de tema al cargar la página"""
+        """Actualiza el icono y label del botón — siempre refleja el estado SIGUIENTE"""
         if theme == 'light':
-            return 'fas fa-sun'
+            # Estamos en modo claro → botón ofrece cambiar a oscuro
+            return 'fas fa-moon', i18n_t('dash.btn_theme_dark')
         else:
-            return 'fas fa-moon'
+            # Estamos en modo oscuro (default) → botón ofrece cambiar a claro
+            return 'fas fa-sun', i18n_t('dash.btn_theme_light')
     
     # Callback para resetear trigger de conexión exitosa después de mostrar la notificación
     @app.callback(
@@ -2656,7 +2626,7 @@ def register_callbacks(app):
         # Solo mostrar notificación si el trigger es explícitamente True
         if trigger is True:
             notyf = Notyf(
-                message='✅ Dispositivo Conectado - ADMX2001 listo para usar',
+                message='Dispositivo Conectado - ADMX2001 listo para usar',
                 type='success'
             )
             print("Retornando notificación de conexión exitosa")
@@ -2682,7 +2652,7 @@ def register_callbacks(app):
         if trigger is True:
             logger.warning("Mostrando modal de error de conexión")
             alert = Alert(
-                '❌ Error de Conexión',
+                'Error de Conexión',
                 'No se pudo conectar al dispositivo ADMX2001. Verifique que el cable esté conectado y el puerto sea correcto.',
                 icon='error'
             )
@@ -2697,7 +2667,7 @@ def register_callbacks(app):
         """Muestra alerta cuando el barrido se completa exitosamente"""
         if trigger:
             alert = Alert(
-                '🎉 ¡Barrido Completado!',
+                '¡Barrido Completado!',
                 'Se adquirieron exitosamente todos los puntos de medición',
                 icon='success',
                 timer=3000,
@@ -2728,10 +2698,10 @@ def register_callbacks(app):
         # Determinar qué gráfico mostrar
         if triggered_id == 'maximize-bode-btn':
             chart_type = 'bode'
-            title_text = "Diagrama de Bode"
+            title_text = i18n_t('chart.bode_title')
         elif triggered_id == 'maximize-nyquist-btn':
             chart_type = 'nyquist'
-            title_text = "Diagrama de Nyquist"
+            title_text = i18n_t('chart.nyquist_title')
         else:
             raise PreventUpdate
         
@@ -2798,6 +2768,10 @@ def register_callbacks(app):
                 // Mostrar ventana
                 console.log('[ChartModal] Mostrando ventana');
                 window.DraggableWindows.show('chart-modal');
+                // Enable focus trap for accessibility
+                if (typeof enableFocusTrap === 'function') {
+                    enableFocusTrap('chart-modal');
+                }
             }, 300);
             
             return window.dash_clientside.no_update;
@@ -2857,10 +2831,10 @@ def register_callbacks(app):
             return (
                 current_options or [], NOUPDATE,
                 'Ya conectado', 'has-device',
-                "✓ Conectado", "fw-semibold text-success",
+                i18n_t('conn.connected_check'), "fw-semibold text-success",
                 {'width': '100%'}, {'display': 'none'},
                 html.Small("", **{'data-i18n': 'dash.device_connected_already'}),
-                True, [html.I(className="fas fa-check me-2"), "Conectado"],
+                True, [html.I(className="fas fa-check me-2"), i18n_t('conn.connected')],
                 False,
                 True  # Deshabilitar interval
             )
@@ -2871,12 +2845,12 @@ def register_callbacks(app):
             
             if not usb_ports:
                 return (
-                    [{'label': '❌ No hay puertos USB', 'value': '', 'disabled': True}], '',
-                    'Ninguno', '',
-                    "❌ Sin dispositivos", "fw-semibold text-danger",
+                    [{'label': i18n_t('conn.no_ports'), 'value': '', 'disabled': True}], '',
+                    i18n_t('conn.none'), '',
+                    i18n_t('conn.no_devices'), "fw-semibold text-danger",
                     {'width': '0%'}, {'display': 'none'},
-                    "Conecte el cable USB del ADMX2001",
-                    True, [html.I(className="fas fa-plug me-2"), "Conectar"],
+                    i18n_t('conn.connect_cable'),
+                    True, [html.I(className="fas fa-plug me-2"), html.Span("Conectar", **{'data-i18n': 'dash.connect_btn'})],
                     False,
                     False  # Mantener interval activo para detectar cuando conectan
                 )
@@ -2888,7 +2862,7 @@ def register_callbacks(app):
             for port in usb_ports:
                 is_candidate = is_likely_admx_port(port)
                 description = (port.description or 'USB Serial')[:40]
-                prefix = '✓' if is_candidate else '○'
+                prefix = '' if is_candidate else '○'
                 label = f"{prefix} {port.device} - {description}"
                 options.append({'label': label, 'value': port.device, 'disabled': False})
                 
@@ -2931,15 +2905,15 @@ def register_callbacks(app):
                             device_state.set_device(test_device, True)
                             
                             connected_port = port.device
-                            test_result += "✓ Conectado!"
+                            test_result += i18n_t('conn.connected_check')
                             logger.info(f"Auto-conexión exitosa en {port.device}")
                             break
                         else:
                             test_device.close()
-                            test_result += "✗ No responde; "
+                            test_result += " No responde; "
                             
                     except Exception as e:
-                        test_result += f"✗ {str(e)[:20]}; "
+                        test_result += f" {str(e)[:20]}; "
                         continue
             
             # Si se conectó exitosamente
@@ -2947,22 +2921,22 @@ def register_callbacks(app):
                 return (
                     options if options != NOUPDATE else current_options, connected_port,
                     connected_port, 'has-device',
-                    "✓ Conectado", "fw-semibold text-success",
+                    i18n_t('conn.connected_check'), "fw-semibold text-success",
                     {'width': '100%'}, {'display': 'none'},
                     html.Small(test_result, className="text-muted"),
-                    True, [html.I(className="fas fa-check-circle me-2"), "Conectado"],
-                    True,  # Trigger notificación
-                    True  # Deshabilitar interval al conectar
+True, [html.I(className="fas fa-check-circle me-2"), i18n_t('conn.connected')],
+                     True,  # Trigger notificación
+                     True  # Deshabilitar interval al conectar
                 )
             
             # Si no se pudo conectar a ninguno
             return (
                 options if options != NOUPDATE else current_options, '',
-                'Sin respuesta', '',
-                "⚠ No detectado", "fw-semibold text-warning",
+                i18n_t('conn.no_response'), '',
+                i18n_t('conn.not_detected_warn'), "fw-semibold text-warning",
                 {'width': '100%'}, {'display': 'none'},
-                html.Small(test_result or "No se detectó USB TTL232R-3V3"),
-                False, [html.I(className="fas fa-plug me-2"), "Conectar Manual"],
+                html.Small(test_result or i18n_t('conn.no_ttl232r')),
+                False, [html.I(className="fas fa-plug me-2"), i18n_t('conn.manual_connect')],
                 False,
                 False  # Mantener interval activo para seguir buscando
             )
@@ -2970,12 +2944,12 @@ def register_callbacks(app):
         except Exception as e:
             logger.error(f"Error en autoconexión: {e}")
             return (
-                [{'label': f'❌ Error: {str(e)[:20]}', 'value': '', 'disabled': True}], '',
-                'Error', '',
-                "❌ Error de escaneo", "fw-semibold text-danger",
+                [{'label': i18n_t('dash.error_detail').replace('{err}', str(e)[:20]), 'value': '', 'disabled': True}], '',
+                i18n_t('conn.error'), '',
+                i18n_t('conn.scan_error'), "fw-semibold text-danger",
                 {'width': '0%'}, {'display': 'none'},
                 str(e)[:50],
-                False, [html.I(className="fas fa-times me-2"), "Reintentar"],
+                False, [html.I(className="fas fa-times me-2"), i18n_t('conn.retry')],
                 False,
                 False  # Mantener interval activo
             )
@@ -2993,6 +2967,8 @@ def register_callbacks(app):
     )
     def open_csv_modal(n_clicks):
         """Abre el modal para cargar archivos CSV"""
+        if not n_clicks:
+            raise PreventUpdate
         return {'display': 'block'}, 'modal fade show'
 
     # Callback para guardar datos del barrido en CSV
@@ -3115,9 +3091,7 @@ def register_callbacks(app):
     # Callback para manejar subida de archivos CSV
     @app.callback(
         [Output('csv-upload-status', 'children'),
-         Output('csv-upload-store', 'data'),
-         Output('csv-modal', 'style', allow_duplicate=True),
-         Output('csv-modal', 'className', allow_duplicate=True)],
+         Output('csv-upload-store', 'data')],
         Input('upload-csv', 'contents'),
         State('upload-csv', 'filename'),
         prevent_initial_call=True
@@ -3141,12 +3115,12 @@ def register_callbacks(app):
             
             if missing_columns:
                 status = f"❌ Columnas faltantes: {', '.join(missing_columns)}"
-                return status, None, {'display': 'block'}, 'modal fade show'
+                return status, None
             
             # Validar que hay datos
             if len(csv_data) == 0:
                 status = "❌ El archivo CSV está vacío"
-                return status, None, {'display': 'block'}, 'modal fade show'
+                return status, None
             
             # Convertir a formato interno
             loaded_data = {
@@ -3157,15 +3131,29 @@ def register_callbacks(app):
                 'phase': csv_data['phase_rad'].tolist()  # Usar radianes para consistencia interna
             }
             
-            # Guardar en store temporal (esto se manejará en el callback de confirmación)
-            # Por ahora solo mostrar éxito
-            status = f"✅ Archivo '{filename}' cargado exitosamente ({len(csv_data)} puntos). Haz clic en 'Cargar Datos' para mostrar los gráficos."
-            
-            return status, loaded_data, {'display': 'block'}, 'modal fade show'
+            status = f"✅ '{filename}' listo ({len(csv_data)} puntos). Pulsa 'Cargar Datos' para mostrar los gráficos."
+            return status, loaded_data
             
         except Exception as e:
             status = f"❌ Error al procesar archivo CSV: {str(e)}"
-            return status, None, {'display': 'block'}, 'modal fade show'
+            return status, None
+
+    # Callback para cerrar el modal CSV (botón X o Cancelar)
+    @app.callback(
+        [Output('csv-modal', 'style', allow_duplicate=True),
+         Output('csv-modal', 'className', allow_duplicate=True),
+         Output('csv-upload-status', 'children', allow_duplicate=True),
+         Output('csv-upload-store', 'data', allow_duplicate=True),
+         Output('upload-csv', 'contents', allow_duplicate=True)],
+        [Input('csv-modal-cancel-btn', 'n_clicks'),
+         Input('csv-modal-x-btn', 'n_clicks')],
+        prevent_initial_call=True
+    )
+    def close_csv_modal(cancel_clicks, x_clicks):
+        """Cierra el modal CSV y limpia el estado de carga"""
+        if not cancel_clicks and not x_clicks:
+            raise PreventUpdate
+        return {'display': 'none'}, 'modal fade', '', None, None
 
     # Callback para confirmar carga de datos CSV
     @app.callback(
@@ -3173,7 +3161,8 @@ def register_callbacks(app):
          Output('bode-plot', 'figure', allow_duplicate=True),
          Output('nyquist-plot', 'figure', allow_duplicate=True),
          Output('csv-modal', 'style', allow_duplicate=True),
-         Output('csv-modal', 'className', allow_duplicate=True)],
+         Output('csv-modal', 'className', allow_duplicate=True),
+         Output('csv-upload-status', 'children', allow_duplicate=True)],
         Input('confirm-load-csv-btn', 'n_clicks'),
         State('csv-upload-store', 'data'),
         State('phase-negative-store', 'data'),
@@ -3182,20 +3171,27 @@ def register_callbacks(app):
     )
     def confirm_load_csv(n_clicks, csv_data, negative_phase, theme):
         """Confirma la carga de datos CSV y actualiza las gráficas"""
-        if not csv_data:
+        if not n_clicks:
             raise PreventUpdate
+        if not csv_data:
+            # Dar feedback claro sin bloquear el modal
+            return (dash.no_update, dash.no_update, dash.no_update,
+                    dash.no_update, dash.no_update,
+                    '⚠️ Primero selecciona un archivo CSV válido')
         
         try:
             # Actualizar gráficas con los datos cargados
             bode_fig = create_bode_plot_from_dataset(csv_data, negative_phase, theme)
             nyquist_fig = create_nyquist_plot_from_dataset(csv_data, theme)
             
-            # Cerrar modal
-            return csv_data, bode_fig, nyquist_fig, {'display': 'none'}, 'modal fade'
+            # Cerrar modal y limpiar estado
+            return csv_data, bode_fig, nyquist_fig, {'display': 'none'}, 'modal fade', ''
             
         except Exception as e:
             print(f"Error cargando datos CSV: {e}")
-            raise PreventUpdate
+            return (dash.no_update, dash.no_update, dash.no_update,
+                    dash.no_update, dash.no_update,
+                    f'❌ Error al cargar datos: {str(e)[:80]}')
 
     # ========== CALLBACK PARA STREAMING DE SWEEP EN TIEMPO REAL ==========
     @app.callback(
@@ -3246,7 +3242,7 @@ def register_callbacks(app):
             if intervals_without_new_points > MAX_INTERVALS_WITHOUT_DATA:
                 current, total, pct = device_state.get_sweep_progress()
                 if pct >= 90 and current_point_count > 0:
-                    print(f"[Sweep Poll] ⚠️ Sweep abandonado detectado - {intervals_without_new_points} intervalos sin datos, progreso={pct}%")
+                    print(f"[Sweep Poll] Sweep abandonado detectado - {intervals_without_new_points} intervalos sin datos, progreso={pct}%")
                     print(f"[Sweep Poll] Finalizando sweep automáticamente...")
                     device_state.end_sweep_streaming()
                     intervals_without_new_points = 0
@@ -3264,13 +3260,13 @@ def register_callbacks(app):
             # No hay puntos nuevos, mantener estado actual
             return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, False
         
-        print(f"[Sweep Poll] ✅ Actualizando gráficos con {len(new_points)} nuevos puntos")
+        print(f"[Sweep Poll] Actualizando gráficos con {len(new_points)} nuevos puntos")
 
         # Limpiar datos previos EXACTAMENTE al entrar el primer punto del nuevo sweep
         # El primer punto siempre llega con index == 0 (reseteado en start_sweep_streaming)
         first_point_of_new_sweep = any(point.get('index') == 0 for point in new_points)
         if first_point_of_new_sweep and len(current_data.get('param', [])) > 0:
-            print(f"[Sweep Poll] 🧹 Primer punto detectado (index=0) - limpiando {len(current_data['param'])} datos previos")
+            print(f"[Sweep Poll] Primer punto detectado (index=0) - limpiando {len(current_data['param'])} datos previos")
             current_data = {'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}
         
         # Agregar nuevos puntos a los datos actuales
@@ -3307,13 +3303,13 @@ def register_callbacks(app):
                 ];
             }
             var t = statusText.toString();
-            if (t.indexOf('✅') !== -1 || t.indexOf('completado') !== -1) {
+            if (t.indexOf('') !== -1 || t.indexOf('completado') !== -1) {
                 return [
                     'fas fa-circle-check me-1 text-success',
                     'sweep-status-bar completed mt-3 d-flex flex-wrap align-items-center gap-3'
                 ];
             }
-            if (t.indexOf('❌') !== -1 || t.indexOf('Error') !== -1) {
+            if (t.indexOf('') !== -1 || t.indexOf('Error') !== -1) {
                 return [
                     'fas fa-circle-xmark me-1 text-danger',
                     'sweep-status-bar error mt-3 d-flex flex-wrap align-items-center gap-3'

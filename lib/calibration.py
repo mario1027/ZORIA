@@ -399,7 +399,7 @@ class CalibrationManager:
             if "success" in final_response.lower():
                 self.current_state.timestamp = timestamp
                 self.calibration_history.append(self.current_state)
-                logger.info("✅ Calibración guardada exitosamente en flash")
+                logger.info(" Calibración guardada exitosamente en flash")
             else:
                 raise CalibrationError(
                     f"Commit falló. Respuesta: {final_response}"

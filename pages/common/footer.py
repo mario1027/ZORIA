@@ -1,18 +1,18 @@
 """
-Footer ZORIA - Pie de página premium oscuro con detalles dorados
-Diseño elegante de 4 columnas con tema dark/gold
+Footer ZORIA - Pie de página con tema dual (dark/light)
+Diseño elegante de 4 columnas con estilos via CSS tokens.
 """
 from dash import html, dcc
 
 def footer():
     """
-    Footer premium con tema oscuro y detalles dorados.
+    Footer con tema dual. Los colores se gestionan via CSS custom properties
+    en navigation.css y zoria-tokens.css.
     """
     return html.Footer(
         [
             html.Div(
                 [
-                    # Separador superior con gradiente
                     html.Div(className="footer-top-line"),
                     html.Div(
                         [
@@ -24,51 +24,18 @@ def footer():
                                             html.Img(
                                                 src="/assets/logo.png",
                                                 alt="ZORIA",
-                                                style={
-                                                    'height': '50px',
-                                                    'width': 'auto',
-                                                    'objectFit': 'contain',
-                                                    'marginBottom': '1.5rem',
-                                                    'filter': 'drop-shadow(0 0 10px rgba(212, 175, 55, 0.3))'
-                                                }
+                                                className="footer-logo"
                                             ),
                                             html.P(
                                                 '',
                                                 **{'data-i18n': 'footer.description'},
-                                                style={
-                                                    'color': '#1f2937',
-                                                    'fontSize': '0.95rem',
-                                                    'lineHeight': '1.7',
-                                                    'marginBottom': '1.5rem'
-                                                }
+                                                className="footer-description"
                                             ),
                                             html.Div(
-                                                [
-                                                    html.Span(
-                                                        "v1.3.2",
-                                                        style={
-                                                            'background': 'linear-gradient(135deg, #d4af37, #b8941f)',
-                                                            'color': '#0f172a',
-                                                            'padding': '0.4rem 0.9rem',
-                                                            'borderRadius': '6px',
-                                                            'fontSize': '0.75rem',
-                                                            'fontWeight': '600',
-                                                            'letterSpacing': '0.5px'
-                                                        }
-                                                    ),
-                                                    html.Span(
-                                                        "MIT",
-                                                        style={
-                                                            'background': 'rgba(212, 175, 55, 0.12)',
-                                                            'border': '1px solid rgba(212, 175, 55, 0.35)',
-                                                            'color': '#1e40af',
-                                                            'padding': '0.4rem 0.9rem',
-                                                            'borderRadius': '6px',
-                                                            'fontSize': '0.75rem',
-                                                            'fontWeight': '600',
-                                                            'marginLeft': '0.5rem'
-                                                        }
-                                                    )
+                                                className="footer-badges",
+                                                children=[
+                                                    html.Span("v1.3.2", className="footer-version-badge"),
+                                                    html.Span("MIT", className="footer-license-badge")
                                                 ]
                                             )
                                         ]
@@ -81,73 +48,38 @@ def footer():
                                 [
                                     html.H6(
                                         html.Span('', **{'data-i18n': 'footer.navigation'}),
-                                        style={
-                                            'color': '#0f172a',
-                                            'fontSize': '0.85rem',
-                                            'fontWeight': '700',
-                                            'letterSpacing': '1.5px',
-                                            'textTransform': 'uppercase',
-                                            'marginBottom': '1.5rem'
-                                        }
+                                        className="footer-heading"
                                     ),
                                     html.Div(
                                         [
                                             html.A(
                                                 [
-                                                    html.I(
-                                                        className="fas fa-chart-line me-3",
-                                                        style={
-                                                            'width': '20px',
-                                                            'color': '#d4af37',
-                                                            'fontSize': '1rem'
-                                                        }
-                                                    ),
-                                                    html.Span("Dashboard", style={'color': '#1f2937', 'fontSize': '0.95rem'})
+                                                    html.I(className="fas fa-chart-line me-3 footer-icon"),
+                                                    html.Span("Dashboard")
                                                 ],
                                                 href="/",
                                                 className="footer-link"
                                             ),
                                             html.A(
                                                 [
-                                                    html.I(
-                                                        className="fas fa-calculator me-3",
-                                                        style={
-                                                            'width': '20px',
-                                                            'color': '#d4af37',
-                                                            'fontSize': '1rem'
-                                                        }
-                                                    ),
-                                                    html.Span("Simulador RLC", **{'data-i18n': 'footer.nav_simulator'}, style={'color': '#1f2937', 'fontSize': '0.95rem'})
+                                                    html.I(className="fas fa-calculator me-3 footer-icon"),
+                                                    html.Span("Simulador RLC", **{'data-i18n': 'footer.nav_simulator'})
                                                 ],
                                                 href="/simulator",
                                                 className="footer-link"
                                             ),
                                             html.A(
                                                 [
-                                                    html.I(
-                                                        className="fas fa-cogs me-3",
-                                                        style={
-                                                            'width': '20px',
-                                                            'color': '#d4af37',
-                                                            'fontSize': '1rem'
-                                                        }
-                                                    ),
-                                                    html.Span("Calibración", **{'data-i18n': 'footer.nav_calib'}, style={'color': '#1f2937', 'fontSize': '0.95rem'})
+                                                    html.I(className="fas fa-cogs me-3 footer-icon"),
+                                                    html.Span("Calibración", **{'data-i18n': 'footer.nav_calib'})
                                                 ],
                                                 href="/calibration",
                                                 className="footer-link"
                                             ),
                                             html.A(
                                                 [
-                                                    html.I(
-                                                        className="fas fa-book me-3",
-                                                        style={
-                                                            'width': '20px',
-                                                            'color': '#d4af37',
-                                                            'fontSize': '1rem'
-                                                        }
-                                                    ),
-                                                    html.Span("Documentación", **{'data-i18n': 'footer.nav_docs'}, style={'color': '#1f2937', 'fontSize': '0.95rem'})
+                                                    html.I(className="fas fa-book me-3 footer-icon"),
+                                                    html.Span("Documentación", **{'data-i18n': 'footer.nav_docs'})
                                                 ],
                                                 href="/documentacion",
                                                 className="footer-link"
@@ -162,28 +94,14 @@ def footer():
                                 [
                                     html.H6(
                                         html.Span('', **{'data-i18n': 'footer.resources'}),
-                                        style={
-                                            'color': '#0f172a',
-                                            'fontSize': '0.85rem',
-                                            'fontWeight': '700',
-                                            'letterSpacing': '1.5px',
-                                            'textTransform': 'uppercase',
-                                            'marginBottom': '1.5rem'
-                                        }
+                                        className="footer-heading"
                                     ),
                                     html.Div(
                                         [
                                             html.A(
                                                 [
-                                                    html.I(
-                                                        className="fab fa-github me-3",
-                                                        style={
-                                                            'width': '20px',
-                                                            'color': '#d4af37',
-                                                            'fontSize': '1rem'
-                                                        }
-                                                    ),
-                                                    html.Span("GitHub", style={'color': '#1f2937', 'fontSize': '0.95rem'})
+                                                    html.I(className="fab fa-github me-3 footer-icon"),
+                                                    html.Span("GitHub")
                                                 ],
                                                 href="https://github.com/mario1027/ZORIA",
                                                 target="_blank",
@@ -191,15 +109,8 @@ def footer():
                                             ),
                                             html.A(
                                                 [
-                                                    html.I(
-                                                        className="fas fa-microchip me-3",
-                                                        style={
-                                                            'width': '20px',
-                                                            'color': '#d4af37',
-                                                            'fontSize': '1rem'
-                                                        }
-                                                    ),
-                                                    html.Span("ADMX2001", style={'color': '#1f2937', 'fontSize': '0.95rem'})
+                                                    html.I(className="fas fa-microchip me-3 footer-icon"),
+                                                    html.Span("ADMX2001")
                                                 ],
                                                 href="https://www.analog.com/en/products/admx2001.html",
                                                 target="_blank",
@@ -207,15 +118,8 @@ def footer():
                                             ),
                                             html.A(
                                                 [
-                                                    html.I(
-                                                        className="fas fa-book-open me-3",
-                                                        style={
-                                                            'width': '20px',
-                                                            'color': '#d4af37',
-                                                            'fontSize': '1rem'
-                                                        }
-                                                    ),
-                                                    html.Span("Wiki Analog", style={'color': '#1f2937', 'fontSize': '0.95rem'})
+                                                    html.I(className="fas fa-book-open me-3 footer-icon"),
+                                                    html.Span("Wiki Analog")
                                                 ],
                                                 href="https://wiki.analog.com/eval-admx2001",
                                                 target="_blank",
@@ -231,14 +135,7 @@ def footer():
                                 [
                                     html.H6(
                                         html.Span('', **{'data-i18n': 'footer.shortcuts'}),
-                                        style={
-                                            'color': '#0f172a',
-                                            'fontSize': '0.85rem',
-                                            'fontWeight': '700',
-                                            'letterSpacing': '1.5px',
-                                            'textTransform': 'uppercase',
-                                            'marginBottom': '1.5rem'
-                                        }
+                                        className="footer-heading"
                                     ),
                                     html.Div(
                                         [
@@ -247,33 +144,33 @@ def footer():
                                                     html.Div(
                                                         [
                                                             html.Kbd("Alt", className="footer-kbd"),
-                                                            html.Span("+", style={'color': '#6b7280', 'margin': '0 0.4rem'}),
+                                                            html.Span("+", className="footer-kbd-sep"),
                                                             html.Kbd("T", className="footer-kbd")
                                                         ],
-                                                        style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '0.4rem'}
+                                                        className="footer-kbd-row"
                                                     ),
-                                                    html.Span("Terminal", **{'data-i18n': 'footer.terminal'}, style={'color': '#1f2937', 'fontSize': '0.9rem'})
+                                                    html.Span("Terminal", **{'data-i18n': 'footer.terminal'}, className="footer-shortcut-text")
                                                 ],
-                                                style={'marginBottom': '1rem'}
+                                                className="footer-shortcut-item"
                                             ),
                                             html.Div(
                                                 [
-                                                    html.Kbd("Esc", className="footer-kbd", style={'marginBottom': '0.4rem'}),
-                                                    html.Span("Cerrar", **{'data-i18n': 'footer.close'}, style={'color': '#1f2937', 'fontSize': '0.9rem'})
+                                                    html.Kbd("Esc", className="footer-kbd footer-kbd-single"),
+                                                    html.Span("Cerrar", **{'data-i18n': 'footer.close'}, className="footer-shortcut-text")
                                                 ],
-                                                style={'marginBottom': '1rem'}
+                                                className="footer-shortcut-item"
                                             ),
                                             html.Div(
                                                 [
                                                     html.Div(
                                                         [
                                                             html.Kbd("Ctrl", className="footer-kbd"),
-                                                            html.Span("+", style={'color': '#6b7280', 'margin': '0 0.4rem'}),
+                                                            html.Span("+", className="footer-kbd-sep"),
                                                             html.Kbd("L", className="footer-kbd")
                                                         ],
-                                                        style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '0.4rem'}
+                                                        className="footer-kbd-row"
                                                     ),
-                                                    html.Span("Limpiar", **{'data-i18n': 'footer.clear'}, style={'color': '#1f2937', 'fontSize': '0.9rem'})
+                                                    html.Span("Limpiar", **{'data-i18n': 'footer.clear'}, className="footer-shortcut-text")
                                                 ]
                                             )
                                         ]
@@ -282,17 +179,10 @@ def footer():
                                 className='col-lg-4 col-md-6'
                             )
                         ],
-                        className='row align-items-start',
-                        style={'paddingTop': '3rem', 'paddingBottom': '2rem'}
+                        className='row align-items-start footer-columns'
                     ),
                     # Separador inferior
-                    html.Div(
-                        style={
-                            'height': '1px',
-                            'background': 'rgba(15, 23, 42, 0.1)',
-                            'margin': '0'
-                        }
-                    ),
+                    html.Div(className="footer-bottom-sep"),
                     # Barra inferior - Copyright y equipo
                     html.Div(
                         [
@@ -300,24 +190,12 @@ def footer():
                                 [
                                     html.Div(
                                         [
-                                            html.Span(
-                                                "© 2024-2026 ZORIA",
-                                                style={
-                                                    'color': '#1f2937',
-                                                    'fontSize': '0.9rem'
-                                                }
-                                            ),
-                                            html.Span(" · ", style={'color': '#6b7280', 'margin': '0 0.5rem'}),
+                                            html.Span("© 2024-2026 ZORIA", className="footer-copyright"),
+                                            html.Span(" · ", className="footer-copyright-sep"),
                                             html.A(
                                                 "MIT License",
                                                 href="https://opensource.org/licenses/MIT",
                                                 target="_blank",
-                                                style={
-                                                    'color': '#1e40af',
-                                                    'textDecoration': 'none',
-                                                    'fontSize': '0.9rem',
-                                                    'transition': 'all 0.3s ease'
-                                                },
                                                 className="footer-license-link"
                                             )
                                         ],
@@ -327,14 +205,13 @@ def footer():
                                         [
                                             html.Span(
                                                 "Mario Montero · Juan Alvarez · Francisco Racedo",
-                                                style={'color': '#1f2937', 'fontSize': '0.9rem'}
+                                                className="footer-authors"
                                             ),
                                         ],
                                         className='col-lg-6 text-center'
                                     )
                                 ],
-                                className='row align-items-center',
-                                style={'paddingTop': '1.5rem', 'paddingBottom': '1.5rem'}
+                                className='row align-items-center footer-bottom-row'
                             )
                         ],
                         className='footer-content'
@@ -343,11 +220,5 @@ def footer():
                 className='footer-surface'
             )
         ],
-        className='footer',
-        style={
-            'background': 'transparent',
-            'width': '100%',
-            'margin': '0',
-            'padding': '0'
-        }
+        className='footer'
     )

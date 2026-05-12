@@ -29,14 +29,14 @@ def find_device():
                 response = '\n'.join(response)
             
             if response and "ADMX2001" in response:
-                print(f"✓ Dispositivo encontrado: {port.device}")
+                print(f" Dispositivo encontrado: {port.device}")
                 print(f"  {response.strip()}")
                 return device
             device.close()
         except:
             pass
     
-    print("✗ No se encontró ADMX2001")
+    print(" No se encontró ADMX2001")
     return None
 
 def backup_calibrations(device):
@@ -78,7 +78,7 @@ def backup_calibrations(device):
         cal_list = device.calibration.list_calibrations()
         
         if not cal_list or len(cal_list) == 0:
-            print("⚠ No hay calibraciones guardadas en el dispositivo")
+            print(" No hay calibraciones guardadas en el dispositivo")
             f.write("No hay calibraciones guardadas.\n")
             return backup_file
         
@@ -139,7 +139,7 @@ def backup_calibrations(device):
                 
                 f.write("\n")
         else:
-            print("⚠ No se pudieron extraer frecuencias del formato de respuesta")
+            print(" No se pudieron extraer frecuencias del formato de respuesta")
             print("  Los datos crudos están guardados en el archivo")
         
         # Footer
@@ -158,13 +158,13 @@ def main():
     print("="*70)
     print("RESPALDO DE CALIBRACIONES ADMX2001")
     print("="*70)
-    print("\n⚠️  IMPORTANTE: Este respaldo es CRÍTICO antes de actualizar firmware")
+    print("\n  IMPORTANTE: Este respaldo es CRÍTICO antes de actualizar firmware")
     print("   La actualización puede borrar todas las calibraciones guardadas\n")
     
     # Buscar dispositivo
     device = find_device()
     if not device:
-        print("\n✗ No se puede continuar sin dispositivo conectado")
+        print("\n No se puede continuar sin dispositivo conectado")
         sys.exit(1)
     
     try:
@@ -172,7 +172,7 @@ def main():
         backup_file = backup_calibrations(device)
         
         print(f"\n{'='*70}")
-        print("✓ RESPALDO COMPLETADO")
+        print(" RESPALDO COMPLETADO")
         print(f"{'='*70}")
         print(f"\nArchivo guardado: {backup_file}")
         print(f"Ubicación: {Path(backup_file).absolute()}")
@@ -181,7 +181,7 @@ def main():
         size = Path(backup_file).stat().st_size
         print(f"Tamaño: {size} bytes")
         
-        print("\n📋 Próximos pasos:")
+        print("\n Próximos pasos:")
         print("  1. Verificar el contenido del archivo de respaldo")
         print("  2. Guardar copia en lugar seguro (USB, cloud, etc.)")
         print("  3. Proceder con obtención de firmware y Quartus")
@@ -189,10 +189,10 @@ def main():
         print("  5. Después de actualizar, verificar si calibraciones se perdieron")
         print("  6. Si es necesario, recalibrar usando este respaldo como referencia")
         
-        print("\n✓ Ahora es seguro proceder con la actualización")
+        print("\n Ahora es seguro proceder con la actualización")
         
     except Exception as e:
-        print(f"\n✗ Error durante respaldo: {e}")
+        print(f"\n Error durante respaldo: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
@@ -203,5 +203,5 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\n\n⚠ Respaldo cancelado por el usuario")
+        print("\n\n Respaldo cancelado por el usuario")
         sys.exit(1)

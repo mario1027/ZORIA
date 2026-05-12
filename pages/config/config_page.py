@@ -117,13 +117,13 @@ def preferences_section():
             _flabel('config.chart_theme', 'fas fa-palette'),
             html.Div([
                 html.Button([
-                    html.Span('🌙', className='theme-option__icon d-block'),
+                    html.Span('', className='theme-option__icon d-block'),
                     html.Span('', className='theme-option__label',
                               **{'data-i18n': 'config.theme_dark'}),
                 ], id='cfg-theme-dark-btn', className='theme-option',
                    n_clicks=0, **{'data-theme': 'dark'}),
                 html.Button([
-                    html.Span('☀️', className='theme-option__icon d-block'),
+                    html.Span('', className='theme-option__icon d-block'),
                     html.Span('', className='theme-option__label',
                               **{'data-i18n': 'config.theme_light'}),
                 ], id='cfg-theme-light-btn', className='theme-option',
@@ -159,25 +159,21 @@ layout = html.Div([
     sideBar(),
     mobileNavBar(),
 
-    html.Div([
-        # ── Hero ──────────────────────────────────────────────
+    html.Main([
         html.Div([
+            # ── Header (igual que dashboard/simulador) ────────────
             html.Div([
                 html.Div([
-                    html.Div(html.I(className='fas fa-sliders-h'),
-                             className='config-hero-icon me-4'),
-                    html.Div([
-                        html.H1('', className='config-hero-title',
-                                **{'data-i18n': 'config.page_title'}),
-                        html.P('', className='config-hero-subtitle',
-                               **{'data-i18n': 'config.page_subtitle'}),
-                    ]),
-                ], className='d-flex align-items-center'),
-            ], className='container-fluid px-4'),
-        ], className='config-hero'),
+                    html.H2([
+                        html.I(className='fas fa-sliders-h me-2'),
+                        html.Span('', **{'data-i18n': 'config.page_title'}),
+                    ], className='h3 mb-0'),
+                    html.P('', className='text-muted mb-0 mt-1',
+                           **{'data-i18n': 'config.page_subtitle'}),
+                ], className='col-12 col-md-8 mb-2 mb-md-0'),
+            ], className='row align-items-center py-4'),
 
-        # ── Cards ─────────────────────────────────────────────
-        html.Div([
+            # ── Cards ─────────────────────────────────────────────
             html.Div([
                 html.Div([language_section()],    className='col-12 col-xl-7'),
                 html.Div([preferences_section()], className='col-12 col-xl-5'),
@@ -207,12 +203,12 @@ layout = html.Div([
             ], className='row'),
         ], className='container-fluid px-4 pb-4'),
 
-    ], className='content d-flex flex-column'),
+    ], className='main-content w-100'),
 
     footer(),
     floating_terminal_button(),
 
-], className='sc-chart d-flex flex-column')
+], className='sc-chart d-flex flex-column min-vh-100')
 
 
 # ══════════════════════════════════════════════════════════════

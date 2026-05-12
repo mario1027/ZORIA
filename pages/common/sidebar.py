@@ -70,7 +70,7 @@ def connection_panel():
         html.Div([
             html.Small(
                 "DISPOSITIVO",
-                className="sidebar-section-label text-uppercase text-muted fw-bold",
+                className="sidebar-section-label text-uppercase fw-bold",
                 **{'data-i18n': 'conn.section_label'},
             )
         ], className="px-3 mb-2"),
@@ -89,7 +89,7 @@ def connection_panel():
                     ),
                     html.Small(
                         "ADMX2001",
-                        className="connection-device-id d-block text-muted",
+                        className="connection-device-id d-block",
                         id="sidebar-device-port",
                     ),
                 ], className="connection-info ms-2 flex-grow-1"),
@@ -98,33 +98,33 @@ def connection_panel():
             # Botones de conexión
             html.Div([
                 html.Button([
-                    html.I(className="fas fa-bolt")
+                    html.I(className="fas fa-bolt"),
                 ], 
                 id="sidebar-quick-connect-btn",
-                className="btn btn-success btn-sm connection-btn flex-fill",
+                className="btn btn-conn-connect btn-sm connection-btn flex-fill",
                 title="Conexión Rápida",
                 **{'data-i18n-title': 'conn.quick_connect'},
                 ),
                 html.Button([
-                    html.I(className="fas fa-cog")
+                    html.I(className="fas fa-cog"),
                 ],
                 id="sidebar-config-btn",
-                className="btn btn-gray-700 btn-sm connection-btn",
+                className="btn btn-conn-config btn-sm connection-btn",
                 title="Configurar",
                 **{'data-i18n-title': 'conn.configure'},
                 ),
                 html.Button([
-                    html.I(className="fas fa-power-off")
+                    html.I(className="fas fa-power-off"),
                 ], 
                 id="sidebar-disconnect-btn",
-                className="btn btn-outline-danger btn-sm connection-btn",
+                className="btn btn-conn-off btn-sm connection-btn",
                 title="Desconectar",
                 disabled=True,
                 **{'data-i18n-title': 'conn.disconnect'},
                 ),
             ], className="connection-actions d-flex gap-1"),
             
-        ], className="connection-panel-card p-3 mx-2 mb-3 rounded border border-secondary"),
+        ], className="connection-panel-card p-2 mx-2 mb-2 rounded border border-secondary"),
         
     ], className="sidebar-connection-section mt-auto")
 
@@ -133,6 +133,7 @@ def connection_panel():
 def sideBar():
     """Sidebar principal"""
     return html.Nav([
+        dcc.Location(id='url', refresh=False),
         html.Div([
             # Logo
             dcc.Link([
@@ -141,7 +142,7 @@ def sideBar():
                     alt="Logo",
                     style={'height': '40px', 'width': 'auto', 'objectFit': 'contain'}
                 )
-            ], href="/", className="sidebar-brand d-none d-lg-flex align-items-center justify-content-center px-3 py-4 border-bottom border-secondary"),
+            ], href="/", className="sidebar-brand d-none d-lg-flex align-items-center justify-content-center px-3 py-3 border-bottom border-secondary"),
             
             mobileSidebarHeader(),
             
@@ -160,7 +161,7 @@ def sideBar():
                 # Panel de conexión
                 connection_panel(),
                 
-            ], className="sidebar-content d-flex flex-column", style={'height': 'calc(100vh - 90px)', 'overflowY': 'auto'}),
+            ], className="sidebar-content d-flex flex-column", style={'height': 'calc(100vh - 70px)', 'overflowY': 'auto'}),
             
         ], className="sidebar-inner px-4 pt-3 h-100")
-    ], id="sidebarMenu", className="sidebar d-lg-block sidebar-dark text-white collapse")
+    ], id="sidebarMenu", className="sidebar d-lg-block collapse")

@@ -268,8 +268,8 @@ def max_count_for_span(start_hz: float, end_hz: float) -> int:
     para un barrido de frecuencias dado.
 
     Basado en mediciones empíricas del hardware real:
-      - Spans >= 4 décadas: máximo 100 pts  (CONFIRMADO: 6 dec → 100 ✅)
-      - Spans < 4 décadas:  máximo 200 pts  (CONFIRMADO: 3 dec → 200 ✅)
+      - Spans >= 4 décadas: máximo 100 pts  (CONFIRMADO: 6 dec → 100 )
+      - Spans < 4 décadas:  máximo 200 pts  (CONFIRMADO: 3 dec → 200 )
 
     IMPORTANTE: Superar este límite corrompe el estado del firmware, haciendo
     que barridos siguientes retornen sólo COUNT_MIN=10 puntos en lugar del
@@ -564,9 +564,9 @@ def _acquisition_time_ms(frequency: float, average: int = 1) -> float:
     - El promediado multiplica linealmente el tiempo de adquisición.
 
     Verificación:
-      f=0.2 Hz  → 36/0.2×1000 = 180 000 ms ≈ 3 min por punto  ✓ (correcto)
-      f=3 kHz   → max(12, 15) = 15 ms                           ✓ (docs: 10-12 ms)
-      f=10 MHz  → piso 15 ms                                    ✓
+      f=0.2 Hz  → 36/0.2×1000 = 180 000 ms ≈ 3 min por punto   (correcto)
+      f=3 kHz   → max(12, 15) = 15 ms                            (docs: 10-12 ms)
+      f=10 MHz  → piso 15 ms                                    
 
     Args:
         frequency: Frecuencia en Hz (>0 para AC, 0 para DC)

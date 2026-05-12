@@ -74,18 +74,18 @@
     transform: translateY(-1px);
 }
 
-/* Estado de calibración */
+/* Estado de calibración — dual theme */
 .cal-status-pending {
-    color: #6b7280;
+    color: var(--z-color-text-tertiary);
 }
 
 .cal-status-active {
-    color: #3b82f6;
+    color: var(--z-color-primary);
     animation: pulse 1.5s ease-in-out infinite;
 }
 
 .cal-status-done {
-    color: #10b981;
+    color: var(--z-color-success);
 }
 
 @keyframes pulse {

@@ -23,40 +23,40 @@ def circuit_selector_card():
                         # ============ CIRCUITOS IDEALES ============
                         {'label': '───────── CIRCUITOS IDEALES ─────────', 'value': 'header_ideal', 'disabled': True},
                         {'label': '─── Componentes Individuales ───', 'value': 'header1', 'disabled': True},
-                        {'label': '⚡ Resistor (R)', 'value': 'R'},
-                        {'label': '🌊 Inductor (L)', 'value': 'L'},
-                        {'label': '🔋 Capacitor (C)', 'value': 'C'},
+                        {'label': 'Resistor (R)', 'value': 'R'},
+                        {'label': 'Inductor (L)', 'value': 'L'},
+                        {'label': 'Capacitor (C)', 'value': 'C'},
                         {'label': '─── RC ───', 'value': 'header2', 'disabled': True},
-                        {'label': '🔌 RC en Serie', 'value': 'RC_series'},
-                        {'label': '🔌 RC en Paralelo', 'value': 'RC_parallel'},
+                        {'label': 'RC en Serie', 'value': 'RC_series'},
+                        {'label': 'RC en Paralelo', 'value': 'RC_parallel'},
                         {'label': '─── RL ───', 'value': 'header3', 'disabled': True},
-                        {'label': '🌊 RL en Serie', 'value': 'RL_series'},
-                        {'label': '🌊 RL en Paralelo', 'value': 'RL_parallel'},
+                        {'label': 'RL en Serie', 'value': 'RL_series'},
+                        {'label': 'RL en Paralelo', 'value': 'RL_parallel'},
                         {'label': '─── LC ───', 'value': 'header4', 'disabled': True},
-                        {'label': '💫 LC en Serie', 'value': 'LC_series'},
-                        {'label': '💫 LC en Paralelo', 'value': 'LC_parallel'},
+                        {'label': 'LC en Serie', 'value': 'LC_series'},
+                        {'label': 'LC en Paralelo', 'value': 'LC_parallel'},
                         {'label': '─── RLC ───', 'value': 'header5', 'disabled': True},
-                        {'label': '🎛️ RLC en Serie', 'value': 'RLC_series'},
-                        {'label': '🎛️ RLC en Paralelo', 'value': 'RLC_parallel'},
+                        {'label': 'RLC en Serie', 'value': 'RLC_series'},
+                        {'label': 'RLC en Paralelo', 'value': 'RLC_parallel'},
 
                         # ============ CIRCUITOS REALES CON PARÁSITOS ============
                         {'label': '───────── CIRCUITOS REALES (CON PARÁSITOS) ─────────', 'value': 'header_real', 'disabled': True},
                         {'label': '─── Componentes Individuales Reales ───', 'value': 'header1_real', 'disabled': True},
-                        {'label': '⚡ Resistor Real (R + parásitos)', 'value': 'R_real'},
-                        {'label': '🌊 Inductor Real (L + parásitos)', 'value': 'L_real'},
-                        {'label': '🔋 Capacitor Real (C + ESR + ESL)', 'value': 'C_real'},
+                        {'label': 'Resistor Real (R + parásitos)', 'value': 'R_real'},
+                        {'label': 'Inductor Real (L + parásitos)', 'value': 'L_real'},
+                        {'label': 'Capacitor Real (C + ESR + ESL)', 'value': 'C_real'},
                         {'label': '─── RC Reales ───', 'value': 'header2_real', 'disabled': True},
-                        {'label': '🔌 RC en Serie Real', 'value': 'RC_series_real'},
-                        {'label': '🔌 RC en Paralelo Real', 'value': 'RC_parallel_real'},
+                        {'label': 'RC en Serie Real', 'value': 'RC_series_real'},
+                        {'label': 'RC en Paralelo Real', 'value': 'RC_parallel_real'},
                         {'label': '─── RL Reales ───', 'value': 'header3_real', 'disabled': True},
-                        {'label': '🌊 RL en Serie Real', 'value': 'RL_series_real'},
-                        {'label': '🌊 RL en Paralelo Real', 'value': 'RL_parallel_real'},
+                        {'label': 'RL en Serie Real', 'value': 'RL_series_real'},
+                        {'label': 'RL en Paralelo Real', 'value': 'RL_parallel_real'},
                         {'label': '─── LC Reales ───', 'value': 'header4_real', 'disabled': True},
-                        {'label': '💫 LC en Serie Real', 'value': 'LC_series_real'},
-                        {'label': '💫 LC en Paralelo Real', 'value': 'LC_parallel_real'},
+                        {'label': 'LC en Serie Real', 'value': 'LC_series_real'},
+                        {'label': 'LC en Paralelo Real', 'value': 'LC_parallel_real'},
                         {'label': '─── RLC Reales ───', 'value': 'header5_real', 'disabled': True},
-                        {'label': '🎛️ RLC en Serie Real', 'value': 'RLC_series_real'},
-                        {'label': '🎛️ RLC en Paralelo Real', 'value': 'RLC_parallel_real'},
+                        {'label': 'RLC en Serie Real', 'value': 'RLC_series_real'},
+                        {'label': 'RLC en Paralelo Real', 'value': 'RLC_parallel_real'},
                     ],
                     value='RC_series',
                     clearable=False,
@@ -86,7 +86,7 @@ def resistance_input_card():
     return html.Div([
         html.Div([
             html.Label([
-                html.Span("⚡", className='me-2'),
+                html.Span("", className='me-2'),
                 html.Span('', **{'data-i18n': 'ui.resistance_r'})
             ], className='form-label fw-bold', htmlFor='resistance-input'),
 
@@ -117,7 +117,7 @@ def inductance_input_card():
     return html.Div([
         html.Div([
             html.Label([
-                html.Span("🌊", className='me-2'),
+                html.Span("", className='me-2'),
                 html.Span('', **{'data-i18n': 'ui.inductance_l'})
             ], className='form-label fw-bold', htmlFor='inductance-input'),
 
@@ -148,7 +148,7 @@ def capacitance_input_card():
     return html.Div([
         html.Div([
             html.Label([
-                html.Span("🔋", className='me-2'),
+                html.Span("", className='me-2'),
                 html.Span('', **{'data-i18n': 'ui.capacitance_c'})
             ], className='form-label fw-bold', htmlFor='capacitance-input'),
 
@@ -179,7 +179,7 @@ def frequency_range_card():
     return html.Div([
         html.Div([
             html.H5([
-                html.Span("📊", className='me-2'),
+                html.Span("", className='me-2'),
                 html.Span('', **{'data-i18n': 'ui.range_freq'})
             ], className='card-title mb-3'),
 
@@ -270,7 +270,7 @@ def bode_plot_card():
             html.H5([
                 html.I(className="fas fa-chart-line me-2"),
                 html.Span('', **{'data-i18n': 'dash.bode_title'})
-            ], className='mb-0')
+            ], className='mb-0 chart-title')
         ], className='d-flex justify-content-between align-items-center card-header border-bottom border-gray-300 p-3'),
         html.Div([
             dcc.Loading(
@@ -298,7 +298,7 @@ def nyquist_plot_card():
             html.H5([
                 html.I(className="fas fa-circle-notch me-2"),
                 html.Span('', **{'data-i18n': 'dash.nyquist_title'})
-            ], className='mb-0')
+            ], className='mb-0 chart-title')
         ], className='d-flex justify-content-between align-items-center card-header border-bottom border-gray-300 p-3'),
         html.Div([
             dcc.Loading(

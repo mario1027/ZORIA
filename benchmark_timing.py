@@ -125,9 +125,9 @@ def run_benchmark(port: str, average: int, include_slow: bool = False) -> None:
     try:
         device = ADMX2001(port)
     except Exception as e:
-        print(f"❌ Error conectando: {e}")
+        print(f" Error conectando: {e}")
         sys.exit(1)
-    print("✅ Conectado\n")
+    print(" Conectado\n")
 
     # Preparar dispositivo
     try:
@@ -138,7 +138,7 @@ def run_benchmark(port: str, average: int, include_slow: bool = False) -> None:
         device.set_tdelay(0)
         device.set_gain_auto()
     except Exception as e:
-        print(f"⚠️ Error configurando dispositivo: {e}")
+        print(f" Error configurando dispositivo: {e}")
 
     print(f"  {'Banda':<30}  {'Ptos':>4}  {'Tiempo':>8}  {'ms/pto':>8}  {'Teórico':>8}  {'Ratio':>6}  Estado")
     print(f"  {'─'*30}  {'─'*4}  {'─'*8}  {'─'*8}  {'─'*8}  {'─'*6}  {'─'*12}")
@@ -159,7 +159,7 @@ def run_benchmark(port: str, average: int, include_slow: bool = False) -> None:
                 count=n_pts
             )
         except Exception as e:
-            print(f"  {label:<30}  ⚠️  configure_sweep falló: {e}")
+            print(f"  {label:<30}    configure_sweep falló: {e}")
             continue
 
         t0 = time.perf_counter()
@@ -168,14 +168,14 @@ def run_benchmark(port: str, average: int, include_slow: bool = False) -> None:
         except Exception as e:
             elapsed = time.perf_counter() - t0
             print(f"  {label:<30}  {n_pts:>4}  {fmt_time(elapsed*1000):>8}  "
-                  f"{'—':>8}  {fmt_time(theoretical_ms):>8}  {'—':>6}  ❌ {e}")
+                  f"{'—':>8}  {fmt_time(theoretical_ms):>8}  {'—':>6}   {e}")
             continue
         elapsed_s = time.perf_counter() - t0
 
         n_recv = len(results)
         if n_recv < 2:
             print(f"  {label:<30}  {n_pts:>4}  {fmt_time(elapsed_s*1000):>8}  "
-                  f"{'<2 pts':>8}  {fmt_time(theoretical_ms):>8}  {'—':>6}  ⚠️ insuficiente")
+                  f"{'<2 pts':>8}  {fmt_time(theoretical_ms):>8}  {'—':>6}   insuficiente")
             continue
 
         # Tiempo medio por punto (excluyendo overhead de setup: tomar desde 2° punto)
@@ -183,15 +183,15 @@ def run_benchmark(port: str, average: int, include_slow: bool = False) -> None:
 
         ratio = ms_per_pt / theoretical_ms if theoretical_ms > 0 else float('nan')
         if ratio < 0.3:
-            indicator = "🔵 muy rápido"
+            indicator = " muy rápido"
         elif ratio < 0.8:
-            indicator = "🟢 rápido"
+            indicator = " rápido"
         elif ratio <= 1.5:
-            indicator = "🟡 ok"
+            indicator = " ok"
         elif ratio <= 3.0:
-            indicator = "🟠 lento"
+            indicator = " lento"
         else:
-            indicator = "🔴 MUY LENTO"
+            indicator = " MUY LENTO"
 
         print(f"  {label:<30}  {n_recv:>4}  {fmt_time(elapsed_s*1000):>8}  "
               f"{fmt_time(ms_per_pt):>8}  {fmt_time(theoretical_ms):>8}  "
@@ -211,7 +211,7 @@ def run_benchmark(port: str, average: int, include_slow: bool = False) -> None:
     # Recargar perfil (fue actualizado por update_from_sweep dentro de perform_sweep)
     profile.load()
     print(f"\n{'─'*68}")
-    print(f"✅ Perfil actualizado: {profile.path}")
+    print(f" Perfil actualizado: {profile.path}")
     print(f"   {profile.summary()}")
     print(f"{'═'*68}\n")
 
@@ -220,7 +220,7 @@ def run_benchmark(port: str, average: int, include_slow: bool = False) -> None:
         off = {lbl: v for lbl, v in all_results.items()
                if v['ratio'] > 3.0 or v['ratio'] < 0.2}
         if off:
-            print("⚠️  BANDAS CON RATIO FUERA DEL ESPERADO (>3× o <0.2×):")
+            print("  BANDAS CON RATIO FUERA DEL ESPERADO (>3× o <0.2×):")
             for lbl, v in off.items():
                 print(f"   {lbl:<30}: medido={fmt_time(v['ms_per_pt'])} "
                       f"vs teoría={fmt_time(v['theoretical_ms'])} "
@@ -228,7 +228,7 @@ def run_benchmark(port: str, average: int, include_slow: bool = False) -> None:
             print("\n  → El perfil real se usará para futuros timeouts.")
             print("  → El modelo teórico puede necesitar ajuste.\n")
         else:
-            print("✅ Todos los ratios dentro del rango esperado (0.2×–3×).\n")
+            print(" Todos los ratios dentro del rango esperado (0.2×–3×).\n")
 
 
     device.disconnect()
@@ -283,7 +283,7 @@ def detect_port() -> str:
         print(f"  Puerto USB serie detectado: {port}")
         return port
 
-    print("❌ No se encontró ningún dispositivo serie USB.")
+    print(" No se encontró ningún dispositivo serie USB.")
     print("   Conecta el cable USB-UART y vuelve a intentar,")
     print("   o especifica el puerto con --port /dev/ttyUSBx")
     sys.exit(1)

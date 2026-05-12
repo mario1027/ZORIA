@@ -1,11 +1,12 @@
 /* ============================================================
    assets/css/config.css  –  ZORIA Settings / Configuración
+   Token-based, dark-first, WCAG AA compliant
    ============================================================ */
 
 /* ── Page hero ─────────────────────────────────────────────── */
 .config-hero {
-    background: linear-gradient(135deg, #1a1f2e 0%, #232b3e 60%, #1e293b 100%);
-    border-bottom: 1px solid rgba(255,255,255,0.07);
+    background: linear-gradient(135deg, var(--z-color-bg-elevated) 0%, var(--z-color-bg-primary) 60%, var(--z-color-bg-elevated) 100%);
+    border-bottom: 1px solid var(--z-color-border);
     padding: 2.5rem 2rem 2rem;
     margin-bottom: 2rem;
 }
@@ -14,12 +15,12 @@
     width: 56px;
     height: 56px;
     border-radius: 16px;
-    background: linear-gradient(135deg, #d4af37, #f7c948);
+    background: linear-gradient(135deg, var(--z-footer-accent, #d4af37), #f7c948);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
-    color: #1a1f2e;
+    color: var(--z-color-bg-primary);
     flex-shrink: 0;
     box-shadow: 0 4px 16px rgba(212,175,55,0.3);
 }
@@ -27,25 +28,28 @@
 .config-hero-title {
     font-size: 1.75rem;
     font-weight: 700;
-    color: #f8f9fa;
+    color: var(--z-color-text-primary);
     line-height: 1.2;
     margin: 0;
 }
 
 .config-hero-subtitle {
-    color: rgba(255,255,255,0.5);
+    color: var(--z-color-text-secondary);
     font-size: 0.88rem;
     margin: 0;
 }
 
 /* ── Section cards ─────────────────────────────────────────── */
 .cfg-card {
-    background: #fff;
-    border: 1px solid rgba(0,0,0,0.07);
+    background: var(--z-color-bg-card);
+    border: 1px solid var(--z-color-border);
     border-radius: 16px;
     padding: 1.75rem;
     margin-bottom: 1.5rem;
-    box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+    box-shadow: var(--z-shadow-sm);
+    transition: background-color var(--z-transition-slow),
+                border-color var(--z-transition-slow),
+                box-shadow var(--z-transition-slow);
 }
 
 .cfg-card-header {
@@ -54,7 +58,7 @@
     gap: 1rem;
     margin-bottom: 1.5rem;
     padding-bottom: 1.25rem;
-    border-bottom: 1px solid rgba(0,0,0,0.07);
+    border-bottom: 1px solid var(--z-color-border);
 }
 
 .cfg-card-icon {
@@ -68,22 +72,22 @@
     flex-shrink: 0;
 }
 
-.cfg-card-icon--gold  { background: rgba(212,175,55,0.12); color: #d4af37; }
-.cfg-card-icon--blue  { background: rgba(66,153,225,0.12); color: #4299e1; }
-.cfg-card-icon--green { background: rgba(72,187,120,0.12); color: #48bb78; }
-.cfg-card-icon--purple{ background: rgba(159,122,234,0.12); color: #9f7aea; }
+.cfg-card-icon--gold  { background: rgba(212,175,55,0.12); color: var(--z-footer-accent); }
+.cfg-card-icon--blue  { background: rgba(66,153,225,0.12); color: #60a5fa; }
+.cfg-card-icon--green { background: rgba(72,187,120,0.12); color: #4ade80; }
+.cfg-card-icon--purple{ background: rgba(159,122,234,0.12); color: #a78bfa; }
 
 .cfg-card-title {
     font-size: 1.05rem;
     font-weight: 700;
-    color: #1a202c;
+    color: var(--z-color-text-primary);
     margin: 0;
     line-height: 1.3;
 }
 
 .cfg-card-subtitle {
     font-size: 0.8rem;
-    color: #718096;
+    color: var(--z-color-text-secondary);
     margin: 0;
 }
 
@@ -100,21 +104,21 @@
 }
 
 .cfg-status-badge--connected {
-    background: rgba(72,187,120,0.1);
-    color: #276749;
-    border-color: rgba(72,187,120,0.35);
+    background: var(--z-color-success-subtle);
+    color: var(--z-color-success);
+    border-color: rgba(34, 197, 94, 0.35);
 }
 
 .cfg-status-badge--disconnected {
-    background: rgba(113,128,150,0.08);
-    color: #4a5568;
-    border-color: rgba(113,128,150,0.25);
+    background: var(--z-color-bg-surface);
+    color: var(--z-color-text-secondary);
+    border-color: var(--z-color-border-hover);
 }
 
 .cfg-status-badge--error {
-    background: rgba(245,101,101,0.1);
-    color: #c53030;
-    border-color: rgba(245,101,101,0.35);
+    background: var(--z-color-danger-subtle);
+    color: var(--z-color-danger);
+    border-color: rgba(239, 68, 68, 0.35);
 }
 
 .cfg-status-dot {
@@ -124,20 +128,20 @@
     flex-shrink: 0;
 }
 
-.cfg-status-badge--connected  .cfg-status-dot { background: #48bb78; box-shadow: 0 0 0 3px rgba(72,187,120,0.2); animation: pulse-green 2s infinite; }
-.cfg-status-badge--disconnected .cfg-status-dot { background: #a0aec0; }
-.cfg-status-badge--error .cfg-status-dot { background: #f56565; box-shadow: 0 0 0 3px rgba(245,101,101,0.2); }
+.cfg-status-badge--connected  .cfg-status-dot { background: var(--z-color-success); box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2); animation: pulse-green 2s infinite; }
+.cfg-status-badge--disconnected .cfg-status-dot { background: var(--z-color-text-disabled); }
+.cfg-status-badge--error .cfg-status-dot { background: var(--z-color-danger); box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2); }
 
 @keyframes pulse-green {
-    0%, 100% { box-shadow: 0 0 0 3px rgba(72,187,120,0.2); }
-    50%       { box-shadow: 0 0 0 6px rgba(72,187,120,0.08); }
+    0%, 100% { box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2); }
+    50%       { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.08); }
 }
 
 /* ── Form controls override ────────────────────────────────── */
 .cfg-form-label {
     font-size: 0.82rem;
     font-weight: 600;
-    color: #4a5568;
+    color: var(--z-color-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: 0.4rem;
@@ -158,8 +162,9 @@
     gap: 8px;
     padding: 1rem 0.5rem;
     border-radius: 14px;
-    border: 2px solid rgba(0,0,0,0.08);
-    background: #f7f9fc;
+    border: 2px solid var(--z-color-border);
+    background: var(--z-color-bg-surface);
+    color: var(--z-color-text-primary);
     cursor: pointer;
     transition: border-color 0.2s, background 0.2s, box-shadow 0.2s, transform 0.15s;
     text-align: center;
@@ -169,15 +174,15 @@
 }
 
 .lang-card:hover {
-    background: #eef2f9;
-    border-color: #90aecb;
+    background: var(--z-color-bg-hover);
+    border-color: var(--z-color-border-hover);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    box-shadow: var(--z-shadow-md);
 }
 
 .lang-card--active {
-    background: linear-gradient(135deg, rgba(212,175,55,0.12), rgba(247,201,72,0.07));
-    border-color: #d4af37 !important;
+    background: rgba(212,175,55,0.12);
+    border-color: var(--z-footer-accent) !important;
     box-shadow: 0 0 0 3px rgba(212,175,55,0.15), 0 4px 12px rgba(212,175,55,0.1);
     transform: translateY(-2px);
 }
@@ -190,18 +195,18 @@
 .lang-card__name {
     font-size: 0.8rem;
     font-weight: 600;
-    color: #2d3748;
+    color: var(--z-color-text-primary);
     line-height: 1.2;
 }
 
 .lang-card__native {
     font-size: 0.7rem;
-    color: #718096;
+    color: var(--z-color-text-secondary);
     line-height: 1;
 }
 
 .lang-card--active .lang-card__name {
-    color: #744210;
+    color: var(--z-footer-accent);
 }
 
 .lang-card--active::after {
@@ -211,7 +216,7 @@
     right: 8px;
     width: 10px;
     height: 10px;
-    background: #d4af37;
+    background: var(--z-footer-accent);
     border-radius: 50%;
 }
 
@@ -229,8 +234,8 @@
     gap: 8px;
     padding: 1rem;
     border-radius: 12px;
-    border: 2px solid rgba(0,0,0,0.08);
-    background: #f7f9fc;
+    border: 2px solid var(--z-color-border);
+    background: var(--z-color-bg-surface);
     cursor: pointer;
     transition: border-color 0.2s, background 0.2s;
     -webkit-appearance: none;
@@ -239,13 +244,13 @@
 }
 
 .theme-option:hover {
-    background: #eef2f9;
-    border-color: #90aecb;
+    background: var(--z-color-bg-hover);
+    border-color: var(--z-color-border-hover);
 }
 
 .theme-option--active {
-    border-color: #4299e1;
-    background: rgba(66,153,225,0.07);
+    border-color: var(--z-color-primary);
+    background: var(--z-color-primary-subtle);
 }
 
 .theme-option__icon {
@@ -255,10 +260,12 @@
 .theme-option__label {
     font-size: 0.82rem;
     font-weight: 600;
-    color: #4a5568;
+    color: var(--z-color-text-secondary);
 }
 
-.theme-option--active .theme-option__label { color: #2b6cb0; }
+.theme-option--active .theme-option__label {
+    color: var(--z-color-primary);
+}
 
 /* ── Feedback alerts ──────────────────────────────────────── */
 .cfg-feedback {
@@ -270,5 +277,69 @@
     gap: 8px;
 }
 
-/* ── Scrollbar removal in narrow sidebar──────────────────── */
-.sidebar-content { overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }
+/* ── Scrollbar ────────────────────────────────────────────── */
+.sidebar-content {
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--z-sidebar-scroll-thumb) transparent;
+}
+
+/* ── LIGHT MODE overrides ────────────────────────────────── */
+[data-theme="light"] .config-hero {
+    background: linear-gradient(135deg, #f8fafc 0%, #e8edf5 60%, #f1f5f9 100%);
+}
+
+[data-theme="light"] .config-hero-icon {
+    color: #1a1f2e;
+    box-shadow: 0 4px 16px rgba(212,175,55,0.25);
+}
+
+[data-theme="light"] .cfg-card {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.07);
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .lang-card {
+    background: #f7f9fc;
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .lang-card:hover {
+    background: #eef2f9;
+    border-color: #90aecb;
+}
+
+[data-theme="light"] .lang-card--active .lang-card__name {
+    color: #744210;
+}
+
+[data-theme="light"] .theme-option {
+    background: #f7f9fc;
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .theme-option:hover {
+    background: #eef2f9;
+    border-color: #90aecb;
+}
+
+[data-theme="light"] .theme-option--active {
+    border-color: #2563eb;
+    background: rgba(59, 130, 246, 0.08);
+}
+
+[data-theme="light"] .theme-option--active .theme-option__label {
+    color: #2563eb;
+}
+
+[data-theme="light"] .cfg-status-badge--disconnected {
+    background: rgba(113, 128, 150, 0.08);
+    color: #4a5568;
+    border-color: rgba(113, 128, 150, 0.25);
+}
+
+[data-theme="light"] .cfg-card-icon--gold  { color: #d4af37; }
+[data-theme="light"] .cfg-card-icon--blue  { color: #3b82f6; }
+[data-theme="light"] .cfg-card-icon--green { color: #16a34a; }
+[data-theme="light"] .cfg-card-icon--purple{ color: #7c3aed; }

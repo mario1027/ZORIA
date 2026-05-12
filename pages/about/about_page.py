@@ -71,7 +71,7 @@ def hero_section():
                     'fontSize': '0.75rem',
                     'letterSpacing': '0.3em',
                     'fontWeight': '500',
-                    'color': '#64748b'
+                    'color': 'var(--z-color-text-tertiary)'
                 })
             ], style={
                 'marginBottom': '40px',
@@ -88,7 +88,7 @@ def hero_section():
                     'fontWeight': '200',
                     'letterSpacing': '-0.03em',
                     'lineHeight': '0.9',
-                    'color': '#0f172a',
+                    'color': 'var(--z-color-text-primary)',
                     'marginBottom': '10px'
                 }),
                 html.Span("Impedance Analysis System", style={
@@ -120,7 +120,7 @@ def hero_section():
             ], style={
                 'fontSize': 'clamp(1rem, 1.5vw, 1.25rem)',
                 'fontWeight': '300',
-                'color': '#475569',
+                'color': 'var(--z-color-text-secondary)',
                 'textAlign': 'center',
                 'maxWidth': '600px',
                 'margin': '0 auto 60px',
@@ -175,7 +175,7 @@ def hero_section():
             'position': 'relative'
         })
     ], style={
-        'background': 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
+        'background': 'var(--z-color-bg-primary)',
         'position': 'relative',
         'overflow': 'hidden',
         'minHeight': '100vh',
@@ -201,7 +201,7 @@ def stats_section():
                         html.Span(stat['value'], className="stat-number", style={
                             'fontSize': 'clamp(3rem, 6vw, 5rem)',
                             'fontWeight': '200',
-                            'color': '#0f172a',
+                            'color': 'var(--z-color-text-primary)',
                             'lineHeight': '1'
                         }),
                         html.Span(stat['unit'], style={
@@ -221,7 +221,7 @@ def stats_section():
                     }),
                     html.P(stat['desc'], style={
                         'fontSize': '0.85rem',
-                        'color': '#64748b',
+                        'color': 'var(--z-color-text-tertiary)',
                         'fontWeight': '300'
                     })
                 ], className="stat-item", style={
@@ -234,11 +234,11 @@ def stats_section():
             ], className='col-lg-3 col-md-6', style={'marginBottom': '0'}) 
             for i, stat in enumerate(stats)]
         ], className='row g-0', style={
-            'borderTop': '1px solid #e2e8f0',
-            'borderBottom': '1px solid #e2e8f0'
+            'borderTop': '1px solid var(--z-color-border)',
+            'borderBottom': '1px solid var(--z-color-border)'
         })
     ], style={
-        'background': '#f8fafc'
+        'background': 'var(--z-color-bg-elevated)'
     })
 
 
@@ -274,7 +274,7 @@ def manifesto_section():
                     ], style={
                         'fontSize': 'clamp(1.5rem, 3vw, 2.5rem)',
                         'fontWeight': '300',
-                        'color': '#1e293b',
+                        'color': 'var(--z-color-text-primary)',
                         'lineHeight': '1.4',
                         'margin': '0 0 40px 0',
                         'padding': '0',
@@ -289,7 +289,7 @@ def manifesto_section():
                         "el acceso a la caracterización de materiales y circuitos."
                     ], style={
                         'fontSize': '1.1rem',
-                        'color': '#475569',
+                        'color': 'var(--z-color-text-secondary)',
                         'lineHeight': '1.9',
                         'fontWeight': '300',
                         'maxWidth': '700px'
@@ -302,7 +302,7 @@ def manifesto_section():
             'padding': '120px 40px'
         })
     ], style={
-        'background': '#ffffff'
+        'background': 'var(--z-color-bg-card)'
     })
 
 
@@ -356,7 +356,7 @@ def features_section():
                     html.H2("Funcionalidades Principales", style={
                         'fontSize': 'clamp(2rem, 4vw, 3rem)',
                         'fontWeight': '300',
-                        'color': '#0f172a',
+                        'color': 'var(--z-color-text-primary)',
                         'letterSpacing': '-0.02em'
                     })
                 ], className='col-lg-8')
@@ -374,33 +374,33 @@ def features_section():
                         ], className="feature-icon-container", style={
                             'width': '70px',
                             'height': '70px',
-                            'border': '2px solid #e2e8f0',
+                            'border': '2px solid var(--z-color-border)',
                             'borderRadius': '50%',
                             'display': 'flex',
                             'alignItems': 'center',
                             'justifyContent': 'center',
                             'marginBottom': '25px',
                             'transition': 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                            'background': '#ffffff'
+                            'background': 'var(--z-color-bg-card)'
                         }),
                         html.H3(feature['title'], style={
                             'fontSize': '1.15rem',
                             'fontWeight': '600',
-                            'color': '#0f172a',
+                            'color': 'var(--z-color-text-primary)',
                             'marginBottom': '12px',
                             'letterSpacing': '-0.01em'
                         }),
                         html.P(feature['desc'], style={
                             'fontSize': '0.95rem',
-                            'color': '#64748b',
+                            'color': 'var(--z-color-text-tertiary)',
                             'lineHeight': '1.7',
                             'fontWeight': '400'
                         })
                     ], className="feature-card-v2", style={
                         'padding': '40px 30px',
-                        'background': '#ffffff',
+                        'background': 'var(--z-color-bg-card)',
                         'borderRadius': '16px',
-                        'border': '1px solid #e2e8f0',
+                        'border': '1px solid var(--z-color-border)',
                         'height': '100%',
                         'transition': 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                         'cursor': 'pointer'
@@ -413,7 +413,7 @@ def features_section():
             'padding': '120px 40px'
         })
     ], style={
-        'background': '#f1f5f9'
+        'background': 'var(--z-color-bg-elevated)'
     })
 
 
@@ -434,14 +434,14 @@ def team_section():
                 html.H2("Quienes Construyen ZORIA", style={
                     'fontSize': 'clamp(2rem, 4vw, 3rem)',
                     'fontWeight': '300',
-                    'color': '#0f172a',
+                    'color': 'var(--z-color-text-primary)',
                     'letterSpacing': '-0.02em',
                     'marginBottom': '20px'
                 }),
                 html.Div(style={
                     'width': '40px',
                     'height': '2px',
-                    'background': '#d4af37',
+                    'background': 'var(--z-color-accent, #d4af37)',
                     'margin': '30px auto'
                 }),
             ], style={'textAlign': 'center', 'marginBottom': '80px'}),
@@ -482,7 +482,7 @@ def team_section():
                             'position': 'absolute',
                             'top': '20px',
                             'right': '20px',
-                            'background': '#d4af37',
+                            'background': 'var(--z-color-accent, #d4af37)',
                             'padding': '6px 14px',
                             'borderRadius': '20px',
                             'zIndex': '10'
@@ -493,7 +493,7 @@ def team_section():
                             html.H3(member['name'], style={
                                 'fontSize': '1.4rem',
                                 'fontWeight': '600',
-                                'color': '#0f172a',
+                                'color': 'var(--z-color-text-primary)',
                                 'marginBottom': '5px',
                                 'letterSpacing': '-0.01em'
                             }),
@@ -505,7 +505,7 @@ def team_section():
                             }),
                             html.P(member['description'], style={
                                 'fontSize': '0.9rem',
-                                'color': '#475569',
+                                'color': 'var(--z-color-text-secondary)',
                                 'lineHeight': '1.7',
                                 'marginBottom': '25px',
                                 'fontWeight': '300'
@@ -519,7 +519,7 @@ def team_section():
                                     target="_blank" if member['github'] != '#' else None,
                                     className="social-link",
                                     style={
-                                        'color': '#64748b',
+                                        'color': 'var(--z-color-text-tertiary)',
                                         'textDecoration': 'none',
                                         'marginRight': '20px',
                                         'transition': 'all 0.3s ease',
@@ -532,7 +532,7 @@ def team_section():
                                     target="_blank" if member['linkedin'] != '#' else None,
                                     className="social-link",
                                     style={
-                                        'color': '#64748b',
+                                        'color': 'var(--z-color-text-tertiary)',
                                         'textDecoration': 'none',
                                         'marginRight': '20px' if member['email'] else '0',
                                         'transition': 'all 0.3s ease',
@@ -544,7 +544,7 @@ def team_section():
                                     href=f"mailto:{member['email']}" if member['email'] else None,
                                     className="social-link",
                                     style={
-                                        'color': '#64748b',
+                                        'color': 'var(--z-color-text-tertiary)',
                                         'textDecoration': 'none',
                                         'transition': 'all 0.3s ease',
                                         'padding': '8px'
@@ -553,16 +553,16 @@ def team_section():
                             ])
                         ], style={
                             'padding': '30px',
-                            'background': '#f8fafc',
-                            'borderTop': '1px solid #e2e8f0'
+                            'background': 'var(--z-color-bg-elevated)',
+                            'borderTop': '1px solid var(--z-color-border)'
                         })
                     ], className="team-card-v2", style={
-                        'border': '1px solid #e2e8f0',
+                        'border': '1px solid var(--z-color-border)',
                         'borderRadius': '16px',
                         'overflow': 'hidden',
                         'position': 'relative',
                         'transition': 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                        'background': '#ffffff'
+                        'background': 'var(--z-color-bg-card)'
                     })
                 ], className='col-lg-4 col-md-6 mb-5') for member in TEAM_MEMBERS]
             ], className='row g-4 justify-content-center')
@@ -573,7 +573,7 @@ def team_section():
             'padding': '120px 40px'
         })
     ], style={
-        'background': '#ffffff'
+        'background': 'var(--z-color-bg-card)'
     })
 
 
@@ -594,14 +594,14 @@ def partners_section():
                 html.H2("Respaldo Institucional", style={
                     'fontSize': 'clamp(2rem, 4vw, 2.5rem)',
                     'fontWeight': '300',
-                    'color': '#0f172a',
+                    'color': 'var(--z-color-text-primary)',
                     'letterSpacing': '-0.02em',
                     'marginBottom': '20px'
                 }),
                 html.Div(style={
                     'width': '40px',
                     'height': '2px',
-                    'background': '#d4af37',
+                    'background': 'var(--z-color-accent, #d4af37)',
                     'margin': '30px auto 60px'
                 }),
             ], style={'textAlign': 'center'}),
@@ -627,20 +627,20 @@ def partners_section():
                         html.H5("Universidad del Atlántico", style={
                             'fontSize': '1.2rem',
                             'fontWeight': '600',
-                            'color': '#0f172a',
+                            'color': 'var(--z-color-text-primary)',
                             'marginBottom': '10px',
                             'textAlign': 'center'
                         }),
                         html.P("Barranquilla, Colombia", style={
                             'fontSize': '0.9rem',
-                            'color': '#475569',
+                            'color': 'var(--z-color-text-secondary)',
                             'textAlign': 'center'
                         })
                     ], style={
                         'padding': '40px 30px',
-                        'background': '#f8fafc',
+                        'background': 'var(--z-color-bg-elevated)',
                         'borderRadius': '16px',
-                        'border': '1px solid #e2e8f0',
+                        'border': '1px solid var(--z-color-border)',
                         'transition': 'all 0.4s ease',
                         'cursor': 'pointer',
                         'height': '100%'
@@ -666,26 +666,26 @@ def partners_section():
                         html.H5("GEOEL", style={
                             'fontSize': '1.2rem',
                             'fontWeight': '600',
-                            'color': '#0f172a',
+                            'color': 'var(--z-color-text-primary)',
                             'marginBottom': '10px',
                             'textAlign': 'center'
                         }),
                         html.P("Grupo de Espectroscopia Óptica y Emisión Láser", style={
                             'fontSize': '0.9rem',
-                            'color': '#475569',
+                            'color': 'var(--z-color-text-secondary)',
                             'textAlign': 'center',
                             'marginBottom': '5px'
                         }),
                         html.P("Universidad del Atlántico", style={
                             'fontSize': '0.85rem',
-                            'color': '#64748b',
+                            'color': 'var(--z-color-text-tertiary)',
                             'textAlign': 'center'
                         })
                     ], style={
                         'padding': '40px 30px',
-                        'background': '#f8fafc',
+                        'background': 'var(--z-color-bg-elevated)',
                         'borderRadius': '16px',
-                        'border': '1px solid #e2e8f0',
+                        'border': '1px solid var(--z-color-border)',
                         'transition': 'all 0.4s ease',
                         'cursor': 'pointer',
                         'height': '100%'
@@ -699,7 +699,7 @@ def partners_section():
             'padding': '100px 40px'
         })
     ], style={
-        'background': '#f8fafc'
+        'background': 'var(--z-color-bg-elevated)'
     })
 
 
@@ -724,7 +724,7 @@ def cta_section():
                     ], style={
                         'fontSize': 'clamp(2rem, 4vw, 3.5rem)',
                         'fontWeight': '300',
-                        'color': '#0f172a',
+                        'color': 'var(--z-color-text-primary)',
                         'letterSpacing': '-0.02em',
                         'marginBottom': '30px',
                         'lineHeight': '1.2'
@@ -734,7 +734,7 @@ def cta_section():
                         "que confían en ZORIA para sus mediciones de precisión."
                     ], style={
                         'fontSize': '1.1rem',
-                        'color': '#475569',
+                        'color': 'var(--z-color-text-secondary)',
                         'maxWidth': '500px',
                         'margin': '0 auto 50px',
                         'lineHeight': '1.8',
@@ -775,7 +775,7 @@ def cta_section():
                             }),
                             html.Div("Python 3.13+", style={
                                 'fontSize': '0.75rem',
-                                'color': '#64748b'
+                                'color': 'var(--z-color-text-tertiary)'
                             })
                         ], style={'textAlign': 'center'}),
                         html.Div([
@@ -786,7 +786,7 @@ def cta_section():
                             }),
                             html.Div("MIT License", style={
                                 'fontSize': '0.75rem',
-                                'color': '#64748b'
+                                'color': 'var(--z-color-text-tertiary)'
                             })
                         ], style={'textAlign': 'center'}),
                         html.Div([
@@ -797,7 +797,7 @@ def cta_section():
                             }),
                             html.Div("Multi-Platform", style={
                                 'fontSize': '0.75rem',
-                                'color': '#64748b'
+                                'color': 'var(--z-color-text-tertiary)'
                             })
                         ], style={'textAlign': 'center'})
                     ], style={
@@ -816,7 +816,7 @@ def cta_section():
             'padding': '150px 40px'
         })
     ], style={
-        'background': 'linear-gradient(135deg, #f8fafc 0%, #ffffff 50%, #f8fafc 100%)',
+        'background': 'var(--z-color-bg-primary)',
         'position': 'relative'
     })
 
@@ -849,7 +849,7 @@ layout = html.Div([
         cta_section()
         
     ], className="content", style={
-        'background': '#ffffff'
+        'background': 'var(--z-color-bg-card)'
     }),
     
     # Footer fuera del main (igual que otras páginas)
@@ -859,7 +859,7 @@ layout = html.Div([
     
 ], className="about-page sc-chart d-flex flex-column", style={
     'minHeight': '100vh',
-    'background': '#ffffff'
+    'background': 'var(--z-color-bg-card)'
 })
 
 

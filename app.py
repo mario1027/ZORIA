@@ -65,28 +65,9 @@ def setup_logging(log_level: Optional[str] = None) -> logging.Logger:
 # para permitir el funcionamiento sin conexión a internet.
 
 EXTERNAL_STYLESHEETS = [
-    # Normalización CSS (local)
-    "/assets/vendor/css/normalize.min.css",
-    # Chartist para gráficos (local)
-    "/assets/vendor/css/chartist.min.css",
-    # Font Awesome para iconos (local)
-    "/assets/vendor/css/all.min.css",
-    # Notyf para notificaciones (local)
-    "/assets/vendor/css/notyf.min.css",
-    # Tema VOLT Bootstrap 5 (local)
-    "/assets/vendor/css/volt.min.css",
-    # Estilos locales de la aplicación
-    "/assets/css/typography-scale.css",
-    "/assets/css/navigation.css",
-    "/assets/css/mobile-nav.css",
-    "/assets/css/scichart-themes.css",
-    "/assets/css/calibration.css",
-    "/assets/css/calibration-wizard.css",
-    "/assets/css/windows.css",
-    "/assets/css/modal-connect.css",
-    "/assets/css/documentation.css",
-    "/assets/css/about.css",
-    "/assets/css/config.css",
+    # Los CSS se sirven automáticamente desde assets/ por Dash.
+    # No se duplican aquí para evitar cargas redundantes.
+    # El orden de carga es alphabético: vendor/ < css/ (volt → zoria-tokens → resto)
 ]
 
 EXTERNAL_SCRIPTS = [
@@ -273,7 +254,7 @@ def register_global_connection_callbacks(app):
                             dev.set_mdelay(1)
                             dev.set_tdelay(0)
                             device_state.set_device(dev, True)
-                            logger.info(f"✅ Conectado a {p.device}")
+                            logger.info(f"Conectado a {p.device}")
                             return ("Conectado", "connection-pulse connected",
                                     p.device, False, False, True)
                         else:
@@ -479,7 +460,7 @@ def register_global_terminal_callbacks(app):
                     });
                     
                     if (success) {
-                        console.log('[Terminal] ✅ Sistema inicializado');
+                        console.log('[Terminal] Sistema inicializado');
                     }
                 }
                 
@@ -756,7 +737,7 @@ def register_global_terminal_callbacks(app):
             if line_type == 'error':
                 current_output.append(
                     html.Div([
-                        html.Span("✗ ", className="terminal-error-icon"),
+                        html.Span("", className="terminal-error-icon"),
                         html.Span(f"Error: {line_text}", className="terminal-error-text")
                     ], className="terminal-line terminal-error-line")
                 )
@@ -772,13 +753,13 @@ def register_global_terminal_callbacks(app):
                 line_lower = line_text.lower()
                 if any(err in line_lower for err in ['error', 'fail', 'invalid', 'unknown']):
                     css_class = "terminal-response-line terminal-response-error"
-                    prefix = html.Span("✗ ", className="terminal-error-icon")
+                    prefix = html.Span("", className="terminal-error-icon")
                 elif any(ok in line_lower for ok in ['ok', 'success', 'done', 'ready', 'pass']):
                     css_class = "terminal-response-line terminal-response-success"
-                    prefix = html.Span("✓ ", className="terminal-success-icon")
+                    prefix = html.Span("", className="terminal-success-icon")
                 elif any(warn in line_lower for warn in ['warning', 'warn', 'caution']):
                     css_class = "terminal-response-line terminal-response-warning"
-                    prefix = html.Span("⚠ ", className="terminal-warning-icon")
+                    prefix = html.Span("", className="terminal-warning-icon")
                 else:
                     css_class = "terminal-response-line"
                     prefix = html.Span("  ", className="terminal-indent")
@@ -805,7 +786,7 @@ def register_global_terminal_callbacks(app):
                 )
                 current_output.append(
                     html.Div([
-                        html.Span("💡 ", className="text-info"),
+                        html.Span("", className="text-info"),
                         html.Span("Verifique que el comando sea correcto. Use ", className="text-muted"),
                         html.Code("help", className="terminal-code"),
                         html.Span(" para ver comandos disponibles.", className="text-muted")
@@ -931,7 +912,7 @@ def register_global_terminal_callbacks(app):
         
         # ===== MANEJO DE PASSWORD: Si estamos esperando una contraseña =====
         if password_state.get('waiting', False):
-            logger.info(f"[Terminal] 🔐 PASSWORD MODE: Enviando '{command}' como contraseña (TeraTerm style)")
+            logger.info(f"[Terminal] PASSWORD MODE: Enviando '{command}' como contraseña (TeraTerm style)")
             
             # El comando actual es la contraseña
             password = command
@@ -943,7 +924,7 @@ def register_global_terminal_callbacks(app):
             # Mostrar en terminal que se envió la contraseña (oculta)
             current_output.append(
                 html.Div([
-                    html.Span(f"[{timestamp}] ❯ ", className="terminal-prompt"),
+                    html.Span(f"[{timestamp}] ", className="terminal-prompt"),
                     html.Span("*" * len(password), className="text-muted"),  # Ocultar contraseña
                     html.Span(" (password)", className="text-muted fst-italic ms-2")
                 ], className="terminal-line")
@@ -958,7 +939,7 @@ def register_global_terminal_callbacks(app):
                     # Enviar contraseña directamente al serial (SIN esperar prompt ADMX2001>)
                     device.serial.write((password + '\n').encode('utf-8'))
                     device.serial.flush()
-                    logger.info(f"[Terminal] 📤 Contraseña enviada")
+                    logger.info(f"[Terminal] Contraseña enviada")
                     
                     # DETECCIÓN ACTIVA de respuesta (TeraTerm style)
                     import time
@@ -976,7 +957,7 @@ def register_global_terminal_callbacks(app):
                             buffer_str = response_buffer.decode('utf-8', errors='ignore')
                             if 'success' in buffer_str.lower() or 'ADMX2001>' in buffer_str:
                                 success_detected = True
-                                logger.info(f"[Terminal] ✓ Respuesta recibida (success o prompt detectado)")
+                                logger.info(f"[Terminal] Respuesta recibida (success o prompt detectado)")
                                 # Pequeña pausa para datos finales
                                 time.sleep(0.05)
                                 if device.serial.in_waiting:
@@ -988,7 +969,7 @@ def register_global_terminal_callbacks(app):
                     
                     # Decodificar buffer
                     response_text = response_buffer.decode('utf-8', errors='ignore')
-                    logger.info(f"[Terminal] 📥 Respuesta completa: {repr(response_text[:200])}")
+                    logger.info(f"[Terminal] Respuesta completa: {repr(response_text[:200])}")
                     
                     # Procesar respuesta con limpieza robusta (ANSI/VT100)
                     from lib.utils import clean_response_line
@@ -1081,15 +1062,15 @@ def register_global_terminal_callbacks(app):
                             line_lower = line.lower()
                             if 'success' in line_lower or 'done' in line_lower:
                                 css_class = "terminal-response-success"
-                                prefix = html.Span("✓ ", className="terminal-success-icon")
+                                prefix = html.Span("", className="terminal-success-icon")
                             elif "command" in line_lower and "not found" in line_lower and password.lower() in line_lower:
                                 css_class = "terminal-response-warning"
-                                prefix = html.Span("⚠ ", className="terminal-warning-icon")
+                                prefix = html.Span("", className="terminal-warning-icon")
                                 line = "Contraseña incorrecta o prompt expirado. Intente nuevamente."
                                 keep_password_mode = True
                             elif 'error' in line_lower or 'fail' in line_lower:
                                 css_class = "terminal-response-error"
-                                prefix = html.Span("✗ ", className="terminal-error-icon")
+                                prefix = html.Span("", className="terminal-error-icon")
                             else:
                                 css_class = "terminal-response-line"
                                 prefix = html.Span("  ", className="terminal-indent")
@@ -1100,23 +1081,23 @@ def register_global_terminal_callbacks(app):
                     else:
                         current_output.append(
                             html.Div([
-                                html.Span("⚠ ", className="text-warning"),
+                                html.Span("", className="text-warning"),
                                 html.Span("Sin respuesta del dispositivo", className="text-muted")
                             ], className="terminal-line")
                         )
                     
                 except Exception as e:
-                    logger.error(f"[Terminal] ❌ Error enviando contraseña: {e}")
+                    logger.error(f"[Terminal] Error enviando contraseña: {e}")
                     current_output.append(
                         html.Div([
-                            html.Span("✗ ", className="terminal-error-icon"),
+                            html.Span("", className="terminal-error-icon"),
                             html.Span(f"Error: {str(e)}", className="terminal-response-error")
                         ], className="terminal-line")
                     )
             else:
                 current_output.append(
                     html.Div([
-                        html.Span("✗ ", className="terminal-error-icon"),
+                        html.Span("", className="terminal-error-icon"),
                         html.Span("Error: Dispositivo no conectado", className="terminal-response-error")
                     ], className="terminal-line")
                 )
@@ -1126,7 +1107,7 @@ def register_global_terminal_callbacks(app):
                 password_state = {'waiting': True, 'original_command': original_command}
                 current_output.append(
                     html.Div([
-                        html.Span("🔐 ", className="text-warning"),
+                        html.Span("", className="text-warning"),
                         html.Span("PASSWORD> ", className="terminal-response-warning fw-bold"),
                         html.Span("Reingrese la contraseña.", className="text-muted fst-italic")
                     ], className="terminal-line")
@@ -1158,7 +1139,7 @@ def register_global_terminal_callbacks(app):
         cmd_block = html.Div([
             html.Div([
                 html.Span(f"[{timestamp}] ", className="terminal-timestamp"),
-                html.Span("❯ ", className="terminal-prompt-symbol"),
+                html.Span("", className="terminal-prompt-symbol"),
                 html.Span(command, className="terminal-cmd-text")
             ], className="terminal-line")
         ])
@@ -1171,13 +1152,13 @@ def register_global_terminal_callbacks(app):
         if cmd_lower.startswith('calibration '):
             current_output.append(
                 html.Div([
-                    html.Span("⚠ Warn: ", className="text-warning fw-bold"),
+                    html.Span("Warn: ", className="text-warning fw-bold"),
                     html.Span("Command 'calibration' not found", className="terminal-response-line")
                 ], className="terminal-line")
             )
             current_output.append(
                 html.Div([
-                    html.Span("💡 ", className="text-info"),
+                    html.Span("", className="text-info"),
                     html.Span("Did you mean: ", className="text-muted"),
                     html.Code(f"calibrate {' '.join(command.split()[1:])}", className="terminal-code text-info")
                 ], className="terminal-line")
@@ -1195,19 +1176,19 @@ def register_global_terminal_callbacks(app):
                 logging.getLogger().setLevel(logging.DEBUG)
                 logging.getLogger('lib.admx2001').setLevel(logging.DEBUG)
                 logging.getLogger('lib.device_state').setLevel(logging.DEBUG)
-                msg = "✓ Logging detallado ACTIVADO (DEBUG)"
+                msg = "Logging detallado ACTIVADO (DEBUG)"
                 css_class = "terminal-response-success"
             elif cmd_lower == 'debug off':
                 logging.getLogger().setLevel(logging.WARNING)
                 logging.getLogger('lib.admx2001').setLevel(logging.WARNING)
                 logging.getLogger('lib.device_state').setLevel(logging.WARNING)
-                msg = "✓ Logging detallado DESACTIVADO (WARNING)"
+                msg = "Logging detallado DESACTIVADO (WARNING)"
                 css_class = "terminal-response-warning"
             elif cmd_lower == 'debug info':
                 logging.getLogger().setLevel(logging.INFO)
                 logging.getLogger('lib.admx2001').setLevel(logging.INFO)
                 logging.getLogger('lib.device_state').setLevel(logging.INFO)
-                msg = "✓ Logging nivel INFO (normal)"
+                msg = "Logging nivel INFO (normal)"
                 css_class = "terminal-response-line"
             
             current_output.append(
@@ -1218,7 +1199,7 @@ def register_global_terminal_callbacks(app):
             )
             current_output.append(
                 html.Div([
-                    html.Span("💡 ", className="text-info"),
+                    html.Span("", className="text-info"),
                     html.Span("Los logs se muestran en la consola donde se ejecutó app.py", className="text-muted small")
                 ], className="terminal-line")
             )
@@ -1345,7 +1326,7 @@ def register_global_terminal_callbacks(app):
 
                 current_output.append(
                     html.Div([
-                        html.Span("✓ ", className="terminal-success-icon"),
+                        html.Span("", className="terminal-success-icon"),
                         html.Span("Streaming detenido", className="terminal-response-success")
                     ], className="terminal-line")
                 )
@@ -1360,12 +1341,12 @@ def register_global_terminal_callbacks(app):
             
             if use_streaming:
                 # ===== MODO STREAMING: Mostrar datos en tiempo real =====
-                logger.info(f"[Terminal] 🎬 Iniciando streaming para: '{command}'")
+                logger.info(f"[Terminal] Iniciando streaming para: '{command}'")
                 
                 # Agregar mensaje de ejecución
                 current_output.append(
                     html.Div([
-                        html.Span("⏳ ", className="text-warning"),
+                        html.Span("", className="text-warning"),
                         html.Span(f"Ejecutando: {command}...", className="text-muted fst-italic")
                     ], className="terminal-line")
                 )
@@ -1433,14 +1414,14 @@ def register_global_terminal_callbacks(app):
                                 password_state = {'waiting': True, 'original_command': erase_cmd}
                                 current_output.append(
                                     html.Div([
-                                        html.Span("🔐 ", className="text-warning"),
+                                        html.Span("", className="text-warning"),
                                         html.Span("PASSWORD> ", className="terminal-response-warning fw-bold"),
                                         html.Span("Ingrese la contraseña:", className="text-muted fst-italic")
                                     ], className="terminal-line")
                                 )
                                 current_output.append(
                                     html.Div([
-                                        html.Span("💡 ", className="text-info"),
+                                        html.Span("", className="text-info"),
                                         html.Span("Contraseña predeterminada: ", className="text-muted"),
                                         html.Code("Analog123", className="terminal-code text-success")
                                     ], className="terminal-line")
@@ -1485,7 +1466,7 @@ def register_global_terminal_callbacks(app):
                                 response.append(clean_line)
 
                     except Exception as e:
-                        logger.error(f"[Terminal] ❌ Error en erase: {e}")
+                        logger.error(f"[Terminal] Error en erase: {e}")
                         import traceback
                         traceback.print_exc()
                         response = [f"Error: {e}"]
@@ -1504,7 +1485,7 @@ def register_global_terminal_callbacks(app):
                     
                     if password:
                         # Usuario proporcionó contraseña - enviar todo el flujo (TeraTerm style)
-                        logger.info(f"[Terminal] 🔐 Calibrate commit con contraseña proporcionada: '{password}' (TeraTerm style)")
+                        logger.info(f"[Terminal] Calibrate commit con contraseña proporcionada: '{password}' (TeraTerm style)")
                         
                         # Construir comando commit
                         import time
@@ -1513,7 +1494,7 @@ def register_global_terminal_callbacks(app):
                         else:
                             commit_cmd = f"calibrate commit {int(time.time())}"
                         
-                        logger.info(f"[Terminal] 📤 Enviando: {commit_cmd}")
+                        logger.info(f"[Terminal] Enviando: {commit_cmd}")
                         
                         try:
                             device = device_state.device
@@ -1541,7 +1522,7 @@ def register_global_terminal_callbacks(app):
                                     buffer_str = response_buffer.decode('utf-8', errors='ignore')
                                     if 'PASSWORD>' in buffer_str.upper():
                                         password_prompt_received = True
-                                        logger.info(f"[Terminal] 🔐 PASSWORD> detectado activamente")
+                                        logger.info(f"[Terminal] PASSWORD> detectado activamente")
                                         # Pequeña pausa para datos finales
                                         time.sleep(0.05)
                                         if device.serial.in_waiting:
@@ -1551,14 +1532,14 @@ def register_global_terminal_callbacks(app):
                                     time.sleep(0.05)
                             
                             first_response = response_buffer.decode('utf-8', errors='ignore')
-                            logger.info(f"[Terminal] 📥 Respuesta después de commit: {repr(first_response[:200])}")
+                            logger.info(f"[Terminal] Respuesta después de commit: {repr(first_response[:200])}")
                             
                             # Verificar que recibimos PASSWORD>
                             if not password_prompt_received:
-                                logger.warning(f"[Terminal] ⚠️ No se recibió PASSWORD>, respuesta: {first_response}")
+                                logger.warning(f"[Terminal] No se recibió PASSWORD>, respuesta: {first_response}")
                             
                             # Enviar contraseña (sin esperar prompt ADMX2001>)
-                            logger.info(f"[Terminal] 🔐 Enviando contraseña...")
+                            logger.info(f"[Terminal] Enviando contraseña...")
                             device.serial.write((password + '\n').encode('utf-8'))
                             device.serial.flush()
                             
@@ -1577,7 +1558,7 @@ def register_global_terminal_callbacks(app):
                                     buffer_str = commit_response_buffer.decode('utf-8', errors='ignore')
                                     if 'success' in buffer_str.lower() or 'ADMX2001>' in buffer_str or 'invalid' in buffer_str.lower():
                                         success_detected = True
-                                        logger.info(f"[Terminal] ✓ Respuesta final recibida")
+                                        logger.info(f"[Terminal] Respuesta final recibida")
                                         # Pequeña pausa para datos finales
                                         time.sleep(0.05)
                                         if device.serial.in_waiting:
@@ -1587,7 +1568,7 @@ def register_global_terminal_callbacks(app):
                                     time.sleep(0.05)
                             
                             commit_response = commit_response_buffer.decode('utf-8', errors='ignore')
-                            logger.info(f"[Terminal] 📥 Respuesta completa del commit: {repr(commit_response[:200])}")
+                            logger.info(f"[Terminal] Respuesta completa del commit: {repr(commit_response[:200])}")
                             
                             # Procesar respuesta
                             from lib.utils import clean_response_line
@@ -1599,22 +1580,22 @@ def register_global_terminal_callbacks(app):
                                     if clean_line.lower() != commit_cmd.lower() and not clean_line.isdigit():
                                         response.append(clean_line)
                             
-                            logger.info(f"[Terminal] ✅ Respuesta procesada: {len(response)} líneas")
+                            logger.info(f"[Terminal] Respuesta procesada: {len(response)} líneas")
                             
                         except Exception as e:
-                            logger.error(f"[Terminal] ❌ Error en commit: {e}")
+                            logger.error(f"[Terminal] Error en commit: {e}")
                             import traceback
                             traceback.print_exc()
                             response = [f"Error: {e}"]
                     else:
                         # Sin contraseña - flujo interactivo: generar timestamp y enviar
-                        logger.info(f"[Terminal] 🔐 calibrate commit sin contraseña - modo interactivo (TeraTerm style)")
+                        logger.info(f"[Terminal] calibrate commit sin contraseña - modo interactivo (TeraTerm style)")
                         
                         import time
                         timestamp = int(time.time())
                         commit_cmd = f"calibrate commit {timestamp}"
                         
-                        logger.info(f"[Terminal] 📤 Enviando comando con timestamp Unix: {commit_cmd}")
+                        logger.info(f"[Terminal] Enviando comando con timestamp Unix: {commit_cmd}")
                         
                         try:
                             device = device_state.device
@@ -1643,7 +1624,7 @@ def register_global_terminal_callbacks(app):
                                     buffer_str = response_buffer.decode('utf-8', errors='ignore')
                                     if 'PASSWORD>' in buffer_str.upper():
                                         password_prompt_received = True
-                                        logger.info(f"[Terminal] 🔐 PASSWORD> detectado activamente")
+                                        logger.info(f"[Terminal] PASSWORD> detectado activamente")
                                         # Pequeña pausa para datos finales
                                         time.sleep(0.05)
                                         # Leer cualquier dato adicional
@@ -1658,15 +1639,15 @@ def register_global_terminal_callbacks(app):
                             response_text = response_buffer.decode('utf-8', errors='ignore')
                             
                             if not password_prompt_received:
-                                logger.warning(f"[Terminal] ⚠️ No se recibió PASSWORD> en {timeout}s")
+                                logger.warning(f"[Terminal] No se recibió PASSWORD> en {timeout}s")
                                 logger.warning(f"[Terminal] Respuesta recibida: {repr(response_text)}")
                             
                             # Separar en líneas para mostrar
                             response = [line.strip() for line in response_text.split('\n') if line.strip()]
-                            logger.info(f"[Terminal] ✅ Respuesta recibida: {len(response)} líneas (prompt detectado: {password_prompt_received})")
+                            logger.info(f"[Terminal] Respuesta recibida: {len(response)} líneas (prompt detectado: {password_prompt_received})")
                             
                         except Exception as e:
-                            logger.error(f"[Terminal] ❌ Error en commit interactivo: {e}")
+                            logger.error(f"[Terminal] Error en commit interactivo: {e}")
                             import traceback
                             traceback.print_exc()
                             response = [f"Error: {e}"]
@@ -1674,7 +1655,7 @@ def register_global_terminal_callbacks(app):
                 # Determinar timeout según el comando
                 elif cmd_lower_check.startswith('calibrate') or cmd_lower_check == '*idn' or cmd_lower_check == 'z':
                     timeout = 30.0
-                    logger.info(f"[Terminal] ⏱️ Usando timeout extendido: {timeout}s")
+                    logger.info(f"[Terminal] ⏱ Usando timeout extendido: {timeout}s")
                     response = device_state.send_command(command, timeout=timeout, lock_timeout=5.0)
                 else:
                     # Comandos rápidos, usar timeout default
@@ -1684,7 +1665,7 @@ def register_global_terminal_callbacks(app):
 
                 # Reintento automático para calibración si llegó vacío (evita falsos 'sin respuesta')
                 if (not response) and cmd_lower_check.startswith('calibrate') and (not cmd_lower_check.startswith('calibrate commit')) and (not cmd_lower_check.startswith('calibrate erase')):
-                    logger.warning(f"[Terminal] ⚠️ Respuesta vacía en calibración. Reintentando: '{command}'")
+                    logger.warning(f"[Terminal] Respuesta vacía en calibración. Reintentando: '{command}'")
                     try:
                         import time
                         time.sleep(0.15)
@@ -1695,17 +1676,17 @@ def register_global_terminal_callbacks(app):
                 
                 # Log completo de la respuesta para comandos de calibración
                 if cmd_lower_check.startswith('calibrate'):
-                    logger.info(f"[Terminal] 🔍 DEBUG CALIBRATE - Command: '{command}'")
-                    logger.info(f"[Terminal] 🔍 DEBUG CALIBRATE - Response type: {type(response)}")
-                    logger.info(f"[Terminal] 🔍 DEBUG CALIBRATE - Response is None: {response is None}")
+                    logger.info(f"[Terminal] DEBUG CALIBRATE - Command: '{command}'")
+                    logger.info(f"[Terminal] DEBUG CALIBRATE - Response type: {type(response)}")
+                    logger.info(f"[Terminal] DEBUG CALIBRATE - Response is None: {response is None}")
                     if response:
-                        logger.info(f"[Terminal] 🔍 DEBUG CALIBRATE - Response length: {len(response)}")
-                        logger.info(f"[Terminal] 🔍 DEBUG CALIBRATE - Todas las líneas:")
+                        logger.info(f"[Terminal] DEBUG CALIBRATE - Response length: {len(response)}")
+                        logger.info(f"[Terminal] DEBUG CALIBRATE - Todas las líneas:")
                         for idx, line in enumerate(response):
-                            logger.info(f"[Terminal] 🔍    [{idx}] {repr(line)}")
+                            logger.info(f"[Terminal]    [{idx}] {repr(line)}")
                     else:
-                        logger.error(f"[Terminal] ❌ DEBUG CALIBRATE - Respuesta es None o vacía!")
-                        logger.error(f"[Terminal] ❌ DEBUG - Probablemente el dispositivo tardó mucho en responder")
+                        logger.error(f"[Terminal] DEBUG CALIBRATE - Respuesta es None o vacía!")
+                        logger.error(f"[Terminal] DEBUG - Probablemente el dispositivo tardó mucho en responder")
                 
                 # Log de respuesta cruda para debug (primeras 10 líneas)
                 if response:
@@ -1723,7 +1704,7 @@ def register_global_terminal_callbacks(app):
                     has_password_prompt = any('PASSWORD>' in line or 'password>' in line.lower() for line in response)
                     
                     if has_password_prompt:
-                        logger.warning(f"[Terminal] 🔐 PASSWORD> detectado - esperando contraseña del usuario")
+                        logger.warning(f"[Terminal] PASSWORD> detectado - esperando contraseña del usuario")
                         
                         # Establecer estado: esperando contraseña
                         password_state = {'waiting': True, 'original_command': command}
@@ -1731,14 +1712,14 @@ def register_global_terminal_callbacks(app):
                         # Mostrar prompt de contraseña al usuario
                         current_output.append(
                             html.Div([
-                                html.Span("🔐 ", className="text-warning"),
+                                html.Span("", className="text-warning"),
                                 html.Span("PASSWORD> ", className="terminal-response-warning fw-bold"),
                                 html.Span("Ingrese la contraseña:", className="text-muted fst-italic")
                             ], className="terminal-line")
                         )
                         current_output.append(
                             html.Div([
-                                html.Span("💡 ", className="text-info"),
+                                html.Span("", className="text-info"),
                                 html.Span("Contraseña predeterminada: ", className="text-muted"),
                                 html.Code("Analog123", className="terminal-code text-success")
                             ], className="terminal-line")
@@ -1771,26 +1752,26 @@ def register_global_terminal_callbacks(app):
                         # Filtrar eco solo si es la primera o última línea Y es exactamente igual (case-insensitive)
                         is_echo = line_stripped.lower() == command.lower()
                         if is_echo and (is_first_line or is_last_line):
-                            logger.info(f"[Terminal] 🔇 Filtrando eco en línea {idx}: '{line_stripped}'")
+                            logger.info(f"[Terminal]  Filtrando eco en línea {idx}: '{line_stripped}'")
                             continue
                         
                         # Para calibración, ser más permisivo - agregar casi todo
                         if is_calibrate_cmd:
-                            logger.info(f"[Terminal] ✅ [CALIBRATE] Agregando línea {idx}: '{line_stripped}'")
+                            logger.info(f"[Terminal] [CALIBRATE] Agregando línea {idx}: '{line_stripped}'")
                             cleaned_lines.append(line_stripped)
                         else:
                             # Para otros comandos, filtrado normal
-                            logger.info(f"[Terminal] ✅ Agregando línea {idx}: '{line_stripped}'")
+                            logger.info(f"[Terminal] Agregando línea {idx}: '{line_stripped}'")
                             cleaned_lines.append(line_stripped)
                     
-                    logger.info(f"[Terminal] 📝 Líneas procesadas: {len(cleaned_lines)} (de {len(response)} originales)")
+                    logger.info(f"[Terminal]  Líneas procesadas: {len(cleaned_lines)} (de {len(response)} originales)")
                     
                     # FILTRADO ESPECIAL: Para comando 'z', mostrar solo la última línea de medición
                     if cmd_lower_check == 'z' and len(cleaned_lines) > 0:
                         # Buscar la última línea que parece una medición (empieza con número)
                         measurement_lines = [line for line in cleaned_lines if line and line[0].isdigit()]
                         if measurement_lines:
-                            logger.info(f"[Terminal] 🎯 Comando 'z': Filtrando {len(measurement_lines)} mediciones, mostrando solo la última")
+                            logger.info(f"[Terminal]  Comando 'z': Filtrando {len(measurement_lines)} mediciones, mostrando solo la última")
                             # Mantener la última medición y cualquier mensaje/advertencia
                             last_measurement = measurement_lines[-1]
                             warnings = [line for line in cleaned_lines if not (line and line[0].isdigit())]
@@ -1801,7 +1782,7 @@ def register_global_terminal_callbacks(app):
                         # Filtrar líneas que parecen mediciones (empiezan con número)
                         non_measurement_lines = [line for line in cleaned_lines if not (line and line[0].isdigit())]
                         if len(non_measurement_lines) < len(cleaned_lines):
-                            logger.warning(f"[Terminal] 🧹 Comando 'display': Filtrando {len(cleaned_lines) - len(non_measurement_lines)} líneas de medición no deseadas")
+                            logger.warning(f"[Terminal]  Comando 'display': Filtrando {len(cleaned_lines) - len(non_measurement_lines)} líneas de medición no deseadas")
                             cleaned_lines = non_measurement_lines if non_measurement_lines else cleaned_lines[:1]
                     
                     if cleaned_lines:
@@ -1817,13 +1798,13 @@ def register_global_terminal_callbacks(app):
                             # Determinar clase CSS basada en contenido
                             if any(err in line_lower for err in ['error', 'fail', 'invalid', 'unknown']):
                                 css_class = "terminal-response-line terminal-response-error"
-                                prefix = html.Span("✗ ", className="terminal-error-icon")
+                                prefix = html.Span("", className="terminal-error-icon")
                             elif any(ok in line_lower for ok in ['ok', 'success', 'done', 'ready', 'pass']):
                                 css_class = "terminal-response-line terminal-response-success"
-                                prefix = html.Span("✓ ", className="terminal-success-icon")
+                                prefix = html.Span("", className="terminal-success-icon")
                             elif any(warn in line_lower for warn in ['warning', 'warn', 'caution']):
                                 css_class = "terminal-response-line terminal-response-warning"
-                                prefix = html.Span("⚠ ", className="terminal-warning-icon")
+                                prefix = html.Span("", className="terminal-warning-icon")
                             # Detectar líneas de calibración (empiezan con números o contienen "ch0" "ch1")
                             elif cmd_lower_check.startswith('calibrate') and (line[0].isdigit() or 'ch0' in line_lower or 'ch1' in line_lower or 'gain' in line_lower):
                                 css_class = "terminal-response-line text-info"
@@ -1838,14 +1819,14 @@ def register_global_terminal_callbacks(app):
                         current_output.append(html.Div(response_children))
                     else:
                         # No hay líneas después del filtrado - mostrar info de debug
-                        logger.warning(f"[Terminal] ⚠️ Sin líneas después de filtrar - respuesta original tenía {len(response)} líneas")
+                        logger.warning(f"[Terminal] Sin líneas después de filtrar - respuesta original tenía {len(response)} líneas")
                         
                         # Para comandos de calibración, mostrar las líneas sin filtrar directamente
                         if cmd_lower_check.startswith('calibrate'):
-                            logger.info(f"[Terminal] 📋 Comando de calibración - mostrando respuesta sin filtrar")
+                            logger.info(f"[Terminal]  Comando de calibración - mostrando respuesta sin filtrar")
                             current_output.append(
                                 html.Div([
-                                    html.Span("⚠ ", className="text-warning"),
+                                    html.Span("", className="text-warning"),
                                     html.Span("Respuesta sin formato (debug):", className="text-warning fst-italic")
                                 ], className="terminal-line")
                             )
@@ -1900,7 +1881,7 @@ def register_global_terminal_callbacks(app):
                         current_output.append(
                             html.Details([
                                 html.Summary([
-                                    html.Span("🐛 ", className="text-warning"),
+                                    html.Span(" ", className="text-warning"),
                                     html.Span(f"Debug: Ver {len(response)} líneas originales", className="text-muted small")
                                 ], style={'cursor': 'pointer', 'userSelect': 'none'}),
                                 html.Div(raw_lines_preview, className="ms-3 mt-2")
@@ -1908,7 +1889,7 @@ def register_global_terminal_callbacks(app):
                         )
                 else:
                     # Respuesta None o vacía desde el dispositivo
-                    logger.warning(f"[Terminal] ⚠️ Dispositivo retornó respuesta vacía o None para comando: '{command}'")
+                    logger.warning(f"[Terminal] Dispositivo retornó respuesta vacía o None para comando: '{command}'")
                     current_output.append(
                         html.Div([
                             html.Span("  ", className="terminal-indent"),
@@ -1917,7 +1898,7 @@ def register_global_terminal_callbacks(app):
                     )
                     current_output.append(
                         html.Div([
-                            html.Span("💡 ", className="text-info"),
+                            html.Span("", className="text-info"),
                             html.Span("Verifique que el comando sea correcto. Use ", className="text-muted"),
                             html.Code("help", className="terminal-code"),
                             html.Span(" para ver comandos disponibles.", className="text-muted")
@@ -1940,7 +1921,7 @@ def register_global_terminal_callbacks(app):
                     error_msg = "Dispositivo desconectado. Reconecte desde el Dashboard."
                 current_output.append(
                     html.Div([
-                        html.Span("✗ ", className="terminal-error-icon"),
+                        html.Span("", className="terminal-error-icon"),
                         html.Span(f"Error: {error_msg}", className="terminal-error-text")
                     ], className="terminal-line terminal-error-line")
                 )
@@ -2054,7 +2035,7 @@ def register_global_terminal_callbacks(app):
                     response_lines = [
                         f"calibrate {subcmd}: requiere hardware conectado",
                         "",
-                        "💡 Use el Wizard de Calibración en la interfaz:",
+                        "Use el Wizard de Calibración en la interfaz:",
                         "   Dashboard > Calibración > Iniciar Wizard"
                     ]
                 else:
@@ -2163,6 +2144,17 @@ def register_global_i18n_callbacks(app):
         prevent_initial_call=False,
     )
 
+    # ── 4. Theme store → aplicar data-theme en <html> (clientside) ─────────────
+    # Sincroniza theme-store con el atributo data-theme del elemento <html>
+    # para activar los CSS custom properties del design system.
+    # Función definida en assets/js/i18n_client.js como window.dash_clientside.zoria.applyTheme
+    app.clientside_callback(
+        ClientsideFunction(namespace='zoria', function_name='applyTheme'),
+        Output('theme-dom-sync', 'data'),
+        Input('theme-store', 'data'),
+        prevent_initial_call=False,
+    )
+
 
 def set_global_device(device, is_connected=False):
     """
@@ -2191,7 +2183,7 @@ def get_secret_key() -> str:
         # Fallback para desarrollo - NO USAR EN PRODUCCIÓN
         secret = "zoria-dev-secret-key-change-in-production"
         logging.getLogger(__name__).warning(
-            "⚠️  Usando SECRET_KEY de desarrollo. "
+            " Usando SECRET_KEY de desarrollo. "
             "Para producción, configure la variable de entorno SECRET_KEY"
         )
     
@@ -2234,7 +2226,7 @@ def create_app() -> DashSPA:
     logger = logging.getLogger(__name__)
     
     try:
-        logger.info("🚀 Inicializando ZORIA Dashboard...")
+        logger.info(" Inicializando ZORIA Dashboard...")
         
         # Crear instancia de DashSPA
         app = DashSPA(
@@ -2260,9 +2252,9 @@ def create_app() -> DashSPA:
         
         # Configurar modo debug
         if config["debug"]:
-            logger.info("🔧 Modo DEBUG activado")
+            logger.info(" Modo DEBUG activado")
         
-        logger.info("📦 Registrando páginas...")
+        logger.info(" Registrando páginas...")
         
         # Importar y registrar páginas
         # Nota: Los imports se hacen aquí para evitar problemas de circular import
@@ -2276,34 +2268,34 @@ def create_app() -> DashSPA:
             from dash import html
             
             register_dashboard_page(app)
-            logger.info("  ✓ Dashboard registrado")
+            logger.info("  Dashboard registrado")
             
             register_simulator_page(app)
-            logger.info("  ✓ Simulator registrado")
+            logger.info("  Simulator registrado")
             
             register_calibration_page(app)
-            logger.info("  ✓ Calibration registrado")
+            logger.info("  Calibration registrado")
             
             register_about_page(app)
-            logger.info("  ✓ About registrado")
+            logger.info("  About registrado")
             
             register_config_page(app)
-            logger.info("  ✓ Config registrado")
+            logger.info("  Config registrado")
             
             # Registrar callbacks globales de conexión
             register_global_connection_callbacks(app)
-            logger.info("  ✓ Conexión sidebar global registrada")
+            logger.info("  Conexión sidebar global registrada")
             
             # Registrar callbacks globales del terminal
             register_global_terminal_callbacks(app)
-            logger.info("  ✓ Terminal global registrado")
+            logger.info("  Terminal global registrado")
 
             # Registrar callbacks globales de i18n (multilenguaje)
             register_global_i18n_callbacks(app)
-            logger.info("  ✓ i18n multilenguaje registrado")
+            logger.info("  i18n multilenguaje registrado")
             
         except ImportError as e:
-            logger.error(f"❌ Error registrando páginas: {e}")
+            logger.error(f"Error registrando páginas: {e}")
             raise RuntimeError(f"No se pudieron registrar las páginas: {e}") from e
         
         # Establecer layout principal con terminal global
@@ -2321,6 +2313,7 @@ def create_app() -> DashSPA:
             dcc.Store(id='lang-apply-done', data=0),  # Output dummy del clientside i18n callback
             # Theme store (global – usado por dashboard, config y simulador)
             dcc.Store(id='theme-store', storage_type='local', data='dark'),
+            dcc.Store(id='theme-dom-sync', data='dark'),  # Output del callback que sincroniza data-theme al <html>
             # Config preferences (persisten en localStorage)
             dcc.Store(id='autoconn-store', storage_type='local', data=True),
             # Intervals globales
@@ -2331,11 +2324,11 @@ def create_app() -> DashSPA:
             original_layout
         ])
         
-        logger.info("✅ Aplicación inicializada correctamente")
+        logger.info("Aplicación inicializada correctamente")
         return app
         
     except Exception as e:
-        logger.error(f"❌ Error crítico al crear la aplicación: {e}")
+        logger.error(f"Error crítico al crear la aplicación: {e}")
         raise RuntimeError(f"Error al inicializar la aplicación: {e}") from e
 
 
@@ -2362,8 +2355,8 @@ def main():
         # Obtener configuración
         config = get_app_config()
         
-        logger.info(f"🌐 Iniciando servidor en http://{config['host']}:{config['port']}")
-        logger.info(f"⏹️  Para detener presione Ctrl+C")
+        logger.info(f" Iniciando servidor en http://{config['host']}:{config['port']}")
+        logger.info(f"⏹  Para detener presione Ctrl+C")
         
         # Ejecutar aplicación
         app.run(
@@ -2374,11 +2367,11 @@ def main():
         )
         
     except KeyboardInterrupt:
-        logger.info("\n👋 Servidor detenido por el usuario")
+        logger.info("\n Servidor detenido por el usuario")
         sys.exit(0)
         
     except Exception as e:
-        logger.error(f"❌ Error fatal: {e}")
+        logger.error(f"Error fatal: {e}")
         sys.exit(1)
 
 

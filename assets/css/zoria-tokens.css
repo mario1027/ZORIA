@@ -1,0 +1,1399 @@
+/* =============================================================================
+   zoria-tokens.css — Design System Central de ZORIA
+   Tokens centralizados usando CSS Custom Properties.
+   Dark theme por defecto, light theme via [data-theme="light"].
+
+   ESTRUCTURA:
+   1. Color tokens (primarios, semánticos, superficie, borde)
+   2. Tipografía (familias, escalas)
+   3. Espaciado (escala 4px base)
+   4. Radio de borde
+   5. Sombras / elevación
+   6. Timing de animación
+   7. Focus rings (accesibilidad)
+   8. Tema claro (overrides)
+   9. prefers-reduced-motion
+   ============================================================================= */
+
+/* ── 1. COLOR TOKENS ────────────────────────────────────────────────────────── */
+
+:root {
+    /* ── Paleta primaria ── */
+    --z-color-primary: #3b82f6;
+    --z-color-primary-hover: #2563eb;
+    --z-color-primary-active: #1d4ed8;
+    --z-color-primary-subtle: rgba(59, 130, 246, 0.12);
+
+    /* ── Acentos ── */
+    --z-color-accent: #22c55e;
+    --z-color-accent-hover: #16a34a;
+    --z-color-accent-glow: rgba(34, 197, 94, 0.25);
+    --z-color-accent-subtle: rgba(34, 197, 94, 0.10);
+
+    /* ── Semánticos ── */
+    --z-color-danger: #ef4444;
+    --z-color-danger-hover: #dc2626;
+    --z-color-danger-subtle: rgba(239, 68, 68, 0.12);
+    --z-color-warning: #f59e0b;
+    --z-color-warning-subtle: rgba(245, 158, 11, 0.12);
+    --z-color-info: #0891b2;
+    --z-color-info-subtle: rgba(8, 145, 178, 0.12);
+    --z-color-info-border: #0891b2;
+    --z-color-info-text: #22d3ee;
+    --z-color-success: #22c55e;
+    --z-color-success-subtle: rgba(34, 197, 94, 0.12);
+
+    /* ── Fondos (dark) ── */
+    --z-color-bg-deepest: #020617;
+    --z-color-bg-primary: #0f172a;
+    --z-color-bg-elevated: #1e293b;
+    --z-color-bg-surface: #334155;
+    --z-color-bg-hover: #3b4a63;
+    --z-color-bg-active: #475569;
+
+    /* ── Fondos de componentes ── */
+    --z-color-bg-card: #1e293b;
+    --z-color-bg-input: #0f172a;
+    --z-color-bg-modal: #1e293b;
+    --z-color-bg-sidebar: #0f172a;
+    --z-color-bg-terminal: #050816;
+
+    /* ── Texto (dark) — WCAG AA compliant ── */
+    --z-color-text-primary: #f8fafc;
+    --z-color-text-secondary: #94a3b8;
+    --z-color-text-tertiary: #7d8ba3;
+    --z-color-text-disabled: #6b7d95;
+    --z-color-text-inverse: #0f172a;
+
+    /* ── Bordes ── */
+    --z-color-border: rgba(148, 163, 184, 0.12);
+    --z-color-border-hover: rgba(148, 163, 184, 0.24);
+    --z-color-border-focus: var(--z-color-primary);
+
+    /* ── Gráficos (Bode, Nyquist) ── */
+    --z-chart-bg: #0d213a;
+    --z-chart-grid: #1f3d68;
+    --z-chart-text: #6495ed;
+    --z-chart-magnitude: #00ffff;
+    --z-chart-phase: #ff69b4;
+    --z-chart-nyquist: #ffa500;
+    --z-chart-trigger-palette: #60a5fa, #f87171, #34d399, #fbbf24, #a78bfa, #22d3ee;
+
+    /* ── Conexión ── */
+    --z-color-conn-connected: #22c55e;
+    --z-color-conn-disconnected: #6b7280;
+    --z-color-conn-error: #ef4444;
+    --z-color-conn-connecting: #f59e0b;
+
+    /* ── Terminal ── */
+    --z-term-bg-deepest: #050816;
+    --z-term-bg-surface: #0a0f1a;
+    --z-term-bg-elevated: #0e1525;
+    --z-term-accent: #00c896;
+    --z-term-accent-glow: #33ffcc;
+    --z-term-ice: #4fd1ff;
+    --z-term-amber: #d29922;
+    --z-term-red: #ff6b6b;
+
+    /* ── Sidebar (dark) ── */
+    --z-sidebar-bg: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    --z-sidebar-text: rgba(255, 255, 255, 0.75);
+    --z-sidebar-text-hover: #ffffff;
+    --z-sidebar-link-bg-hover: linear-gradient(90deg, rgba(59, 130, 246, 0.18) 0%, rgba(139, 92, 246, 0.07) 100%);
+    --z-sidebar-link-bg-active: linear-gradient(90deg, rgba(59, 130, 246, 0.25) 0%, rgba(139, 92, 246, 0.1) 100%);
+    --z-sidebar-accent-line: linear-gradient(180deg, #3b82f6, #8b5cf6);
+    --z-sidebar-divider: rgba(255, 255, 255, 0.1);
+    --z-sidebar-section-label: rgba(255, 255, 255, 0.4);
+    --z-sidebar-scroll-thumb: rgba(255, 255, 255, 0.2);
+    --z-sidebar-scroll-thumb-hover: rgba(255, 255, 255, 0.3);
+    --z-conn-panel-bg: rgba(15, 23, 42, 0.6);
+    --z-conn-panel-border: rgba(255, 255, 255, 0.1);
+    --z-conn-panel-bg-hover: rgba(30, 41, 59, 0.8);
+
+    /* ── Footer (dark) — WCAG AA compliant ── */
+    --z-footer-bg: linear-gradient(180deg, #1a2234 0%, #0f172a 100%);
+    --z-footer-text-primary: #e2e8f0;
+    --z-footer-text-secondary: #94a3b8;
+    --z-footer-text-muted: #7d8ba3;
+    --z-footer-accent: #60a5fa;
+    --z-footer-link: #cbd5e1;
+    --z-footer-link-hover: #f8fafc;
+    --z-footer-kbd-bg: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+    --z-footer-kbd-border: #60a5fa;
+    --z-footer-kbd-text: #e2e8f0;
+    --z-footer-heading-underline: linear-gradient(90deg, #60a5fa, #3b82f6);
+    --z-footer-separator: rgba(255, 255, 255, 0.08);
+    --z-footer-top-line: linear-gradient(90deg, transparent, #60a5fa 15%, #60a5fa 85%, transparent);
+    --z-footer-bottom-sep: rgba(255, 255, 255, 0.06);
+    --z-footer-license: #60a5fa;
+    --z-footer-license-hover: #93c5fd;
+    --z-footer-version-bg: linear-gradient(135deg, #3b82f6, #2563eb);
+    --z-footer-version-text: #ffffff;
+    --z-footer-version-badge-bg: rgba(96, 165, 250, 0.12);
+    --z-footer-version-badge-border: rgba(96, 165, 250, 0.35);
+    --z-footer-version-badge-text: #93c5fd;
+}
+
+/* ── 2. TIPOGRAFÍA ──────────────────────────────────────────────────────────── */
+
+:root {
+    --z-font-sans: 'Fira Sans', 'Inter', system-ui, -apple-system, sans-serif;
+    --z-font-mono: 'Fira Code', 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+    --z-font-display: 'Fira Sans', 'Inter', system-ui, sans-serif;
+
+    /* Escala tipográfica (rem-based) */
+    --z-text-xs: 0.7rem;
+    --z-text-sm: 0.8rem;
+    --z-text-base: 0.92rem;
+    --z-text-md: 1rem;
+    --z-text-lg: 1.15rem;
+    --z-text-xl: 1.35rem;
+    --z-text-2xl: 1.75rem;
+    --z-text-3xl: 2.25rem;
+
+    /* Font weights */
+    --z-font-light: 300;
+    --z-font-normal: 400;
+    --z-font-medium: 500;
+    --z-font-semibold: 600;
+    --z-font-bold: 700;
+
+    /* Line heights */
+    --z-leading-tight: 1.25;
+    --z-leading-normal: 1.5;
+    --z-leading-relaxed: 1.7;
+}
+
+/* ── 3. ESPACIADO ───────────────────────────────────────────────────────────── */
+
+:root {
+    --z-space-0: 0;
+    --z-space-1: 4px;
+    --z-space-2: 8px;
+    --z-space-3: 12px;
+    --z-space-4: 16px;
+    --z-space-5: 20px;
+    --z-space-6: 24px;
+    --z-space-8: 32px;
+    --z-space-10: 40px;
+    --z-space-12: 48px;
+    --z-space-16: 64px;
+}
+
+/* ── 4. RADIO DE BORDE ──────────────────────────────────────────────────────── */
+
+:root {
+    --z-radius-sm: 6px;
+    --z-radius-md: 10px;
+    --z-radius-lg: 14px;
+    --z-radius-xl: 20px;
+    --z-radius-full: 9999px;
+}
+
+/* ── 5. SOMBRAS / ELEVACIÓN ─────────────────────────────────────────────────── */
+
+:root {
+    --z-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --z-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
+    --z-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.3);
+    --z-shadow-xl: 0 25px 60px rgba(0, 0, 0, 0.4);
+    --z-shadow-glow: 0 0 20px rgba(59, 130, 246, 0.15);
+    --z-shadow-accent-glow: 0 0 20px rgba(34, 197, 94, 0.15);
+}
+
+/* ── 6. TIMING DE ANIMACIÓN ─────────────────────────────────────────────────── */
+
+:root {
+    --z-duration-fast: 120ms;
+    --z-duration-normal: 200ms;
+    --z-duration-slow: 350ms;
+    --z-duration-slower: 500ms;
+    --z-easing-default: cubic-bezier(0.4, 0, 0.2, 1);
+    --z-easing-in: cubic-bezier(0.4, 0, 1, 1);
+    --z-easing-out: cubic-bezier(0, 0, 0.2, 1);
+    --z-easing-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── 7. FOCUS RINGS (Accesibilidad) ─────────────────────────────────────────── */
+
+:root {
+    --z-focus-ring: 0 0 0 2px var(--z-color-bg-primary), 0 0 0 4px var(--z-color-primary);
+    --z-focus-ring-offset: 0 0 0 2px var(--z-color-bg-primary), 0 0 0 4px var(--z-color-accent);
+}
+
+:focus-visible {
+    outline: none;
+    box-shadow: var(--z-focus-ring);
+    border-radius: var(--z-radius-sm);
+}
+
+.btn:focus-visible {
+    outline: none;
+    box-shadow: var(--z-focus-ring);
+}
+
+.form-control:focus-visible,
+.dash-dropdown:focus-within {
+    outline: none;
+    box-shadow: var(--z-focus-ring);
+    border-color: var(--z-color-primary);
+}
+
+/* ── 8. TEMA CLARO (overrides via data-theme) ───────────────────────────────── */
+
+[data-theme="light"],
+.sc-theme-light {
+    /* Primarios */
+    --z-color-primary: #2563eb;
+    --z-color-primary-hover: #1d4ed8;
+    --z-color-primary-active: #1e40af;
+    --z-color-primary-subtle: rgba(37, 99, 235, 0.08);
+
+    /* Acentos */
+    --z-color-accent: #16a34a;
+    --z-color-accent-hover: #15803d;
+    --z-color-accent-glow: rgba(22, 163, 74, 0.2);
+    --z-color-accent-subtle: rgba(22, 163, 74, 0.06);
+
+    /* Semánticos */
+    --z-color-danger: #dc2626;
+    --z-color-danger-hover: #b91c1c;
+    --z-color-danger-subtle: rgba(220, 38, 38, 0.08);
+    --z-color-warning: #d97706;
+    --z-color-warning-subtle: rgba(217, 119, 6, 0.08);
+    --z-color-info: #2563eb;
+    --z-color-info-subtle: rgba(37, 99, 235, 0.08);
+    --z-color-success: #16a34a;
+    --z-color-success-subtle: rgba(22, 163, 74, 0.08);
+
+    /* Fondos (light) — scientific theme, no pure white */
+    --z-color-bg-deepest: #f8fafc;
+    --z-color-bg-primary: #e8edf5;
+    --z-color-bg-elevated: #f1f5f9;
+    --z-color-bg-surface: #e2e8f0;
+    --z-color-bg-hover: #cbd5e1;
+    --z-color-bg-active: #94a3b8;
+
+    /* Fondos de componentes (light) */
+    --z-color-bg-card: #ffffff;
+    --z-color-bg-input: #ffffff;
+    --z-color-bg-modal: #ffffff;
+    --z-color-bg-sidebar: #f8fafc;
+    --z-color-bg-terminal: #050816;
+
+    /* Texto (light) — WCAG AA compliant */
+    --z-color-text-primary: #0f172a;
+    --z-color-text-secondary: #475569;
+    --z-color-text-tertiary: #6b7d95;
+    --z-color-text-disabled: #7d8ba3;
+    --z-color-text-inverse: #f8fafc;
+
+    /* Bordes */
+    --z-color-border: rgba(15, 23, 42, 0.1);
+    --z-color-border-hover: rgba(15, 23, 42, 0.2);
+
+    /* Gráficos (light) */
+    --z-chart-bg: #ffffff;
+    --z-chart-grid: #e0e0e0;
+    --z-chart-text: #333333;
+    --z-chart-magnitude: #00bfff;
+    --z-chart-phase: #ff1493;
+    --z-chart-nyquist: #ff8c00;
+
+    /* Sombras (light) */
+    --z-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --z-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --z-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
+    --z-shadow-xl: 0 25px 50px rgba(0, 0, 0, 0.15);
+    --z-shadow-glow: 0 0 20px rgba(37, 99, 235, 0.08);
+    --z-shadow-accent-glow: 0 0 20px rgba(22, 163, 74, 0.08);
+
+    /* Focus ring */
+    --z-focus-ring: 0 0 0 2px #ffffff, 0 0 0 4px var(--z-color-primary);
+
+    /* Sidebar (light) */
+    --z-sidebar-bg: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    --z-sidebar-text: #475569;
+    --z-sidebar-text-hover: #0f172a;
+    --z-sidebar-link-bg-hover: rgba(37, 99, 235, 0.08);
+    --z-sidebar-link-bg-active: rgba(37, 99, 235, 0.12);
+    --z-sidebar-accent-line: linear-gradient(180deg, #2563eb, #7c3aed);
+    --z-sidebar-divider: rgba(15, 23, 42, 0.08);
+    --z-sidebar-section-label: #94a3b8;
+    --z-sidebar-scroll-thumb: rgba(15, 23, 42, 0.15);
+    --z-sidebar-scroll-thumb-hover: rgba(15, 23, 42, 0.25);
+    --z-conn-panel-bg: rgba(241, 245, 249, 0.8);
+    --z-conn-panel-border: rgba(15, 23, 42, 0.08);
+    --z-conn-panel-bg-hover: rgba(226, 232, 240, 0.9);
+
+    /* Footer (light) — WCAG AA compliant */
+    --z-footer-bg: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    --z-footer-text-primary: #1e293b;
+    --z-footer-text-secondary: #475569;
+    --z-footer-text-muted: #6b7d95;
+    --z-footer-accent: #d4af37;
+    --z-footer-link: #1f2937;
+    --z-footer-link-hover: #0f172a;
+    --z-footer-kbd-bg: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+    --z-footer-kbd-border: #d4af37;
+    --z-footer-kbd-text: #0f172a;
+    --z-footer-heading-underline: linear-gradient(90deg, #d4af37, #b8941f);
+    --z-footer-separator: rgba(15, 23, 42, 0.1);
+    --z-footer-bottom-sep: rgba(15, 23, 42, 0.06);
+    --z-footer-top-line: linear-gradient(90deg, transparent, #d4af37 15%, #d4af37 85%, transparent);
+    --z-footer-license: #1e40af;
+    --z-footer-license-hover: #1d4ed8;
+    --z-footer-version-bg: linear-gradient(135deg, #d4af37, #b8941f);
+    --z-footer-version-text: #0f172a;
+    --z-footer-version-badge-bg: rgba(212, 175, 55, 0.12);
+    --z-footer-version-badge-border: rgba(212, 175, 55, 0.35);
+    --z-footer-version-badge-text: #1e40af;
+}
+
+/* ── 9. PREFERS-REDUCED-MOTION ──────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    /* Mantener transiciones mínimas para feedback visual accesible */
+    .btn,
+    .form-control,
+    .nav-link,
+    .sweep-action-btn,
+    .connection-btn {
+        transition-duration: 0.01ms !important;
+    }
+
+    /* Desactivar animaciones pulsantes */
+    .connection-pulse.connected,
+    .connection-pulse.connecting,
+    .connection-pulse.error,
+    .sweep-status-bar.running .sweep-status-icon,
+    .terminal-prompt-symbol,
+    .terminal-cursor {
+        animation: none !important;
+    }
+}
+
+/* ── 10. TRANSICIONES GLOBALES ──────────────────────────────────────────────── */
+
+:root {
+    --z-transition-default: var(--z-duration-normal) var(--z-easing-default);
+    --z-transition-fast: var(--z-duration-fast) var(--z-easing-default);
+    --z-transition-slow: var(--z-duration-slow) var(--z-easing-default);
+}
+
+/* Transición suave de color cuando cambia tema */
+body,
+.card,
+.btn,
+.form-control,
+.nav-link,
+.sweep-action-btn,
+.sweep-status-bar,
+.sidebar,
+.main-content {
+    transition: background-color var(--z-transition-slow),
+                color var(--z-transition-slow),
+                border-color var(--z-transition-slow),
+                box-shadow var(--z-transition-slow);
+}
+
+/* ── 11. UTILIDADES BASADAS EN TOKENS ───────────────────────────────────────── */
+
+/* Fondo de página */
+.z-bg-primary { background-color: var(--z-color-bg-primary); }
+.z-bg-elevated { background-color: var(--z-color-bg-elevated); }
+.z-bg-card { background-color: var(--z-color-bg-card); }
+
+/* Texto */
+.z-text-primary { color: var(--z-color-text-primary); }
+.z-text-secondary { color: var(--z-color-text-secondary); }
+.z-text-tertiary { color: var(--z-color-text-tertiary); }
+
+/* Bordes */
+.z-border { border-color: var(--z-color-border); }
+.z-border-hover:hover { border-color: var(--z-color-border-hover); }
+
+/* Sombras */
+.z-shadow-sm { box-shadow: var(--z-shadow-sm); }
+.z-shadow-md { box-shadow: var(--z-shadow-md); }
+.z-shadow-lg { box-shadow: var(--z-shadow-lg); }
+
+/* ── 12. THEMING GLOBAL — Bootstrap + Page Elements ─────────────────────────── */
+
+/* ── Bootstrap CSS Variables (mapeo tokens → Bootstrap 5) ── */
+:root {
+    --bs-primary:         var(--z-color-primary);
+    --bs-success:         var(--z-color-success);
+    --bs-danger:          var(--z-color-danger);
+    --bs-warning:         var(--z-color-warning);
+    --bs-body-bg:         var(--z-color-bg-primary);
+    --bs-body-color:      var(--z-color-text-primary);
+    --bs-border-color:    var(--z-color-border);
+    --bs-card-bg:         var(--z-color-bg-card);
+    --bs-card-border-color: var(--z-color-border);
+    --bs-secondary-color: var(--z-color-text-secondary);
+    --bs-tertiary-bg:     var(--z-color-bg-elevated);
+    --bs-secondary-bg:    var(--z-color-bg-elevated);
+    --bs-emphasis-color:  var(--z-color-text-primary);
+}
+
+/* ── BODY — fondo y texto base ── */
+body {
+    background-color: var(--z-color-bg-primary) !important;
+    color: var(--z-color-text-primary) !important;
+}
+
+/* ── MAIN CONTENT ── */
+.main-content {
+    background-color: var(--z-color-bg-primary);
+    color: var(--z-color-text-primary);
+}
+
+/* Anular el margin-left de Volt (260px) para .content — sidebar ZORIA es 250px */
+@media (min-width: 992px) {
+    .content {
+        margin-left: 250px !important;
+    }
+}
+
+/* ── CARDS ── */
+.card {
+    background-color: var(--z-color-bg-card) !important;
+    border-color: var(--z-color-border) !important;
+    color: var(--z-color-text-primary);
+}
+
+.card-header {
+    background-color: var(--z-color-bg-elevated);
+    border-color: var(--z-color-border);
+    color: var(--z-color-text-primary);
+}
+
+.card-body {
+    background-color: var(--z-color-bg-card);
+    color: var(--z-color-text-primary);
+}
+
+.card-footer {
+    background-color: var(--z-color-bg-elevated);
+    border-color: var(--z-color-border);
+    color: var(--z-color-text-secondary);
+}
+
+/* ── TIPOGRAFÍA ── */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--z-color-text-primary) !important;
+}
+
+p, li, label, .form-label, .form-check-label, legend {
+    color: var(--z-color-text-primary);
+}
+
+.text-muted,
+.text-muted!important,
+small.text-muted,
+.text-secondary {
+    color: var(--z-color-text-secondary) !important;
+}
+
+small, .small {
+    color: var(--z-color-text-secondary);
+}
+
+/* ── INPUTS Y FORMULARIOS ── */
+.form-control,
+.form-select,
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+textarea,
+select {
+    background-color: var(--z-color-bg-input) !important;
+    border-color: var(--z-color-border) !important;
+    color: var(--z-color-text-primary) !important;
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: var(--z-color-bg-input) !important;
+    border-color: var(--z-color-primary) !important;
+    color: var(--z-color-text-primary) !important;
+    box-shadow: 0 0 0 0.2rem var(--z-color-primary-subtle) !important;
+}
+
+.form-control::placeholder,
+.form-select::placeholder,
+input::placeholder,
+textarea::placeholder {
+    color: var(--z-color-text-tertiary) !important;
+    opacity: 1;
+}
+
+.form-control:disabled,
+.form-select:disabled,
+input:disabled {
+    background-color: var(--z-color-bg-surface) !important;
+    color: var(--z-color-text-disabled) !important;
+    opacity: 0.65;
+}
+
+/* ── BOTONES — override Volt para usar tokens ── */
+
+/* btn-primary: azul del design system */
+.btn-primary {
+    background-color: var(--z-color-primary) !important;
+    border-color: var(--z-color-primary) !important;
+    color: #ffffff !important;
+}
+.btn-primary:hover {
+    background-color: var(--z-color-primary-hover) !important;
+    border-color: var(--z-color-primary-hover) !important;
+    color: #ffffff !important;
+}
+.btn-primary:active,
+.btn-primary.active {
+    background-color: var(--z-color-primary-active) !important;
+    border-color: var(--z-color-primary-active) !important;
+    color: #ffffff !important;
+}
+.btn-primary:disabled,
+.btn-primary.disabled {
+    background-color: var(--z-color-primary) !important;
+    border-color: var(--z-color-primary) !important;
+    color: #ffffff !important;
+    opacity: 0.5;
+}
+
+/* btn-success: verde del design system */
+.btn-success {
+    background-color: var(--z-color-success) !important;
+    border-color: var(--z-color-success) !important;
+    color: #ffffff !important;
+}
+.btn-success:hover {
+    background-color: var(--z-color-accent-hover) !important;
+    border-color: var(--z-color-accent-hover) !important;
+    color: #ffffff !important;
+}
+
+/* btn-danger: rojo del design system */
+.btn-danger {
+    background-color: var(--z-color-danger) !important;
+    border-color: var(--z-color-danger) !important;
+    color: #ffffff !important;
+}
+.btn-danger:hover {
+    background-color: var(--z-color-danger-hover) !important;
+    border-color: var(--z-color-danger-hover) !important;
+    color: #ffffff !important;
+}
+
+/* btn-warning */
+.btn-warning {
+    background-color: var(--z-color-warning) !important;
+    border-color: var(--z-color-warning) !important;
+    color: #ffffff !important;
+}
+
+/* btn-outline-secondary en dark mode */
+.btn-outline-secondary {
+    border-color: var(--z-color-border-hover) !important;
+    color: var(--z-color-text-secondary) !important;
+    background-color: transparent !important;
+}
+.btn-outline-secondary:hover {
+    background-color: var(--z-color-bg-hover) !important;
+    border-color: var(--z-color-border-hover) !important;
+    color: var(--z-color-text-primary) !important;
+}
+
+/* btn-outline-primary */
+.btn-outline-primary {
+    border-color: var(--z-color-primary) !important;
+    color: var(--z-color-primary) !important;
+    background-color: transparent !important;
+}
+.btn-outline-primary:hover {
+    background-color: var(--z-color-primary) !important;
+    color: #ffffff !important;
+}
+
+/* ── LABELS de botones de acción — siempre visibles ── */
+.sweep-action-btn .btn-label,
+.wizard-action-btn .btn-label,
+.connection-btn .btn-label {
+    display: inline !important;
+    overflow: visible !important;
+    color: inherit !important;
+    font-weight: 600;
+    font-size: var(--z-text-sm);
+    letter-spacing: 0.01em;
+    pointer-events: none;
+}
+
+/* ── DROPDOWN / MENÚ ── */
+.dropdown-menu {
+    background-color: var(--z-color-bg-elevated);
+    border-color: var(--z-color-border);
+    color: var(--z-color-text-primary);
+    box-shadow: var(--z-shadow-md);
+}
+
+.dropdown-item {
+    color: var(--z-color-text-primary);
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+    background-color: var(--z-color-bg-hover);
+    color: var(--z-color-text-primary);
+}
+
+.dropdown-divider {
+    border-color: var(--z-color-border);
+}
+
+/* ── DASH DROPDOWN ── */
+.Select-control,
+.Select-menu-outer,
+.dash-dropdown .Select-control {
+    background-color: var(--z-color-bg-input) !important;
+    border-color: var(--z-color-border) !important;
+    color: var(--z-color-text-primary) !important;
+}
+
+.Select-value-label,
+.Select-placeholder,
+.Select-input input {
+    color: var(--z-color-text-primary) !important;
+}
+
+.Select-menu {
+    background-color: var(--z-color-bg-elevated) !important;
+}
+
+.Select-option {
+    background-color: var(--z-color-bg-elevated) !important;
+    color: var(--z-color-text-primary) !important;
+}
+
+.Select-option:hover,
+.Select-option.is-focused {
+    background-color: var(--z-color-bg-hover) !important;
+    color: var(--z-color-text-primary) !important;
+}
+
+/* ── MODALES ── */
+.modal-content {
+    background-color: var(--z-color-bg-modal);
+    border-color: var(--z-color-border);
+    color: var(--z-color-text-primary);
+}
+
+.modal-header {
+    background-color: var(--z-color-bg-elevated);
+    border-color: var(--z-color-border);
+    color: var(--z-color-text-primary);
+}
+
+.modal-footer {
+    background-color: var(--z-color-bg-elevated);
+    border-color: var(--z-color-border);
+}
+
+.modal-backdrop.show {
+    opacity: 0.6;
+}
+
+/* ── TABLAS ── */
+.table {
+    color: var(--z-color-text-primary);
+    border-color: var(--z-color-border);
+}
+
+.table th,
+.table td {
+    border-color: var(--z-color-border);
+    color: var(--z-color-text-primary);
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+    background-color: var(--z-color-bg-elevated);
+    color: var(--z-color-text-primary);
+}
+
+.table-hover > tbody > tr:hover > * {
+    background-color: var(--z-color-bg-hover);
+    color: var(--z-color-text-primary);
+}
+
+/* ── BADGES ── */
+.badge.bg-secondary {
+    background-color: var(--z-color-bg-surface) !important;
+    color: var(--z-color-text-secondary) !important;
+}
+
+/* ── ALERTAS ── */
+.alert {
+    border-radius: var(--z-radius-md);
+    border-color: var(--z-color-border);
+}
+
+.alert-info {
+    background-color: var(--z-color-info-subtle);
+    border-color: var(--z-color-info);
+    color: var(--z-color-text-primary);
+}
+
+.alert-success {
+    background-color: var(--z-color-success-subtle);
+    border-color: var(--z-color-success);
+    color: var(--z-color-text-primary);
+}
+
+.alert-warning {
+    background-color: var(--z-color-warning-subtle);
+    border-color: var(--z-color-warning);
+    color: var(--z-color-text-primary);
+}
+
+.alert-danger {
+    background-color: var(--z-color-danger-subtle);
+    border-color: var(--z-color-danger);
+    color: var(--z-color-text-primary);
+}
+
+/* ── HR / SEPARADORES ── */
+hr {
+    border-color: var(--z-color-border);
+    opacity: 1;
+}
+
+/* ── SCROLLBAR GLOBAL ── */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: var(--z-color-bg-primary);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--z-color-bg-surface);
+    border-radius: var(--z-radius-sm);
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--z-color-bg-hover);
+}
+
+/* ── LIGHT THEME OVERRIDES ── */
+/* En light mode, los botones outline necesitan borde más visible */
+[data-theme="light"] .btn-outline-secondary {
+    border-color: var(--z-color-border-hover) !important;
+    color: var(--z-color-text-secondary) !important;
+}
+
+[data-theme="light"] .btn-outline-secondary:hover {
+    background-color: var(--z-color-bg-surface) !important;
+    color: var(--z-color-text-primary) !important;
+}
+
+/* En light mode, form controls necesitan borde visible */
+[data-theme="light"] .form-control,
+[data-theme="light"] .form-select,
+[data-theme="light"] input[type="number"],
+[data-theme="light"] input[type="text"] {
+    background-color: #ffffff !important;
+    border-color: #ced4da !important;
+    color: #0f172a !important;
+}
+
+/* En light mode, cards con sombra sutil */
+[data-theme="light"] .card {
+    box-shadow: var(--z-shadow-md) !important;
+}
+
+/* En light mode, la sweep-status-bar más clara */
+[data-theme="light"] .sweep-status-bar {
+    background-color: var(--z-color-bg-elevated) !important;
+    border-color: var(--z-color-border) !important;
+}
+
+/* ── DARK THEME OVERRIDES ESPECÍFICOS ── */
+/* En dark mode, aseguramos que los form-controls tengan buen contraste */
+:root .form-control:not(:disabled),
+:root .form-select:not(:disabled) {
+    background-color: var(--z-color-bg-input);
+    border-color: var(--z-color-border);
+    color: var(--z-color-text-primary);
+}
+
+/* El Volt CSS usa .bg-white para algunos contenedores — override en dark */
+:not([data-theme="light"]) .bg-white {
+    background-color: var(--z-color-bg-card) !important;
+    color: var(--z-color-text-primary) !important;
+}
+
+/* Texto muted en dark mode con contraste adecuado */
+:not([data-theme="light"]) .text-dark {
+    color: var(--z-color-text-primary) !important;
+}
+
+/* =============================================================================
+   SECCIÓN 13 — BUTTON DESIGN SYSTEM PRO
+   Colores sobrios, contraste WCAG AA, harmonía dark/light
+   ============================================================================= */
+
+/* ── Base de todos los botones ── */
+.btn {
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    transition: background-color 0.18s ease, border-color 0.18s ease,
+                color 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease;
+    border-radius: var(--z-radius-sm, 8px);
+}
+
+.btn:active {
+    transform: translateY(1px) !important;
+}
+
+/* ── btn-primary — Azul corporativo vibrante (acción principal) ── */
+.btn-primary {
+    background-color: var(--z-color-primary, #3b82f6) !important;
+    border-color: var(--z-color-primary, #3b82f6) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: var(--z-color-primary-hover, #2563eb) !important;
+    border-color: var(--z-color-primary-hover, #2563eb) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.45);
+    transform: translateY(-1px);
+}
+
+.btn-primary:disabled,
+.btn-primary.disabled {
+    background-color: rgba(59, 130, 246, 0.4) !important;
+    border-color: transparent !important;
+    color: rgba(255,255,255,0.6) !important;
+    box-shadow: none;
+    transform: none;
+}
+
+/* ── btn-danger — Rojo para acciones destructivas ── */
+.btn-danger {
+    background-color: #dc2626 !important;
+    border-color: #dc2626 !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+}
+
+.btn-danger:hover,
+.btn-danger:focus {
+    background-color: #b91c1c !important;
+    border-color: #b91c1c !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.4);
+    transform: translateY(-1px);
+}
+
+/* ── btn-success — Verde para acciones positivas/guardar ── */
+.btn-success {
+    background-color: #16a34a !important;
+    border-color: #16a34a !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(22, 163, 74, 0.25);
+}
+
+.btn-success:hover,
+.btn-success:focus {
+    background-color: #15803d !important;
+    border-color: #15803d !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 16px rgba(22, 163, 74, 0.4);
+    transform: translateY(-1px);
+}
+
+/* ── btn-outline-info — Cian para acciones neutras (cargar/importar) ── */
+.btn-outline-info {
+    border-color: var(--z-color-info-border, #0891b2) !important;
+    color: var(--z-color-info-text, #22d3ee) !important;
+    background-color: transparent !important;
+}
+
+.btn-outline-info:hover,
+.btn-outline-info:focus {
+    background-color: rgba(34, 211, 238, 0.12) !important;
+    border-color: #22d3ee !important;
+    color: #22d3ee !important;
+    box-shadow: 0 2px 12px rgba(34, 211, 238, 0.2);
+    transform: translateY(-1px);
+}
+
+/* Light mode: info más oscuro para contraste */
+[data-theme="light"] .btn-outline-info {
+    border-color: #0891b2 !important;
+    color: #0e7490 !important;
+}
+
+[data-theme="light"] .btn-outline-info:hover {
+    background-color: rgba(8, 145, 178, 0.08) !important;
+    color: #164e63 !important;
+    border-color: #0e7490 !important;
+}
+
+/* ── btn-outline-secondary — Acciones secundarias ── */
+.btn-outline-secondary {
+    border-color: rgba(148, 163, 184, 0.4) !important;
+    color: var(--z-color-text-secondary, #94a3b8) !important;
+    background-color: transparent !important;
+}
+
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus {
+    background-color: rgba(148, 163, 184, 0.1) !important;
+    border-color: rgba(148, 163, 184, 0.7) !important;
+    color: var(--z-color-text-primary, #f8fafc) !important;
+}
+
+[data-theme="light"] .btn-outline-secondary {
+    border-color: #94a3b8 !important;
+    color: #475569 !important;
+}
+
+[data-theme="light"] .btn-outline-secondary:hover {
+    background-color: #f1f5f9 !important;
+    border-color: #64748b !important;
+    color: #0f172a !important;
+}
+
+/* ── btn-outline-danger — Peligro outline ── */
+.btn-outline-danger {
+    border-color: rgba(239, 68, 68, 0.5) !important;
+    color: #f87171 !important;
+    background-color: transparent !important;
+}
+
+.btn-outline-danger:hover,
+.btn-outline-danger:focus {
+    background-color: rgba(239, 68, 68, 0.12) !important;
+    border-color: #ef4444 !important;
+    color: #ef4444 !important;
+}
+
+[data-theme="light"] .btn-outline-danger {
+    border-color: #dc2626 !important;
+    color: #dc2626 !important;
+}
+
+[data-theme="light"] .btn-outline-danger:hover {
+    background-color: rgba(220, 38, 38, 0.08) !important;
+    color: #b91c1c !important;
+}
+
+/* ── btn-secondary — Gris neutro ── */
+.btn-secondary {
+    background-color: var(--z-color-bg-surface, #334155) !important;
+    border-color: var(--z-color-border, rgba(148,163,184,0.12)) !important;
+    color: var(--z-color-text-primary, #f8fafc) !important;
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus {
+    background-color: var(--z-color-bg-hover, rgba(148,163,184,0.1)) !important;
+    border-color: var(--z-color-border-hover, rgba(148,163,184,0.25)) !important;
+    color: var(--z-color-text-primary, #f8fafc) !important;
+}
+
+[data-theme="light"] .btn-secondary {
+    background-color: #e2e8f0 !important;
+    border-color: #cbd5e1 !important;
+    color: #1e293b !important;
+}
+
+[data-theme="light"] .btn-secondary:hover {
+    background-color: #cbd5e1 !important;
+    border-color: #94a3b8 !important;
+    color: #0f172a !important;
+}
+
+/* ── btn-info (filled) — Cian sólido ── */
+.btn-info {
+    background-color: #0891b2 !important;
+    border-color: #0891b2 !important;
+    color: #ffffff !important;
+}
+
+.btn-info:hover {
+    background-color: #0e7490 !important;
+    border-color: #0e7490 !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+}
+
+/* ── Tamaños ── */
+.btn-sm {
+    border-radius: var(--z-radius-xs, 6px) !important;
+    font-size: 0.78rem !important;
+    padding: 0.3rem 0.65rem !important;
+}
+
+.btn-lg {
+    border-radius: var(--z-radius-md, 10px) !important;
+    font-size: 1rem !important;
+    padding: 0.65rem 1.4rem !important;
+}
+
+/* ── btn-gray-700 (Volt class override) ── */
+.btn-gray-700 {
+    background-color: var(--z-color-bg-surface, #334155) !important;
+    border-color: var(--z-color-border, rgba(148,163,184,0.2)) !important;
+    color: var(--z-color-text-secondary, #94a3b8) !important;
+}
+
+.btn-gray-700:hover {
+    background-color: var(--z-color-bg-hover, rgba(255,255,255,0.08)) !important;
+    border-color: var(--z-color-border-hover, rgba(148,163,184,0.4)) !important;
+    color: var(--z-color-text-primary, #f8fafc) !important;
+}
+
+[data-theme="light"] .btn-gray-700 {
+    background-color: #e2e8f0 !important;
+    border-color: #cbd5e1 !important;
+    color: #334155 !important;
+}
+
+/* ── SWEEP ACTION BUTTONS — profesional, no aplastados ── */
+.sweep-action-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.35rem !important;
+    padding: 0.45rem 1rem !important;
+    min-width: 88px !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    transition: all 0.18s ease !important;
+    letter-spacing: 0.01em;
+}
+
+.sweep-action-btn i {
+    font-size: 0.85em;
+    flex-shrink: 0;
+}
+
+.sweep-action-btn .btn-label {
+    display: inline !important;
+    overflow: visible !important;
+    white-space: nowrap;
+    color: inherit !important;
+    font-size: inherit;
+    font-weight: inherit;
+    pointer-events: none;
+}
+
+/* Responsive: en pantallas muy pequeñas colapsar label */
+@media (max-width: 360px) {
+    .sweep-action-btn .btn-label {
+        display: none !important;
+    }
+    .sweep-action-btn {
+        min-width: 40px !important;
+        padding: 0.45rem 0.65rem !important;
+    }
+}
+
+/* =============================================================================
+   SECCIÓN 14 — STATUS BAR (24px persistent top bar)
+   ============================================================================= */
+
+.status-bar {
+    height: 24px;
+    min-height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--z-space-4);
+    background-color: var(--z-color-bg-elevated);
+    border-bottom: 1px solid var(--z-color-border);
+    font-size: var(--z-text-xs);
+    color: var(--z-color-text-secondary);
+    font-family: var(--z-font-mono);
+    gap: var(--z-space-4);
+}
+
+.status-group {
+    display: flex;
+    align-items: center;
+    gap: var(--z-space-2);
+    min-width: 0;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--z-color-conn-disconnected);
+    flex-shrink: 0;
+    transition: background-color var(--z-transition-default);
+}
+
+.status-dot.connected {
+    background-color: var(--z-color-conn-connected);
+    box-shadow: 0 0 6px var(--z-color-accent-glow);
+}
+
+.status-dot.acquiring {
+    background-color: var(--z-color-warning);
+    animation: status-pulse 1.5s ease-in-out infinite;
+}
+
+.status-dot.live {
+    background-color: var(--z-color-info);
+    animation: status-pulse 2s ease-in-out infinite;
+}
+
+.status-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--z-color-text-secondary);
+    transition: color var(--z-transition-default);
+}
+
+@keyframes status-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .status-dot.acquiring,
+    .status-dot.live {
+        animation: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .status-bar {
+        padding: 0 var(--z-space-2);
+        gap: var(--z-space-2);
+    }
+    .status-label {
+        font-size: 0.65rem;
+    }
+}
+
+/* =============================================================================
+   SECCIÓN 15 — TERMINAL DOCK (persistent bottom dock ~140px)
+   ============================================================================= */
+
+.terminal-dock {
+    height: 140px;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--z-color-bg-terminal);
+    border-top: 1px solid var(--z-color-border);
+    font-family: var(--z-font-mono);
+    transition: height var(--z-duration-slow) var(--z-easing-default),
+                min-height var(--z-duration-slow) var(--z-easing-default);
+    overflow: hidden;
+}
+
+.terminal-dock.collapsed {
+    height: 36px;
+    min-height: 36px;
+}
+
+.terminal-dock-header {
+    height: 36px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--z-space-4);
+    background-color: var(--z-color-bg-elevated);
+    border-bottom: 1px solid var(--z-color-border);
+    flex-shrink: 0;
+}
+
+.dock-header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--z-space-2);
+    color: var(--z-term-accent);
+    font-size: var(--z-text-sm);
+    font-weight: 600;
+}
+
+.dock-header-left i {
+    font-size: 0.85rem;
+}
+
+.dock-title {
+    color: var(--z-term-accent);
+}
+
+.dock-header-right {
+    display: flex;
+    align-items: center;
+    gap: var(--z-space-2);
+}
+
+.dock-collapse-btn,
+.dock-close-btn {
+    background: transparent;
+    border: 1px solid var(--z-color-border);
+    color: var(--z-color-text-secondary);
+    width: 24px;
+    height: 24px;
+    border-radius: var(--z-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.7rem;
+    transition: all var(--z-transition-fast);
+}
+
+.dock-collapse-btn:hover,
+.dock-close-btn:hover {
+    background-color: var(--z-color-bg-hover);
+    color: var(--z-color-text-primary);
+    border-color: var(--z-color-border-hover);
+}
+
+.dock-close-btn:hover {
+    color: var(--z-color-danger);
+    border-color: var(--z-color-danger);
+}
+
+.terminal-dock-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--z-space-2) var(--z-space-4);
+    min-height: 0;
+}
+
+.terminal-dock-screen {
+    font-size: var(--z-text-xs);
+    line-height: 1.6;
+    color: var(--z-term-ice);
+    min-height: 100%;
+}
+
+.dock-empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--z-color-text-tertiary);
+    font-style: italic;
+}
+
+.dock-waiting-text {
+    color: var(--z-term-amber);
+    opacity: 0.8;
+}
+
+.terminal-dock-input-line {
+    height: 36px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    gap: var(--z-space-2);
+    padding: 0 var(--z-space-4);
+    background-color: var(--z-color-bg-elevated);
+    border-top: 1px solid var(--z-color-border);
+    flex-shrink: 0;
+}
+
+.dock-prompt-icon {
+    color: var(--z-term-accent);
+    font-weight: 700;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.terminal-dock-command-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--z-color-text-primary);
+    font-family: var(--z-font-mono);
+    font-size: var(--z-text-xs);
+    padding: 0;
+    outline: none;
+}
+
+.terminal-dock-command-input::placeholder {
+    color: var(--z-color-text-tertiary);
+}
+
+.dock-send-btn {
+    background: transparent;
+    border: 1px solid var(--z-color-border);
+    color: var(--z-term-accent);
+    width: 28px;
+    height: 28px;
+    border-radius: var(--z-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all var(--z-transition-fast);
+    flex-shrink: 0;
+}
+
+.dock-send-btn:hover {
+    background-color: var(--z-term-accent);
+    color: var(--z-color-bg-terminal);
+    border-color: var(--z-term-accent);
+}
+
+/* Scrollbar for terminal dock */
+.terminal-dock-body::-webkit-scrollbar {
+    width: 4px;
+}
+.terminal-dock-body::-webkit-scrollbar-track {
+    background: var(--z-color-bg-terminal);
+}
+.terminal-dock-body::-webkit-scrollbar-thumb {
+    background: var(--z-color-bg-surface);
+    border-radius: var(--z-radius-sm);
+}
+.terminal-dock-body::-webkit-scrollbar-thumb:hover {
+    background: var(--z-color-bg-hover);
+}
+
+@media (max-width: 768px) {
+    .terminal-dock {
+        height: 120px;
+        min-height: 120px;
+    }
+    .terminal-dock-header,
+    .terminal-dock-input-line {
+        padding: 0 var(--z-space-2);
+    }
+    .terminal-dock-body {
+        padding: var(--z-space-2);
+    }
+}
+

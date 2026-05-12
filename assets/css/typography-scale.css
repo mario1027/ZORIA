@@ -1,76 +1,107 @@
 /* =============================================================================
    typography-scale.css — Escala tipográfica central de ZORIA
-   Aumenta el tamaño base ~15% usando rem para escalado fluido.
-   No modifica colores, fuentes, layouts ni decoraciones.
+
+   Usa las fuentes del design system: Fira Sans (UI) y Fira Code (datos/código).
+   Los tokens de tamaño están en zoria-tokens.css (--z-text-*).
+   Este archivo aplica la escala y las fuentes a los elementos base.
+
+   NOTA: No modifica colores, bordes ni layouts. Esos viven en zoria-tokens.css.
    ============================================================================= */
 
-/* ── Escala global ─────────────────────────────────────────────────────────── */
+/* ── Importar fuentes ───────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
+
+/* ── Escala global ───────────────────────────────────────────────────────────── */
 html {
     font-size: 115%;                   /* 18.4px vs 16px default — ~15% más */
 }
 
 body {
-    line-height: 1.5;
+    line-height: var(--z-leading-normal, 1.5);
+    font-family: var(--z-font-sans, 'Fira Sans', system-ui, sans-serif);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Mínimos de accesibilidad ─────────────────────────────────────────────── */
-/* WCAG 2.1 AA: texto pequeño ≥ 12px, cuerpo ≥ 16px    */
-/* Con html 115%: 0.65rem ≈ 12px, 0.87rem ≈ 16px       */
+/* ── Monospace para datos y código ──────────────────────────────────────────── */
+code, pre, .font-mono,
+.terminal-float-screen,
+.terminal-command-input,
+.terminal-line,
+.terminal-status-bar,
+.terminal-badge-value {
+    font-family: var(--z-font-mono, 'Fira Code', monospace);
+}
+
+/* ── Mínimos de accesibilidad ───────────────────────────────────────────────── */
+/* WCAG 2.1 AA: texto pequeño >= 12px, cuerpo >= 16px */
+/* Con html 115%: 0.65rem ~ 12px, 0.87rem ~ 16px */
 
 small, .small, .text-muted, legend, .form-text {
-    font-size: 0.75rem !important;     /* ≈ 13.8px — jamás baja de 12px */
+    font-size: var(--z-text-sm, 0.8rem);
 }
 
 label, .form-label, .btn, input, select, textarea, .form-control {
-    font-size: 0.92rem !important;     /* ≈ 16.9px */
+    font-size: var(--z-text-base, 0.92rem);
 }
 
 p, li, td, th, .card-text, .alert {
-    font-size: 0.95rem;                /* ≈ 17.5px */
+    font-size: var(--z-text-md, 0.95rem);
 }
 
-/* ── Ajuste de espaciado proporcional ─────────────────────────────────────── */
-/* Global: aumenta gap y padding ~15% donde el texto crece */
+/* ── Headings ───────────────────────────────────────────────────────────────── */
+h1 { font-size: var(--z-text-3xl, 2.25rem); font-weight: var(--z-font-bold, 700); }
+h2 { font-size: var(--z-text-2xl, 1.75rem); font-weight: var(--z-font-semibold, 600); }
+h3 { font-size: var(--z-text-xl, 1.35rem); font-weight: var(--z-font-semibold, 600); }
+h4 { font-size: var(--z-text-lg, 1.15rem); font-weight: var(--z-font-semibold, 600); }
+h5 { font-size: var(--z-text-md, 1rem); font-weight: var(--z-font-semibold, 600); }
+h6 { font-size: var(--z-text-base, 0.92rem); font-weight: var(--z-font-semibold, 600); }
 
+/* ── Ajuste de espaciado proporcional ───────────────────────────────────────── */
 .btn {
-    line-height: 1.45;
+    line-height: var(--z-leading-tight, 1.25);
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
 }
 
 .form-control {
-    line-height: 1.5;
+    line-height: var(--z-leading-normal, 1.5);
     padding: 0.5rem 0.75rem;
 }
 
-/* ── Prevenir recorte de texto en contenedores ────────────────────────────── */
-.btn, .btn-label, .nav-link, .sweep-action-btn, .wizard-action-btn,
+/* ── Prevenir recorte de texto en contenedores ───────────────────────────────── */
+/* NOTA: .btn-label excluido a propósito — es un span inline dentro de flex buttons;
+   overflow:hidden en spans inline puede recortar el texto del label */
+.btn, .nav-link, .sweep-action-btn, .wizard-action-btn,
 .connection-btn, .cal-wizard-control-btn, .window-control-btn {
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow: visible;
 }
 
-/* ── Gráficos (Plotly) — no escalar más de lo necesario ───────────────────── */
+/* El label dentro del botón debe ser siempre visible */
+.btn-label {
+    display: inline;
+    white-space: nowrap;
+    overflow: visible;
+    color: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    vertical-align: middle;
+}
+
+/* ── Gráficos (Plotly) — no escalar tipografía innecesariamente ─────────────── */
 .js-plotly-plot .plotly .main-svg text {
-    font-size: inherit;                /* Plotly usa su propia escala inline */
+    font-size: inherit;
+    font-family: var(--z-font-sans, 'Fira Sans', sans-serif);
 }
 
-/* ── Tablas ────────────────────────────────────────────────────────────────── */
+/* ── Tablas ──────────────────────────────────────────────────────────────────── */
 .table th, .table td {
-    font-size: 0.9rem;
+    font-size: var(--z-text-sm, 0.8rem);
     padding: 0.6rem 0.75rem;
 }
 
-/* ── Mantener jerarquía visual ───────────────────────────────────────────── */
-h1 { font-size: 2.5rem; }
-h2 { font-size: 2rem; }
-h3 { font-size: 1.75rem; }
-h4 { font-size: 1.5rem; }
-h5 { font-size: 1.25rem; }
-h6 { font-size: 1.1rem; }
-
-/* En móvil, ajustar sin perder jerarquía */
+/* ── Responsive: móvil ───────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
     h1 { font-size: 2rem; }
     h2 { font-size: 1.65rem; }
@@ -78,4 +109,14 @@ h6 { font-size: 1.1rem; }
     h4 { font-size: 1.25rem; }
     h5 { font-size: 1.1rem; }
     h6 { font-size: 1rem; }
+}
+
+@media (max-width: 576px) {
+    h1 { font-size: 1.8rem; }
+    h2 { font-size: 1.5rem; }
+    h3 { font-size: 1.2rem; }
+}
+
+@media (max-width: 360px) {
+    h1 { font-size: 1.5rem; }
 }
