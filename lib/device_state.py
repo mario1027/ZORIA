@@ -456,6 +456,20 @@ class DeviceState:
             self._sweep_total_points = total_points
             self._sweep_current_point = 0
     
+    def rollback_sweep_points(self, n: int):
+        """
+        Elimina los últimos N puntos del buffer de sweep.
+        Útil para revertir puntos parciales antes de reintentar un segmento
+        que falló por saturación ADC.
+        """
+        with self._sweep_lock:
+            if n > 0:
+                removed = min(n, len(self._sweep_buffer))
+                if removed > 0:
+                    del self._sweep_buffer[-removed:]
+                    self._sweep_current_point = max(0, self._sweep_current_point - removed)
+                    logger.info(f"[Sweep] Rollback: revertidos {removed} puntos parciales del buffer")
+
     def add_sweep_point(self, freq, z_real, z_imag, z_mag, phase):
         """Agrega un punto al buffer de streaming del sweep."""
         with self._sweep_lock:

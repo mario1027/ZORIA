@@ -637,10 +637,24 @@ def content_software():
                 html.Div([
                     html.H6("Barridos:", className="fw-bold mb-2", style={'color': 'var(--z-color-text-primary)'}, **{'data-i18n': 'doc.sw.h6.sweeps'}),
                     html.Ul([
-                        html.Li([html.Code("configure_sweep(type, start, end, points, scale)"), " - Configurar barrido"]),
+                        html.Li([html.Code("configure_sweep(type, start, end, count, scale)"), " - Configurar barrido"]),
                         html.Li([html.Code("perform_sweep(timeout)"), " - Ejecutar barrido y retornar datos"]),
                         html.Li([html.Code("disable_sweep()"), " - Deshabilitar modo barrido"])
-                    ], style={'color': 'var(--z-color-text-secondary)', 'fontSize': '0.9rem'})
+                    ], style={'color': 'var(--z-color-text-secondary)', 'fontSize': '0.9rem'}),
+                    html.Div([
+                        "⚠️ Para barridos de frecuencia: ",
+                        html.Code("start"), " y ", html.Code("end"), " en kHz (0.0002–10000). ",
+                        html.Code("start"), " debe ser estrictamente menor que ", html.Code("end"), ". ",
+                        "Máx. puntos: 100 si span ≥4 décadas, 200 si span <4 décadas."
+                    ], style={
+                        'color': 'var(--z-color-warning)',
+                        'fontSize': '0.8rem',
+                        'marginTop': '8px',
+                        'padding': '8px 12px',
+                        'background': 'var(--z-color-warning-subtle)',
+                        'borderRadius': '6px',
+                        'borderLeft': '3px solid var(--z-color-warning)'
+                    })
                 ], style={'marginBottom': '20px'}),
                 
                 html.Div([
@@ -710,12 +724,15 @@ device = ADMX2001(port='/dev/ttyUSB0')
 device.connect()
 
 # Configurar barrido logarítmico
+# NOTA: start y end en kHz. Rango válido: 0.0002 kHz (0.2 Hz) – 10000 kHz (10 MHz)
+# start debe ser estrictamente menor que end.
+# Máx. puntos: 200 si span < 4 décadas, 100 si span >= 4 décadas.
 device.configure_sweep(
     sweep_type=SweepType.FREQUENCY,
     scale=SweepScale.LOGARITHMIC,
-    start=100,          # 100 Hz
-    stop=100000,        # 100 kHz
-    points=100
+    start=0.1,       # Frec. inicial: 100 Hz  (en kHz)
+    end=100.0,       # Frec. final:   100 kHz (en kHz) — 3 décadas
+    count=100        # 100 puntos (máx 200 para < 4 décadas)
 )
 
 # Ejecutar barrido

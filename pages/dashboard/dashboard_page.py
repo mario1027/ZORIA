@@ -745,8 +745,16 @@ def sweep_worker(config):
                         seg_points    = seg_end_idx - seg_start_idx
                         seg_start_freq = float(all_freqs[seg_start_idx])
                         seg_end_freq   = float(all_freqs[seg_end_idx - 1])
-                        segments.append((seg_start_freq, seg_end_freq, seg_points))
-                        print(f"  Seg {i+1}/{num_segments}: {seg_start_freq:.4g} Hz – {seg_end_freq:.4g} Hz ({seg_points} pts)")
+
+                        # FIX: un segmento de 1 punto tiene start==end → ValidationError.
+                        # Fusionarlo con el segmento anterior extendiéndolo 1 punto extra.
+                        if seg_points == 1 and segments:
+                            prev = segments[-1]
+                            segments[-1] = (prev[0], seg_end_freq, prev[2] + 1)
+                            print(f"  Seg {i+1}/{num_segments}: fusionado con seg {i} (1 pto suelto → +1 al anterior)")
+                        else:
+                            segments.append((seg_start_freq, seg_end_freq, seg_points))
+                            print(f"  Seg {i+1}/{num_segments}: {seg_start_freq:.4g} Hz – {seg_end_freq:.4g} Hz ({seg_points} pts)")
 
                 all_results = []
                 for seg_idx, (seg_start, seg_end, seg_points) in enumerate(segments):
@@ -837,47 +845,72 @@ def sweep_worker(config):
 
                     if segment_exception[0] is not None:
                         error_text = str(segment_exception[0]).lower()
-                        can_retry = (configured_magnitude is not None and configured_magnitude > 0.01)
                         is_saturation_error = ('saturat' in error_text) or ('measurement failed' in error_text)
 
-                        if is_saturation_error and can_retry:
-                            retry_magnitude = max(0.01, configured_magnitude * 0.5)
-                            print(f"Saturación detectada en segmento {seg_idx+1}. Reintentando con magnitud {configured_magnitude}V → {retry_magnitude}V")
-                            configured_magnitude = retry_magnitude
-                            try:
-                                device_state.device.set_gain_auto()
-                                device_state.device.set_magnitude(configured_magnitude)
-                            except Exception as e:
-                                print(f"Error aplicando recuperación por saturación: {e}")
+                        if is_saturation_error:
+                            # Reintentos adaptativos: reducir magnitud 50% por intento hasta 4 veces
+                            MAX_SAT_RETRIES = 4
+                            last_sat_exc = segment_exception[0]
+                            sat_retry_ok = False
 
-                            device_state.device.configure_sweep(
-                                SweepType.FREQUENCY,
-                                seg_start / 1000,
-                                seg_end / 1000,
-                                sweep_scale,
-                                seg_points
-                            )
+                            for sat_attempt in range(1, MAX_SAT_RETRIES + 1):
+                                next_magnitude = configured_magnitude * (0.5 ** sat_attempt)
+                                if next_magnitude < 0.01:
+                                    print(f"  Magnitud {next_magnitude:.4f}V < 0.01V mínimo — deteniendo reintentos")
+                                    break
 
-                            segment_results = device_state.device.perform_sweep(
-                                timeout=sweep_timeout,
-                                point_callback=process_point_realtime
-                            )
+                                # Revertir puntos parciales del intento fallido del buffer en tiempo real
+                                partial_pts = point_counter[0]
+                                if partial_pts > 0:
+                                    device_state.rollback_sweep_points(partial_pts)
+                                    print(f"  Rollback: {partial_pts} puntos parciales eliminados del buffer")
+                                point_counter[0] = 0
+
+                                configured_magnitude = next_magnitude
+                                print(f"⚠️ Saturación seg {seg_idx+1}, intento {sat_attempt}/{MAX_SAT_RETRIES}: magnitud → {configured_magnitude:.4f}V")
+
+                                try:
+                                    device_state.device.set_gain_auto()
+                                    device_state.device.set_magnitude(configured_magnitude)
+                                    device_state.device.configure_sweep(
+                                        SweepType.FREQUENCY,
+                                        seg_start / 1000,
+                                        seg_end / 1000,
+                                        sweep_scale,
+                                        seg_points
+                                    )
+                                    segment_results = device_state.device.perform_sweep(
+                                        timeout=sweep_timeout,
+                                        point_callback=process_point_realtime
+                                    )
+                                    sat_retry_ok = True
+                                    print(f"✅ Recuperado de saturación en seg {seg_idx+1} tras {sat_attempt} intento(s). Magnitud: {configured_magnitude:.4f}V")
+                                    break
+                                except Exception as sat_exc:
+                                    last_sat_exc = sat_exc
+                                    sat_err = str(sat_exc).lower()
+                                    if 'saturat' not in sat_err and 'measurement failed' not in sat_err:
+                                        raise sat_exc  # Error distinto, propagar
+
+                            if not sat_retry_ok:
+                                # Saturación persistente tras todos los intentos — omitir segmento
+                                print(f"⚠️ Seg {seg_idx+1}: saturación persistente tras {MAX_SAT_RETRIES} intentos. Segmento omitido, continuando.")
+                                segment_results = []
                         else:
                             raise segment_exception[0]
 
                     if segment_results:
                         all_results.extend(segment_results)
-                        print(f"  Segmento completado: {len(segment_results)} puntos obtenidos")
-                        if len(segment_results) != seg_points:
-                            raise RuntimeError(
-                                f"Sweep incompleto en segmento {seg_idx+1}: esperados {seg_points}, recibidos {len(segment_results)}"
-                            )
+                        n_got = len(segment_results)
+                        print(f"  Segmento completado: {n_got} puntos obtenidos")
+                        if n_got != seg_points:
+                            print(f"  ⚠️ Puntos recibidos ({n_got}) ≠ esperados ({seg_points}) en seg {seg_idx+1}")
 
-                        segment_end_point = segment_start_point + seg_points
+                        segment_end_point = segment_start_point + n_got
                         final_progress_pct = int((segment_end_point / total_stream_points) * 100)
                         print(f"  Progreso automático vía streaming: {final_progress_pct}% ({segment_end_point}/{total_stream_points} puntos)")
                     else:
-                        print(f"  Segmento sin resultados")
+                        print(f"  Segmento {seg_idx+1} sin resultados (omitido)")
 
                 return all_results
 
@@ -2250,7 +2283,41 @@ setTimeout(function() {
                             progress_value = 0
                             progress_style = {'width': '0%'}
                             progress_text = "0%"
-                            status_text = f"Error ({error_phase}): {data['message']}"
+
+                            # Traducir errores técnicos a mensajes accionables
+                            raw_msg = data.get('message', '')
+                            if 'debe ser menor que end' in raw_msg or ('start' in raw_msg and 'end' in raw_msg):
+                                status_text = (
+                                    "⚠️ Frec. Inicial igual a Frec. Final en un segmento "
+                                    "interno. Reduce el número de puntos o amplía el rango de frecuencia."
+                                )
+                            elif 'saturaci' in raw_msg.lower() or 'saturat' in raw_msg.lower() or 'measurement failed' in raw_msg.lower():
+                                status_text = (
+                                    "⚠️ Saturación ADC: la señal de excitación es demasiado alta para el DUT. "
+                                    "El sistema intentó reducir la magnitud automáticamente sin éxito. "
+                                    "Prueba: 1) Activar 'Auto' en Ganancia, "
+                                    "2) Reducir el campo Magnitud (ej. 0.2 V), "
+                                    "3) Verificar que el DUT esté bien conectado. "
+                                    "Consulta la tabla de rangos en la documentación (Selección de Rango)."
+                                )
+                            elif 'ValidationError' in raw_msg or 'rango' in raw_msg.lower():
+                                status_text = (
+                                    "⚠️ Parámetros fuera del rango del ADMX2001 "
+                                    "(0.2 Hz – 10 MHz). Revisa Frec. Inicial, Frec. Final y Puntos."
+                                )
+                            elif 'timeout' in raw_msg.lower() or 'timed out' in raw_msg.lower():
+                                status_text = (
+                                    "⏱️ Timeout de adquisición. Prueba reducir el número de puntos "
+                                    "o aumentar M.Delay y T.Delay para frecuencias muy bajas."
+                                )
+                            elif 'not connected' in raw_msg.lower() or 'device' in raw_msg.lower():
+                                status_text = (
+                                    "⚠️ Dispositivo desconectado durante el barrido. "
+                                    "Reconecta el ADMX2001 y repite."
+                                )
+                            else:
+                                status_text = f"❌ Error ({error_phase}): {raw_msg}"
+
                             interval_disabled = True  # Detener interval
                             streaming_interval_disabled = True  # Detener streaming
                             modal_close_interval_disabled = True  # No necesita cerrar (ya cerrado)
@@ -2344,7 +2411,20 @@ setTimeout(function() {
                             modal_class = 'modal fade'
                             return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, "0", status_text, status_text, stored_data, False, True, True, True)
 
-                    if not trigger_enabled and (start >= end or points < 2):
+                    # Validar start < end — aplica siempre (con o sin trigger)
+                    if start >= end:
+                        status_text = (
+                            f"\u26a0\ufe0f Frec. Inicial ({start:.4g} Hz) debe ser menor que "
+                            f"Frec. Final ({end:.4g} Hz). "
+                            "Corrige los campos e inténtalo de nuevo."
+                        )
+                        progress_style = {'width': '0%'}
+                        progress_text = "0%"
+                        modal_style = {'display': 'none'}
+                        modal_class = 'modal fade'
+                        return (bode_fig, nyquist_fig, modal_style, modal_class, progress_style, progress_text, "0", status_text, status_text, stored_data, False, True, True, True)
+
+                    if not trigger_enabled and points < 2:
                         status_text = i18n_t('dash.err_invalid_params')
                         progress_style = {'width': '0%'}
                         progress_text = "0%"

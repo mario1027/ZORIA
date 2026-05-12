@@ -249,6 +249,12 @@ Por defecto, el ADMX2001B está en modo **auto-ranging**, que optimizará la gan
 
 > ℹ️ **Info**: El algoritmo de auto-ranging solo se aplica a las condiciones de la primera medición. Al realizar barridos de frecuencia, la impedancia del DUT cambiará y podría salir del rango seleccionado.
 
+> ⚠️ **Saturación ADC**: Si durante un barrido aparece el error "Measurement failed" o "Saturación ADC", significa que la señal de excitación es demasiado alta para el rango de impedancia del DUT. Para solucionarlo:
+> 1. Usar `setgain auto` para dejar que el sistema seleccione el rango
+> 2. Reducir la magnitud de la señal (`magnitude 0.2` o menor)
+> 3. Seleccionar manualmente el rango apropiado según la tabla de rangos de impedancia
+> 4. Verificar que el DUT esté correctamente conectado a los terminales H/L
+
 El rango de medición está principalmente afectado por la transimpedancia del canal 1 y la magnitud de la señal de prueba.
 
 #### Tabla de Configuraciones de Ganancia de Corriente (Ch1)
@@ -340,6 +346,14 @@ ADMX2001> sweep_scale <log|linear>
 ADMX2001> count <número_puntos>
 ADMX2001> z
 ```
+
+> ⚠️ **IMPORTANTE**: `<inicio>` debe ser **estrictamente menor** que `<fin>`. Valores iguales o invertidos producen un error de validación del firmware.
+
+> ⚠️ **Límites de firmware para `count`** (puntos por barrido):
+> - Span **≥ 4 décadas** (ej. 0.2 Hz – 10 MHz): máximo **100 puntos**
+> - Span **< 4 décadas** (ej. 100 Hz – 100 kHz): máximo **200 puntos**
+>
+> Superar estos límites corrompe el estado interno del firmware y los barridos siguientes retornarán solo 10 puntos. ZORIA recorta automáticamente el número de puntos al máximo permitido.
 
 #### Ejemplo: Barrido Logarítmico de Frecuencia
 
