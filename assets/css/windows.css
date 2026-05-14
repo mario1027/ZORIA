@@ -230,35 +230,52 @@ body.window-dragging-active * {
 }
 
 /* =============================================================================
-   TERMINAL CLI — Instrumento Científico Premium
-   Estética: macOS Terminal × Warp × Tektronix
-   Regla: un solo acento (#00c896), sobriedad, precisión, profundidad real.
+   ZORIA RUNTIME — Núcleo Computacional del Instrumento
+   Estética: Keysight · Rohde & Schwarz · DaVinci Resolve
+   Filosofía: precisión operacional — silencioso y poderoso.
    ============================================================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
-/* ── Variables ── */
+/* ── Scientific Instrument Palette ── */
 .terminal-window {
-    --t-bg-deepest: #050816;
-    --t-bg-surface: #0a0f1a;
-    --t-bg-elevated: #0e1525;
-    --t-bg-layer4: rgba(12, 18, 30, 0.85);
-    --t-bg-layer3: rgba(10, 15, 26, 0.75);
-    --t-bg-layer2: #050816;
-    --t-bg-layer1: #0e1525;
-    --t-text-primary: #e6edf3;
-    --t-text-secondary: #9fb0c0;
-    --t-text-tertiary: #6b7c93;
-    --t-text-disabled: #3d4a5c;
-    --t-accent: #00c896;
-    --t-accent-glow: #33ffcc;
-    --t-accent-muted: rgba(0, 200, 150, 0.18);
-    --t-ice: #4fd1ff;
-    --t-amber: #d29922;
-    --t-red: #ff6b6b;
-    --t-red-muted: rgba(255, 107, 107, 0.12);
-    --t-border: rgba(255, 255, 255, 0.04);
-    --t-border-bright: rgba(255, 255, 255, 0.08);
+    /* Surface — graphite deep field */
+    --t-bg-deepest:  #070b10;
+    --t-bg-surface:  #0b1018;
+    --t-bg-elevated: #111920;
+    --t-bg-layer4:   rgba(8, 12, 20, 0.90);
+    --t-bg-layer3:   rgba(7, 11, 18, 0.82);
+    --t-bg-layer2:   #070b10;
+    --t-bg-layer1:   #0f1822;
+
+    /* Typography — warm white / scientific gray */
+    --t-text-primary:   #ecf0f4;
+    --t-text-secondary: #8ea6bc;
+    --t-text-tertiary:  #526476;
+    --t-text-disabled:  #2a3848;
+
+    /* Primary accent — scientific teal (no neon, no hacker) */
+    --t-accent:       #3cb8ca;
+    --t-accent-glow:  #72d4e0;
+    --t-accent-muted: rgba(60, 184, 202, 0.09);
+
+    /* Semantic instrument channels */
+    --t-measurement:       #b8983a;  /* amber  — measured values       */
+    --t-measurement-muted: rgba(184, 152, 58, 0.09);
+    --t-compute:           #5888c8;  /* blue   — computation           */
+    --t-viz:               #6898c0;  /* sky    — visualization         */
+    --t-runtime:           #7898b0;  /* neutral — runtime / info       */
+    --t-ice:               #6898c0;  /* compat alias                   */
+    --t-amber:             #b8983a;
+    --t-red:               #c06060;
+    --t-red-muted:         rgba(192, 96, 96, 0.09);
+
+    /* Borders */
+    --t-border:        rgba(255, 255, 255, 0.025);
+    --t-border-bright: rgba(255, 255, 255, 0.055);
+    --t-border-accent: rgba(60, 184, 202, 0.10);
+
+    /* Spacing */
     --t-space-1: 4px;
     --t-space-2: 8px;
     --t-space-3: 12px;
@@ -266,6 +283,12 @@ body.window-dragging-active * {
     --t-space-5: 24px;
     --t-space-6: 32px;
     --t-space-7: 48px;
+}
+
+/* ── Base font — IBM Plex Mono cascades everywhere ── */
+.terminal-window,
+.terminal-window * {
+    font-family: "IBM Plex Mono", "JetBrains Mono", "SF Mono", monospace;
 }
 
 /* ── Window Shell ── */
@@ -277,9 +300,9 @@ body.window-dragging-active * {
     border-radius: 14px;
     overflow: hidden;
     box-shadow:
-        0 0 0 1px rgba(0, 0, 0, 0.5),
-        0 25px 80px rgba(0, 0, 0, 0.55),
-        0 0 120px -40px rgba(0, 200, 150, 0.04);
+        0 0 0 1px rgba(0, 0, 0, 0.65),
+        0 32px 96px rgba(0, 0, 0, 0.62),
+        0 0 160px -60px rgba(60, 184, 202, 0.03);
     animation: terminalWindowIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -317,7 +340,7 @@ body.window-dragging-active * {
     height: 1px;
     background: linear-gradient(90deg,
         transparent 0%,
-        rgba(0, 200, 150, 0.12) 50%,
+        rgba(60, 184, 202, 0.07) 50%,
         transparent 100%);
 }
 
@@ -326,34 +349,43 @@ body.window-dragging-active * {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 5px;
     pointer-events: none;
     color: var(--t-text-tertiary);
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     font-weight: 500;
-    letter-spacing: 0.02em;
-    font-family: "SF Mono", "JetBrains Mono", "Fira Code", monospace;
+    letter-spacing: 0.025em;
+    font-family: "IBM Plex Mono", "JetBrains Mono", "SF Mono", monospace;
 }
 
-.terminal-window .window-title .fa-terminal {
+.terminal-window .window-title .title-mark {
     color: var(--t-accent);
-    opacity: 0.4;
-    font-size: 0.6rem;
+    opacity: 0.50;
+    font-size: 0.65rem;
+    margin-right: 1px;
+}
+
+.terminal-window .window-title .title-system {
+    color: var(--t-text-primary);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    font-size: 0.72rem;
 }
 
 .terminal-window .window-title .title-device {
     color: var(--t-text-secondary);
-    font-weight: 600;
+    font-weight: 500;
     letter-spacing: 0.03em;
 }
 
 .terminal-window .window-title .title-sep {
     color: var(--t-text-disabled);
-    opacity: 0.4;
+    opacity: 0.35;
 }
 
 .terminal-window .window-title .title-status {
     font-weight: 400;
+    color: var(--t-text-tertiary);
 }
 
 .terminal-window .window-title .title-port {
@@ -474,8 +506,8 @@ body.window-dragging-active * {
     color: var(--t-text-secondary);
     position: relative;
     background:
-        radial-gradient(ellipse at 50% 0%, rgba(0, 200, 150, 0.02), transparent 50%),
-        radial-gradient(ellipse at 20% 100%, rgba(79, 209, 255, 0.01), transparent 40%),
+        radial-gradient(ellipse at 50% 0%, rgba(60, 184, 202, 0.012), transparent 55%),
+        radial-gradient(ellipse at 80% 100%, rgba(88, 136, 200, 0.007), transparent 40%),
         var(--t-bg-layer2);
 }
 
@@ -527,35 +559,75 @@ body.window-dragging-active * {
     border-radius: 0.5px;
 }
 
-/* ── Banner Typography (new structure) ── */
-.terminal-banner-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--t-text-primary);
-    margin-bottom: 2px;
-    letter-spacing: 0.02em;
-}
-
-.terminal-banner-subtitle {
-    font-size: 0.8rem;
-    font-weight: 400;
-    color: var(--t-accent);
+/* ── Banner — Scientific Identity ── */
+.terminal-banner-identity {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
     margin-bottom: 4px;
 }
 
+.terminal-banner-mark {
+    color: var(--t-accent);
+    opacity: 0.55;
+    font-size: 0.80rem;
+}
+
+.terminal-banner-system {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--t-text-primary);
+    letter-spacing: 0.05em;
+}
+
+.terminal-banner-runtime-label {
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: var(--t-text-tertiary);
+    letter-spacing: 0.02em;
+}
+
+.terminal-banner-device {
+    color: var(--t-accent);
+    font-size: 0.70rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+.terminal-banner-meta-text {
+    color: var(--t-text-disabled);
+    font-size: 0.70rem;
+}
+
+.t-prompt-mini {
+    color: var(--t-accent);
+    opacity: 0.55;
+    margin-right: 6px;
+    font-size: 0.75rem;
+}
+
+/* Banner subtitle + meta (mantenidos del sistema anterior) */
+.terminal-banner-subtitle {
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: var(--t-text-tertiary);
+    margin-bottom: 8px;
+    letter-spacing: 0.02em;
+}
+
 .terminal-banner-meta {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 400;
     color: var(--t-text-disabled);
-    padding-bottom: 16px;
+    padding-bottom: 14px;
     border-bottom: 1px solid var(--t-border);
-    margin-bottom: 16px;
+    margin-bottom: 14px;
 }
 
 .terminal-banner-sep {
-    margin: 0 8px;
+    margin: 0 5px;
     color: var(--t-text-disabled);
-    opacity: 0.5;
+    opacity: 0.4;
 }
 
 /* ── Terminal Lines ── */
@@ -568,7 +640,7 @@ body.window-dragging-active * {
 @keyframes terminalLineIn {
     0% {
         opacity: 0;
-        transform: translateY(4px);
+        transform: translateY(2px);
     }
     100% {
         opacity: 1;
@@ -588,7 +660,7 @@ body.window-dragging-active * {
     border-radius: 4px;
     font-size: 0.85em;
     color: var(--t-accent);
-    border: 1px solid rgba(0, 200, 150, 0.15);
+    border: 1px solid var(--t-border-accent);
     font-family: inherit;
 }
 
@@ -608,8 +680,8 @@ body.window-dragging-active * {
     height: 1px;
     background: linear-gradient(90deg,
         transparent 0%,
-        rgba(0, 200, 150, 0.18) 30%,
-        rgba(79, 209, 255, 0.12) 70%,
+        rgba(60, 184, 202, 0.08) 35%,
+        rgba(88, 136, 200, 0.05) 70%,
         transparent 100%);
 }
 
@@ -629,8 +701,11 @@ body.window-dragging-active * {
 
 .terminal-prompt-icon {
     color: var(--t-accent);
-    margin-right: 8px;
-    font-size: 0.95rem;
+    margin-right: 10px;
+    font-size: 0.82rem;
+    opacity: 0.72;
+    flex-shrink: 0;
+    animation: promptBreathe 6s ease-in-out infinite;
 }
 
 .terminal-prompt-path {
@@ -640,13 +715,15 @@ body.window-dragging-active * {
 }
 
 /* ── Command Input ── */
-.terminal-command-input {
+/* Especificidad (0,0,3,0) > [data-theme="light"] input[type="text"] (0,0,2,1) de zoria-tokens */
+.terminal-window .terminal-input-wrapper .terminal-command-input {
     flex: 1;
     background: transparent !important;
+    background-color: transparent !important;
     border: none !important;
     outline: none !important;
     color: var(--t-text-primary) !important;
-    font-family: "SF Mono", "JetBrains Mono", "Fira Code", monospace !important;
+    font-family: "IBM Plex Mono", "JetBrains Mono", "SF Mono", monospace !important;
     font-size: 13px !important;
     font-weight: 400 !important;
     caret-color: var(--t-accent);
@@ -655,42 +732,55 @@ body.window-dragging-active * {
     box-shadow: none !important;
 }
 
-.terminal-command-input::placeholder {
-    color: var(--t-text-disabled);
+.terminal-window .terminal-input-wrapper .terminal-command-input::placeholder {
+    color: var(--t-text-tertiary) !important;
     font-style: italic;
+    opacity: 1;
 }
 
-.terminal-command-input:focus {
+.terminal-window .terminal-input-wrapper .terminal-command-input:focus {
     outline: none !important;
     box-shadow: none !important;
     border: none !important;
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+/* Anular autofill del navegador — mantiene el fondo oscuro del terminal */
+.terminal-window .terminal-input-wrapper .terminal-command-input:-webkit-autofill,
+.terminal-window .terminal-input-wrapper .terminal-command-input:-webkit-autofill:hover,
+.terminal-window .terminal-input-wrapper .terminal-command-input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0px 1000px var(--t-bg-layer1) inset !important;
+    -webkit-text-fill-color: var(--t-text-primary) !important;
+    caret-color: var(--t-accent);
 }
 
 /* ── Cursor ── */
 .terminal-cursor {
     color: var(--t-accent);
-    font-weight: 400;
-    animation: cursorBreathe 1.5s ease-in-out infinite;
-    margin-left: 1px;
+    font-weight: 300;
+    animation: cursorPulse 2.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    margin-left: 2px;
     font-size: 13px;
     line-height: 1;
+    opacity: 0.65;
 }
 
-@keyframes cursorBreathe {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.25; }
+@keyframes cursorPulse {
+    0%, 55%, 100% { opacity: 0.65; }
+    28%            { opacity: 0;    }
 }
 
-/* ── Prompt Glow ── */
+/* ── Prompt Breathe ── */
 .terminal-prompt-symbol {
     color: var(--t-accent);
-    font-weight: 700;
-    animation: promptGlow 4s ease-in-out infinite;
+    font-weight: 600;
+    animation: promptBreathe 5s ease-in-out infinite;
 }
 
-@keyframes promptGlow {
-    0%, 100% { text-shadow: 0 0 8px rgba(0, 200, 150, 0.2); }
-    50% { text-shadow: 0 0 14px rgba(0, 200, 150, 0.35); }
+@keyframes promptBreathe {
+    0%, 100% { opacity: 0.75; }
+    50%       { opacity: 0.45; }
 }
 
 /* ── Footer ── */
@@ -904,11 +994,11 @@ body.window-dragging-active * {
 @keyframes statusPulse {
     0%, 100% {
         opacity: 1;
-        box-shadow: 0 0 6px rgba(0, 200, 150, 0.35);
+        box-shadow: 0 0 5px rgba(60, 184, 202, 0.28);
     }
     50% {
-        opacity: 0.6;
-        box-shadow: 0 0 3px rgba(0, 200, 150, 0.2);
+        opacity: 0.55;
+        box-shadow: 0 0 2px rgba(60, 184, 202, 0.10);
     }
 }
 
@@ -981,19 +1071,19 @@ body.window-dragging-active * {
 
 /* ── Window States ── */
 .terminal-window.window-dragging {
-    opacity: 0.98;
+    opacity: 0.97;
     box-shadow:
-        0 0 0 1px rgba(0, 0, 0, 0.5),
-        0 40px 80px rgba(0, 0, 0, 0.6),
-        0 0 100px -30px rgba(0, 200, 150, 0.03);
+        0 0 0 1px rgba(0, 0, 0, 0.65),
+        0 44px 88px rgba(0, 0, 0, 0.62),
+        0 0 120px -40px rgba(60, 184, 202, 0.02);
     transition: none !important;
 }
 
 .terminal-window.window-active {
     box-shadow:
-        0 0 0 1px rgba(0, 0, 0, 0.5),
-        0 25px 80px rgba(0, 0, 0, 0.55),
-        0 0 0 1px rgba(0, 200, 150, 0.06);
+        0 0 0 1px rgba(0, 0, 0, 0.65),
+        0 32px 96px rgba(0, 0, 0, 0.60),
+        0 0 0 1px rgba(60, 184, 202, 0.06);
 }
 
 /* ── Scrollbar (window body) ── */
@@ -1116,13 +1206,13 @@ body.window-dragging-active * {
 }
 
 @keyframes streamingPulse {
-    0%, 100% { opacity: 1; box-shadow: 0 0 4px rgba(79, 209, 255, 0.4); }
-    50% { opacity: 0.5; box-shadow: 0 0 2px rgba(79, 209, 255, 0.2); }
+    0%, 100% { opacity: 1; box-shadow: 0 0 4px rgba(104, 152, 192, 0.32); }
+    50% { opacity: 0.5; box-shadow: 0 0 2px rgba(104, 152, 192, 0.12); }
 }
 
 @keyframes errorPulse {
-    0%, 100% { opacity: 1; box-shadow: 0 0 4px rgba(210, 153, 34, 0.4); }
-    50% { opacity: 0.5; box-shadow: 0 0 2px rgba(210, 153, 34, 0.15); }
+    0%, 100% { opacity: 1; box-shadow: 0 0 4px rgba(184, 152, 58, 0.32); }
+    50% { opacity: 0.5; box-shadow: 0 0 2px rgba(184, 152, 58, 0.12); }
 }
 
 .terminal-badge-label {
@@ -1155,28 +1245,28 @@ body.window-dragging-active * {
 }
 
 .t-role-section {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--t-accent);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--t-text-tertiary);
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.10em;
     opacity: 1;
 }
 
 .t-role-value {
     font-size: 13px;
     font-weight: 400;
-    color: var(--t-text-secondary);
-    opacity: 0.72;
+    color: var(--t-measurement);
+    font-variant-numeric: tabular-nums;
+    opacity: 0.85;
 }
 
 .t-role-label {
     font-size: 11px;
     font-weight: 400;
     color: var(--t-text-tertiary);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    opacity: 0.48;
+    letter-spacing: 0.03em;
+    opacity: 0.55;
 }
 
 .t-role-meta {
@@ -1184,21 +1274,76 @@ body.window-dragging-active * {
     font-weight: 400;
     color: var(--t-text-disabled);
     font-variant-numeric: tabular-nums;
-    opacity: 0.28;
+    opacity: 0.35;
 }
 
 .t-role-status {
-    font-size: 11px;
-    font-weight: 500;
+    font-size: 10px;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.07em;
     opacity: 1;
 }
 
-.t-role-status.t-status-ok { color: var(--t-accent); }
-.t-role-status.t-status-err { color: var(--t-red); }
+.t-role-status.t-status-ok   { color: var(--t-accent); }
+.t-role-status.t-status-err  { color: var(--t-red); }
 .t-role-status.t-status-warn { color: var(--t-amber); }
-.t-role-status.t-status-info { color: var(--t-ice); }
+.t-role-status.t-status-info { color: var(--t-compute); }
+
+/* ── Operational Narrative Roles ── */
+.t-role-runtime     { color: var(--t-runtime)      !important; }
+.t-role-measurement { color: var(--t-measurement)  !important; font-variant-numeric: tabular-nums; }
+.t-role-compute     { color: var(--t-compute)      !important; }
+.t-role-viz         { color: var(--t-viz)           !important; }
+.t-role-hardware    { color: var(--t-accent)        !important; }
+.t-role-warning-op  {
+    color: var(--t-amber) !important;
+    border-left: 2px solid rgba(184, 152, 58, 0.22);
+    padding-left: 8px;
+}
+.t-role-error-op {
+    color: var(--t-red) !important;
+    border-left: 2px solid rgba(192, 96, 96, 0.22);
+    padding-left: 8px;
+}
+
+/* Inline token classes */
+.t-cmd  { color: var(--t-text-primary);   font-weight: 500; }
+.t-arg  { color: var(--t-text-tertiary);  font-weight: 400; }
+.t-val  { color: var(--t-measurement);    font-variant-numeric: tabular-nums; }
+.t-unit { color: var(--t-text-tertiary);  font-size: 0.88em; }
+
+/* ── Scientific Spinners — instrumental, not hacker ── */
+.t-spinner {
+    display: inline-block;
+    font-style: normal;
+    transition: opacity 0.4s ease;
+}
+/* THINK  ◌ orbital */
+.t-spinner-think {
+    color: var(--t-accent);
+    animation: spinOrbit 3.8s ease-in-out infinite;
+}
+/* ACQUIRE  ◎ radial pulse */
+.t-spinner-acquire {
+    color: var(--t-measurement);
+    animation: spinAcquire 2.4s ease-in-out infinite;
+}
+/* COMPUTE  ◈ morph */
+.t-spinner-compute {
+    color: var(--t-compute);
+    animation: spinCompute 1.9s ease-in-out infinite;
+}
+/* STREAM  ∙ • ● flow */
+.t-spinner-stream {
+    color: var(--t-viz);
+    animation: spinStream 2.2s ease-in-out infinite;
+}
+
+@keyframes spinOrbit   { 0%,100%{opacity:.30} 50%{opacity:.70} }
+@keyframes spinAcquire { 0%,100%{opacity:.35;transform:scale(1)} 50%{opacity:.85;transform:scale(1.06)} }
+@keyframes spinCompute { 0%{opacity:.50} 25%{opacity:.90} 75%{opacity:.30} 100%{opacity:.50} }
+@keyframes spinStream  { 0%,100%{opacity:.28} 33%{opacity:.80} 66%{opacity:.48} }
 
 /* ── Semantic Status Card (for STATUS command) ── */
 .terminal-status-card {
@@ -1312,22 +1457,22 @@ body.window-dragging-active * {
    ============================================================================= */
 
 .terminal-window[data-system-state="disconnected"] .terminal-status-bar {
-    background: rgba(255, 107, 107, 0.04);
+    background: rgba(192, 96, 96, 0.04);
 }
 
 .terminal-window[data-system-state="disconnected"] .window-header::after {
     background: linear-gradient(90deg,
         transparent 0%,
-        rgba(255, 107, 107, 0.08) 50%,
+        rgba(192, 96, 96, 0.07) 50%,
         transparent 100%);
 }
 
 .terminal-window[data-system-state="streaming"] .terminal-prompt-symbol {
-    animation: promptGlow 1.5s ease-in-out infinite;
+    animation: promptBreathe 1.5s ease-in-out infinite;
 }
 
 .terminal-window[data-system-state="streaming"] .terminal-cursor {
-    animation: cursorBreathe 0.8s ease-in-out infinite;
+    animation: cursorPulse 0.9s ease-in-out infinite;
 }
 
 .terminal-window[data-system-state="error"] .terminal-float-screen::before {

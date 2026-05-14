@@ -352,6 +352,11 @@
         state.isMaximized = !state.isMaximized;
         
         if (state.isMaximized) {
+            // Si estaba minimizado, restaurar primero
+            if (state.isMinimized) {
+                state.isMinimized = false;
+                element.classList.remove('window-minimized');
+            }
             // Guardar estado actual
             state.prevX = state.x;
             state.prevY = state.y;

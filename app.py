@@ -379,13 +379,35 @@ def register_global_terminal_callbacks(app):
                 }
                 
                 // === INICIALIZAR TECLADO ===
+                // Dash 3.x almacena dcc.Store(storage_type='session') en sessionStorage directamente
+                function readHistory() {
+                    try {
+                        var raw = sessionStorage.getItem('command-history-store');
+                        return raw ? JSON.parse(raw) : {'commands': [], 'index': -1};
+                    } catch(err) {
+                        return {'commands': [], 'index': -1};
+                    }
+                }
+                function writeHistory(commands, index) {
+                    try {
+                        sessionStorage.setItem('command-history-store', JSON.stringify({'commands': commands, 'index': index}));
+                        sessionStorage.setItem('command-history-store-timestamp', Date.now().toString());
+                    } catch(err) {}
+                }
+                
+                // Setear valor en input React (controlled component): requiere el native setter
+                // para que React detecte el cambio y el callback n_submit reciba el valor correcto.
+                function setReactInputValue(inputEl, val) {
+                    var nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                    nativeSetter.call(inputEl, val);
+                    inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                
                 input.onkeydown = function(e) {
-                    var historyData = JSON.parse(JSON.stringify(
-                        document.getElementById('command-history-store').data || {'commands': [], 'index': -1}
-                    ));
+                    var historyData = readHistory();
                     var commands = historyData.commands || [];
                     var currentIndex = historyData.index;
-                    if (currentIndex === undefined) currentIndex = commands.length;
+                    if (currentIndex === undefined || currentIndex < 0) currentIndex = commands.length;
                     
                     if (e.key === 'Enter') {
                         return;
@@ -395,11 +417,8 @@ def register_global_terminal_callbacks(app):
                         e.preventDefault();
                         if (commands.length > 0 && currentIndex > 0) {
                             currentIndex--;
-                            input.value = commands[currentIndex];
-                            document.getElementById('command-history-store').data = {
-                                'commands': commands,
-                                'index': currentIndex
-                            };
+                            setReactInputValue(input, commands[currentIndex]);
+                            writeHistory(commands, currentIndex);
                         }
                         return false;
                     }
@@ -408,18 +427,12 @@ def register_global_terminal_callbacks(app):
                         e.preventDefault();
                         if (currentIndex < commands.length - 1) {
                             currentIndex++;
-                            input.value = commands[currentIndex];
-                            document.getElementById('command-history-store').data = {
-                                'commands': commands,
-                                'index': currentIndex
-                            };
+                            setReactInputValue(input, commands[currentIndex]);
+                            writeHistory(commands, currentIndex);
                         } else if (currentIndex === commands.length - 1) {
                             currentIndex = commands.length;
-                            input.value = '';
-                            document.getElementById('command-history-store').data = {
-                                'commands': commands,
-                                'index': currentIndex
-                            };
+                            setReactInputValue(input, '');
+                            writeHistory(commands, currentIndex);
                         }
                         return false;
                     }
@@ -797,16 +810,16 @@ def register_global_terminal_callbacks(app):
             current_output.append(html.Div(className="terminal-separator"))
             
             # Limitar output
-            if len(current_output) > 80:
-                current_output = current_output[-80:]
+            if len(current_output) > 500:
+                current_output = current_output[-500:]
             
             # Desactivar streaming
             streaming_state['active'] = False
             return current_output, True, streaming_state  # True = deshabilitar Interval
         
         # Limitar output mientras va creciendo
-        if len(current_output) > 80:
-            current_output = current_output[-80:]
+        if len(current_output) > 500:
+            current_output = current_output[-500:]
         
         # Continuar polling
         return current_output, False, streaming_state  # False = mantener Interval activo
@@ -1117,8 +1130,8 @@ def register_global_terminal_callbacks(app):
             
             # Agregar separador
             current_output.append(html.Div(className="terminal-separator"))
-            if len(current_output) > 80:
-                current_output = current_output[-80:]
+            if len(current_output) > 500:
+                current_output = current_output[-500:]
             
             return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
         
@@ -1164,8 +1177,8 @@ def register_global_terminal_callbacks(app):
                 ], className="terminal-line")
             )
             current_output.append(html.Div(className="terminal-separator"))
-            if len(current_output) > 80:
-                current_output = current_output[-80:]
+            if len(current_output) > 500:
+                current_output = current_output[-500:]
             return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
         
         # ===== COMANDOS LOCALES (funcionan siempre, con o sin hardware) =====
@@ -1204,8 +1217,8 @@ def register_global_terminal_callbacks(app):
                 ], className="terminal-line")
             )
             current_output.append(html.Div(className="terminal-separator"))
-            if len(current_output) > 80:
-                current_output = current_output[-80:]
+            if len(current_output) > 500:
+                current_output = current_output[-500:]
             return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
         
         if cmd_lower == 'version':
@@ -1288,8 +1301,8 @@ def register_global_terminal_callbacks(app):
             
             current_output.append(html.Div(response_children))
             current_output.append(html.Div(className="terminal-separator"))
-            if len(current_output) > 80:
-                current_output = current_output[-80:]
+            if len(current_output) > 500:
+                current_output = current_output[-500:]
             return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
         
         # Verificar si hay dispositivo conectado
@@ -1314,8 +1327,8 @@ def register_global_terminal_callbacks(app):
                     )
                 current_output.append(html.Div(response_children))
                 current_output.append(html.Div(className="terminal-separator"))
-                if len(current_output) > 80:
-                    current_output = current_output[-80:]
+                if len(current_output) > 500:
+                    current_output = current_output[-500:]
                 return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
 
             if cmd_lower == 'stop':
@@ -1331,8 +1344,8 @@ def register_global_terminal_callbacks(app):
                     ], className="terminal-line")
                 )
                 current_output.append(html.Div(className="terminal-separator"))
-                if len(current_output) > 80:
-                    current_output = current_output[-80:]
+                if len(current_output) > 500:
+                    current_output = current_output[-500:]
                 return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
             
             # Detectar comandos que deben usar STREAMING (respuestas en tiempo real)
@@ -1427,8 +1440,8 @@ def register_global_terminal_callbacks(app):
                                     ], className="terminal-line")
                                 )
                                 current_output.append(html.Div(className="terminal-separator"))
-                                if len(current_output) > 80:
-                                    current_output = current_output[-80:]
+                                if len(current_output) > 500:
+                                    current_output = current_output[-500:]
                                 return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
 
                             # Si no detecta PASSWORD>, mostrar lo que haya
@@ -1725,8 +1738,8 @@ def register_global_terminal_callbacks(app):
                             ], className="terminal-line")
                         )
                         current_output.append( html.Div(className="terminal-separator"))
-                        if len(current_output) > 80:
-                            current_output = current_output[-80:]
+                        if len(current_output) > 500:
+                            current_output = current_output[-500:]
                         
                         # NO limpiar el input, retornar con password_state activo
                         return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
@@ -1909,8 +1922,8 @@ def register_global_terminal_callbacks(app):
                 current_output.append(html.Div(className="terminal-separator"))
                 
                 # Limitar output
-                if len(current_output) > 80:
-                    current_output = current_output[-80:]
+                if len(current_output) > 500:
+                    current_output = current_output[-500:]
                 
                 return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
                     
@@ -1930,8 +1943,8 @@ def register_global_terminal_callbacks(app):
                 current_output.append(html.Div(className="terminal-separator"))
                 
                 # Limitar output  
-                if len(current_output) > 80:
-                    current_output = current_output[-80:]
+                if len(current_output) > 500:
+                    current_output = current_output[-500:]
                 
                 return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
         
@@ -2077,8 +2090,8 @@ def register_global_terminal_callbacks(app):
         current_output.append(html.Div(className="terminal-separator"))
         
         # Limitar output
-        if len(current_output) > 80:
-            current_output = current_output[-80:]
+        if len(current_output) > 500:
+            current_output = current_output[-500:]
         
         return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
 

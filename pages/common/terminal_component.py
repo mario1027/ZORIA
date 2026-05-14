@@ -32,11 +32,13 @@ def global_terminal_component():
                     html.Button(html.I(className="fas fa-times"), id="terminal-close-btn", className="window-control-btn window-btn-close", title="", **{'data-i18n-title': 'ui.close_esc'}),
                 ], className="window-controls"),
                 
-                # Title: device · status — port
+                # Title: ZORIA · ADMX2001 · status — port
                 html.Div([
-                    html.I(className="fas fa-terminal", style={'fontSize': '0.6rem', 'opacity': '0.4'}),
+                    html.Span("◈ ", className="title-mark"),
+                    html.Span("ZORIA", className="title-system"),
+                    html.Span(" · ", className="title-sep"),
                     html.Span("ADMX2001", className="title-device"),
-                    html.Span(" \u00b7 ", className="title-sep"),
+                    html.Span(" · ", className="title-sep"),
                     html.Span("", id="terminal-status-text", className="title-status"),
                     html.Span(" — ", className="title-sep"),
                     html.Span("", id="terminal-port-label", className="title-port"),
@@ -84,63 +86,67 @@ def global_terminal_component():
                         id="command-output",
                         className="terminal-float-screen",
                         children=[
-                            # Banner — pure typography
+                            # Banner — Scientific instrument identity
                             html.Div([
-                                html.Div("ADMX2001", className="terminal-banner-title"),
-                                html.Div("Impedance Analyzer CLI", className="terminal-banner-subtitle"),
                                 html.Div([
-                                    html.Span("Analog Devices", className=""),
-                                    html.Span(" \u00b7 ", className="terminal-banner-sep"),
-                                    html.Span("Evaluation Board", className=""),
+                                    html.Span("◈", className="terminal-banner-mark"),
+                                    html.Span("ZORIA", className="terminal-banner-system"),
+                                    html.Span(" Runtime", className="terminal-banner-runtime-label"),
+                                ], className="terminal-banner-identity"),
+                                html.Div("Impedance Analysis Runtime", className="terminal-banner-subtitle"),
+                                html.Div([
+                                    html.Span("ADMX2001", className="terminal-banner-device"),
+                                    html.Span(" · ", className="terminal-banner-sep"),
+                                    html.Span("Analog Devices", className="terminal-banner-meta-text"),
+                                    html.Span(" · ", className="terminal-banner-sep"),
+                                    html.Span("Evaluation Board", className="terminal-banner-meta-text"),
                                 ], className="terminal-banner-meta"),
                             ], className="terminal-banner"),
                             html.Div([
-                                # System status
+                                # Runtime init
                                 html.Div([
-                                    html.I(className="fas fa-terminal", style={'fontSize': '0.75rem', 'width': '20px', 'textAlign': 'center', 'marginRight': '6px', 'opacity': '0.65', 'color': '#6b7c93'}),
-                                    html.Span("system", className="text-info"),
-                                    html.Span(" --status", className="text-muted")
-                                ], className="terminal-line"),
+                                    html.Span("◌ ", className="t-spinner t-spinner-think"),
+                                    html.Span("runtime", className="t-cmd"),
+                                    html.Span(".initialize", className="t-arg"),
+                                    html.Span(" — acquisition layer", className="t-arg"),
+                                ], className="terminal-line t-role-runtime"),
                                 html.Div([
-                                    html.I(className="fas fa-circle-notch", style={'fontSize': '0.75rem', 'width': '20px', 'textAlign': 'center', 'marginRight': '6px', 'opacity': '0.5', 'color': '#6b7c93'}),
-                                    html.Span("", className="text-muted", **{'data-i18n': 'ui.waiting_connection'})
+                                    html.Span("◦ ", style={'color': 'var(--t-text-disabled)', 'marginRight': '4px'}),
+                                    html.Span("", className="t-arg", **{'data-i18n': 'ui.waiting_connection'})
                                 ], className="terminal-line mb-2"),
                                 
-                                # Command help
+                                # Operational primitives
                                 html.Div([
-                                    html.I(className="fas fa-lightbulb", style={'fontSize': '0.75rem', 'width': '20px', 'textAlign': 'center', 'marginRight': '6px', 'opacity': '0.65', 'color': '#6b7c93'}),
-                                    html.Span("", className="text-info fw-bold", **{'data-i18n': 'ui.available_commands'})
-                                ], className="terminal-line mb-1"),
+                                    html.Span("", className="t-role-section", **{'data-i18n': 'ui.available_commands'})
+                                ], className="terminal-line mb-2"),
                                 html.Div([
-                                    html.I(className="fas fa-angle-right", style={'fontSize': '0.75rem', 'width': '20px', 'textAlign': 'center', 'marginRight': '6px', 'opacity': '0.4', 'color': '#3d4a5c'}),
+                                    html.Span("› ", className="t-prompt-mini"),
                                     html.Code("help", className="terminal-code"),
-                                    html.Span("", className="text-muted", **{'data-i18n': 'term.help_list_cmds'})
+                                    html.Span("", className="t-role-label", **{'data-i18n': 'term.help_list_cmds'})
                                 ], className="terminal-line"),
                                 html.Div([
-                                    html.I(className="fas fa-angle-right", style={'fontSize': '0.75rem', 'width': '20px', 'textAlign': 'center', 'marginRight': '6px', 'opacity': '0.4', 'color': '#3d4a5c'}),
+                                    html.Span("› ", className="t-prompt-mini"),
                                     html.Code("z", className="terminal-code"),
-                                    html.Span("", className="text-muted", **{'data-i18n': 'term.help_measure'})
-                                ], className="terminal-line"),
+                                    html.Span("", className="t-role-label", **{'data-i18n': 'term.help_measure'})
+                                ], className="terminal-line t-role-measurement"),
                                 html.Div([
-                                    html.I(className="fas fa-angle-right", style={'fontSize': '0.75rem', 'width': '20px', 'textAlign': 'center', 'marginRight': '6px', 'opacity': '0.4', 'color': '#3d4a5c'}),
+                                    html.Span("› ", className="t-prompt-mini"),
                                     html.Code("status", className="terminal-code"),
-                                    html.Span("", className="text-muted", **{'data-i18n': 'term.help_status'})
+                                    html.Span("", className="t-role-label", **{'data-i18n': 'term.help_status'})
                                 ], className="terminal-line"),
                                 html.Div([
-                                    html.I(className="fas fa-angle-right", style={'fontSize': '0.75rem', 'width': '20px', 'textAlign': 'center', 'marginRight': '6px', 'opacity': '0.4', 'color': '#3d4a5c'}),
+                                    html.Span("› ", className="t-prompt-mini"),
                                     html.Code("sweep", className="terminal-code"),
-                                    html.Span("", className="text-muted", **{'data-i18n': 'term.help_sweep'})
+                                    html.Span("", className="t-role-label", **{'data-i18n': 'term.help_sweep'})
                                 ], className="terminal-line mb-2"),
-                                
                                 # Keyboard shortcuts
                                 html.Div([
-                                    html.I(className="fas fa-keyboard", style={'fontSize': '0.75rem', 'width': '20px', 'textAlign': 'center', 'marginRight': '6px', 'opacity': '0.5', 'color': '#6b7c93'}),
-                                    html.Span("", className="text-muted me-2", **{'data-i18n': 'ui.shortcuts_label'}),
+                                    html.Span("", className="t-arg me-2", **{'data-i18n': 'ui.shortcuts_label'}),
                                     html.Span("Alt+T", className="terminal-kbd"),
-                                    html.Span("", className="text-muted me-2", **{'data-i18n': 'ui.open_close'}),
-                                    html.Span("\u2191\u2193", className="terminal-kbd"),
-                                    html.Span("", className="text-muted", **{'data-i18n': 'ui.history'})
-                                ], className="terminal-line"),
+                                    html.Span("", className="t-arg me-2", **{'data-i18n': 'ui.open_close'}),
+                                    html.Span("↑↓", className="terminal-kbd"),
+                                    html.Span("", className="t-arg", **{'data-i18n': 'ui.history'})
+                                ], className="terminal-line t-role-meta"),
                             ], className="terminal-content-area")
                         ]
                     )
@@ -150,8 +156,7 @@ def global_terminal_component():
                 html.Div([
                     html.Div([
                         html.Div([
-                            html.Span("\u276f", className="terminal-prompt-icon"),
-                            html.Span(" ~", className="terminal-prompt-path")
+                            html.Span("›", className="terminal-prompt-icon")
                         ], className="terminal-prompt d-flex align-items-center"),
                         
                         dcc.Input(
@@ -165,7 +170,7 @@ def global_terminal_component():
                             n_blur=0
                         ),
                         
-                        html.Span("\u258c", className="terminal-cursor", id="terminal-cursor")
+                        html.Span("_", className="terminal-cursor", id="terminal-cursor")
                     ], className="terminal-input-wrapper d-flex align-items-center")
                 ], className="terminal-float-input-area"),
                 
