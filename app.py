@@ -1310,6 +1310,79 @@ def register_global_terminal_callbacks(app):
             # ===== MODO REAL: Usar dispositivo ADMX2001 =====
 
             # ===== COMANDOS LOCALES EN MODO REAL =====
+            if cmd_lower == 'help' or cmd_lower.startswith('help '):
+                # Mostrar help formateado localmente (el blob del firmware no es legible en web)
+                help_lines = [
+                    "════════════════════════════════════════════════════",
+                    "ADMX2001B CLI · HELP",
+                    "Referencia rápida alineada a DOCUMENTACION_OFICIAL",
+                    "════════════════════════════════════════════════════",
+                    "",
+                    "USO:",
+                    "  help                      Lista de comandos",
+                    "  help <comando>            Ayuda detallada",
+                    "",
+                    "MEDICIÓN:",
+                    "  z                         Ejecutar medición/sweep",
+                    "  frequency <valor_kHz>     Ej: 100 => 100 kHz, 0 => modo DC",
+                    "  magnitude <V>             0.01 a 2 V",
+                    "  offset <V>                -5 V a +5 V",
+                    "  average <1-256>           Promediado de muestras",
+                    "  count <n>                 Cantidad de puntos del sweep",
+                    "  mdelay <ms>               Retardo previo a medición",
+                    "  tdelay <ms>               Retardo post-trigger",
+                    "",
+                    "DISPLAY:",
+                    "  display <0-18>            Modo de salida",
+                    "  display 6                 R/X (default)",
+                    "  display 7                 |Z|/deg",
+                    "  display 15                G/B",
+                    "",
+                    "GANANCIA / RANGO:",
+                    "  setgain                   Ver configuración actual",
+                    "  setgain auto              Activar auto-ranging",
+                    "  setgain ch0 <0-3>         Ganancia de voltaje",
+                    "  setgain ch1 <0-3>         Ganancia de corriente",
+                    "",
+                    "BARRIDOS:",
+                    "  sweep_type frequency <inicio> <fin>",
+                    "  sweep_scale <log|linear>",
+                    "",
+                    "CALIBRACIÓN:",
+                    "  calibrate open",
+                    "  calibrate short",
+                    "  calibrate rt <R> xt <X>",
+                    "  calibrate commit <pass> [ts]",
+                    "  calibrate list",
+                    "",
+                    "SISTEMA:",
+                    "  *idn | status | reset | version | debug on|off|info",
+                    "",
+                    "TIP: usa 'help <comando>' para ver sintaxis exacta del firmware.",
+                ]
+                import re as _re
+                response_children = []
+                for line in help_lines:
+                    if line.startswith('═') or line.startswith('─'):
+                        response_children.append(html.Div(html.Span(line, style={'color': 'var(--t-accent)', 'fontWeight': '600'}), className="terminal-line"))
+                    elif line and not line.startswith(' ') and line[0].isupper() and ':' in line:
+                        response_children.append(html.Div(html.Span(line, style={'color': 'var(--t-text-secondary)', 'fontWeight': '700', 'marginTop': '4px', 'display': 'block'}), className="terminal-line"))
+                    elif line == '':
+                        response_children.append(html.Div(style={'height': '4px'}, className="terminal-line"))
+                    elif line.startswith('  '):
+                        m = _re.match(r'^(  \S[^\s]*)(\s{2,})(.*)', line)
+                        if m:
+                            response_children.append(html.Div([html.Span(m.group(1), style={'color': 'var(--t-text-primary)'}), html.Span(m.group(3), style={'color': 'var(--t-text-muted)', 'marginLeft': '1ch'})], className="terminal-line", style={'paddingLeft': '1rem'}))
+                        else:
+                            response_children.append(html.Div(html.Span(line, style={'color': 'var(--t-text-primary)'}), className="terminal-line", style={'paddingLeft': '1rem'}))
+                    else:
+                        response_children.append(html.Div(html.Span(line, style={'color': 'var(--t-text-muted)', 'fontStyle': 'italic'}), className="terminal-line"))
+                current_output.append(html.Div(response_children))
+                current_output.append(html.Div(className="terminal-separator"))
+                if len(current_output) > 500:
+                    current_output = current_output[-500:]
+                return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
+
             if cmd_lower == 'status':
                 status_lines = [
                     f"Conexión: {'Conectado' if device_state.is_connected else 'Desconectado'}",
@@ -1953,54 +2026,53 @@ def register_global_terminal_callbacks(app):
         
         if cmd_lower == 'help':
             response_lines = [
-                "═══════════════════════════════════════════════════",
-                "  ADMX2001 - Comandos CLI (Documentación v1.3.2)",
-                "═══════════════════════════════════════════════════",
+                "════════════════════════════════════════════════════",
+                "ADMX2001B CLI · HELP",
+                "Referencia rápida alineada a DOCUMENTACION_OFICIAL",
+                "════════════════════════════════════════════════════",
+                "",
+                "USO:",
+                "  help                      Lista de comandos",
+                "  help <comando>            Ayuda detallada",
                 "",
                 "MEDICIÓN:",
-                "  z                      Medir impedancia",
-                "  frequency <Hz>         Configurar frecuencia (ej: 100 = 100kHz)",
-                "  magnitude <V>          Configurar magnitud señal (0.01-2V)",
-                "  offset <V>             Offset DC (-5V a +5V)",
-                "  average <1-256>        Promedio de muestras",
-                "  count <n>              Número de lecturas",
-                "  mdelay <ms>            Delay entre mediciones",
-                "  tdelay <ms>            Delay post-trigger",
+                "  z                         Ejecutar medición/sweep",
+                "  frequency <valor_kHz>     Ej: 100 => 100 kHz, 0 => modo DC",
+                "  magnitude <V>             0.01 a 2 V",
+                "  offset <V>                -5 V a +5 V",
+                "  average <1-256>           Promediado de muestras",
+                "  count <n>                 Cantidad de puntos del sweep",
+                "  mdelay <ms>               Retardo previo a medición",
+                "  tdelay <ms>               Retardo post-trigger",
                 "",
                 "DISPLAY:",
-                "  display <0-17>         Modo de display:",
-                "                         0=Cs-Rs, 3=Ls-Rs, 6=R-X (default)",
-                "                         7=Z-deg, 9=Cp-Rp, 15=G-B",
+                "  display <0-18>            Modo de salida",
+                "  display 6                 R/X (default)",
+                "  display 7                 |Z|/deg",
+                "  display 15                G/B",
                 "",
-                "GANANCIA:",
-                "  setgain ch0 <0-3>      Ganancia voltaje (0=1x, 3=8x)",
-                "  setgain ch1 <0-3>      Ganancia corriente (0=25mA, 3=25uA)",
-                "  setgain auto           Auto-ranging",
+                "GANANCIA / RANGO:",
+                "  setgain                   Ver configuración actual",
+                "  setgain auto              Activar auto-ranging",
+                "  setgain ch0 <0-3>         Ganancia de voltaje",
+                "  setgain ch1 <0-3>         Ganancia de corriente",
                 "",
                 "BARRIDOS:",
-                "  sweep_type freq <s> <e>  Barrido de frecuencia",
-                "  sweep_scale log|linear   Escala del barrido",
+                "  sweep_type frequency <inicio> <fin>",
+                "  sweep_scale <log|linear>",
                 "",
                 "CALIBRACIÓN:",
-                "  calibrate open         Medición open",
-                "  calibrate short        Medición short", 
-                "  calibrate rt <R> xt <X>  Medición load",
-                "  calibrate commit <pass> [ts]  Guardar calibración",
-                "                         <pass> = contraseña (ej: Analog123)",
-                "                         [ts] = timestamp opcional",
-                "  calibrate list         Listar calibraciones",
+                "  calibrate open",
+                "  calibrate short",
+                "  calibrate rt <R> xt <X>",
+                "  calibrate commit <pass> [ts]",
+                "  calibrate list",
                 "",
                 "SISTEMA:",
-                "  *idn                   Identificación del hardware ADMX2001",
-                "  version                Información del Dashboard ZORIA",
-                "  help                   Esta ayuda",
-                "  status                 Estado del sistema",
-                "  reset                  Reset del sistema",
-                "  debug on|off|info      Activar/desactivar logging detallado",
+                "  *idn | status | reset | version | debug on|off|info",
                 "",
-                "═══════════════════════════════════════════════════",
-                "Modo: SIMULACIÓN - Conecte el dispositivo en Dashboard",
-                "═══════════════════════════════════════════════════"
+                "TIP: usa 'help <comando>' para ver sintaxis exacta del firmware.",
+                "Modo SIMULACIÓN: conecta hardware desde Dashboard para ejecutar."
             ]
         elif cmd_lower == 'z':
             response_lines = [
@@ -2077,13 +2149,62 @@ def register_global_terminal_callbacks(app):
         
         # Renderizar respuesta simulada
         response_children = []
+        is_help_cmd = (cmd_lower == 'help' or cmd_lower.startswith('help '))
         for line in response_lines:
-            response_children.append(
-                html.Div([
-                    html.Span("  ", className="terminal-indent"),
-                    html.Span(line, className="terminal-response-line")
-                ], className="terminal-line")
-            )
+            if is_help_cmd:
+                # Cabecera separadora (═══)
+                if line.startswith('═') or line.startswith('─'):
+                    response_children.append(
+                        html.Div(
+                            html.Span(line, style={'color': 'var(--t-accent)', 'fontWeight': '600', 'letterSpacing': '0'}),
+                            className="terminal-line"
+                        )
+                    )
+                # Título de sección (mayúsculas, sin indentación)
+                elif line and not line.startswith(' ') and line[0].isupper() and ':' in line:
+                    response_children.append(
+                        html.Div(
+                            html.Span(line, style={'color': 'var(--t-text-secondary)', 'fontWeight': '700', 'marginTop': '4px', 'display': 'block'}),
+                            className="terminal-line"
+                        )
+                    )
+                # Línea vacía
+                elif line == '':
+                    response_children.append(html.Div(style={'height': '4px'}, className="terminal-line"))
+                # Línea de comando (indentada con dos espacios)
+                elif line.startswith('  '):
+                    # Separar comando de descripción por espacios múltiples
+                    import re as _re
+                    m = _re.match(r'^(  \S[^\s]*)(\s{2,})(.*)', line)
+                    if m:
+                        response_children.append(
+                            html.Div([
+                                html.Span(m.group(1), style={'color': 'var(--t-text-primary)', 'fontFamily': 'inherit'}),
+                                html.Span(m.group(3), style={'color': 'var(--t-text-muted)', 'marginLeft': '1ch'}),
+                            ], className="terminal-line", style={'paddingLeft': '1rem'})
+                        )
+                    else:
+                        response_children.append(
+                            html.Div(
+                                html.Span(line, style={'color': 'var(--t-text-primary)'}),
+                                className="terminal-line", style={'paddingLeft': '1rem'}
+                            )
+                        )
+                # Línea de tip/nota
+                else:
+                    response_children.append(
+                        html.Div(
+                            html.Span(line, style={'color': 'var(--t-text-muted)', 'fontStyle': 'italic'}),
+                            className="terminal-line"
+                        )
+                    )
+            else:
+                response_children.append(
+                    html.Div([
+                        html.Span("  ", className="terminal-indent"),
+                        html.Span(line, className="terminal-response-line")
+                    ], className="terminal-line")
+                )
         current_output.append(html.Div(response_children))
         
         # Línea separadora
