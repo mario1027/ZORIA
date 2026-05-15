@@ -1363,16 +1363,17 @@ class ADMX2001:
 
             if idle_timeout is None:
                 # Heurística de respaldo basada en conteo de puntos
+                # REDUCIDA: timeouts más cortos para detectar problemas rápidamente
                 if expected_count > 1000:
-                    idle_timeout = 600.0  # 10 min para sweeps muy grandes
+                    idle_timeout = 120.0  # 2 min para sweeps muy grandes
                 elif expected_count > 500:
-                    idle_timeout = 300.0  # 5 min para sweeps grandes
+                    idle_timeout = 60.0   # 1 min para sweeps grandes
                 elif expected_count > 100:
-                    idle_timeout = 120.0  # 2 min para sweeps medianos
+                    idle_timeout = 30.0   # 30s para sweeps medianos
                 elif expected_count > 50:
-                    idle_timeout = 60.0   # 1 min para sweeps pequeños
+                    idle_timeout = 15.0   # 15s para sweeps pequeños
                 else:
-                    idle_timeout = 30.0   # 30 s para sweeps mínimos
+                    idle_timeout = 10.0   # 10s para sweeps mínimos
             
             logger.info("Leyendo datos del sweep...")
             
@@ -1391,6 +1392,16 @@ class ADMX2001:
                             if 'adc saturated' in line_lower or 'measurement failed' in line_lower:
                                 saturation_detected = True
                                 logger.error(" Saturación ADC detectada durante sweep")
+                                # Forzar terminación del sweep enviando abort al dispositivo
+                                try:
+                                    self.serial.write(b'abort\n')
+                                    self.serial.flush()
+                                    time.sleep(0.3)
+                                    self.serial.reset_input_buffer()
+                                    self.serial.reset_output_buffer()
+                                    logger.info("  Abort enviado al dispositivo tras saturación")
+                                except Exception:
+                                    pass
                                 break
                         
                         # Log cada 10 puntos para no saturar

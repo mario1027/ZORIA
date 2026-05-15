@@ -36,7 +36,7 @@ TEAM_MEMBERS = [
         'role': 'Research Scientist',
         'title': 'Físico',
         'description': 'Especialista en Espectroscopia. Investigador en análisis óptico y caracterización de materiales.',
-        'image': '/assets/images/abaut/FRANCISCO_RACEDO_NIEBLES_0.png',
+        'image': '/assets/images/abaut/FRANCISCO_RACEDO_NIEBLES_0.jpeg',
         'email': '',
         'linkedin': '#',
         'github': '#'
@@ -46,7 +46,7 @@ TEAM_MEMBERS = [
         'role': 'Scientific Advisor',
         'title': 'Físico',
         'description': 'Especialista en Espectroscopia. Experto en técnicas avanzadas de análisis óptico y metrología.',
-        'image': 'https://ui-avatars.com/api/?name=Juan+Carlos+Alvarez&size=400&background=1e293b&color=d4af37&bold=true',
+        'image': '/assets/images/abaut/juancarlosalvarez.jpeg',
         'email': '',
         'linkedin': '#',
         'github': '#'

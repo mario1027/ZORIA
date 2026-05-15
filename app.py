@@ -2496,8 +2496,8 @@ def main():
         app.run(
             host=config["host"],
             port=config["port"],
-            debug=config["debug"],
-            use_reloader=config["use_reloader"]
+            debug=False,
+            use_reloader=False
         )
         
     except KeyboardInterrupt:

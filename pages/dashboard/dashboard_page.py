@@ -640,7 +640,7 @@ def sweep_worker(config):
         average = config.get('average', 1)
         mdelay = config['mdelay']
         tdelay = config['tdelay']
-        magnitude = config.get('magnitude', 1.0)  # Valor por defecto 1.0V
+        magnitude = config.get('magnitude', 0.2)  # Valor por defecto 0.2V (menor saturación)
         configured_magnitude = None
         total_stream_points = points * trigger_count if trigger_enabled else points
 
@@ -726,7 +726,71 @@ def sweep_worker(config):
                 # frecuencia más baja del rango para evitar timeouts a bajas frecuencias.
                 BASE_MAX_SEG = max_points_per_segment(start)
 
-                if points <= BASE_MAX_SEG:
+                # SEGMENTACIÓN ADAPTATIVA POR GANANCIA (escala logarítmica):
+                # El ADMX2001 solo auto-rangea la ganancia para el PRIMER punto del sweep.
+                # Si el span cubre más de MAX_DECADES_PER_GAIN_SEG décadas, la impedancia
+                # puede cambiar varios órdenes de magnitud, saturando el ADC en parte del
+                # rango. Solución: forzar segmentos de ≤ MAX_DECADES_PER_GAIN_SEG décadas y
+                # sondear la ganancia óptima antes de cada segmento.
+                MAX_DECADES_PER_GAIN_SEG = 1.5
+                if scale == 'log' and end > start:
+                    total_decades = np.log10(end) - np.log10(start)
+                    _force_gain_split = total_decades > MAX_DECADES_PER_GAIN_SEG
+                else:
+                    total_decades = 0.0
+                    _force_gain_split = False
+
+                if _force_gain_split:
+                    # Crear bordes de segmentos equidistantes en escala log
+                    n_gain_segs = max(1, int(np.ceil(total_decades / MAX_DECADES_PER_GAIN_SEG)))
+                    gain_seg_edges = np.logspace(np.log10(start), np.log10(end), n_gain_segs + 1)
+                    print(f"Barrido adaptativo por ganancia: {points} pts → "
+                          f"{n_gain_segs} segmentos de ≤{MAX_DECADES_PER_GAIN_SEG:.1f} déc/seg")
+
+                    # Distribuir puntos proporcionalmente en escala log
+                    pts_per_gain_seg: list[tuple[float, float, int]] = []
+                    remaining_pts = points
+                    for i in range(n_gain_segs - 1):
+                        gs_s = float(gain_seg_edges[i])
+                        gs_e = float(gain_seg_edges[i + 1])
+                        frac = (np.log10(gs_e) - np.log10(gs_s)) / total_decades
+                        gs_pts = max(2, int(round(points * frac)))
+                        pts_per_gain_seg.append((gs_s, gs_e, gs_pts))
+                        remaining_pts -= gs_pts
+                    pts_per_gain_seg.append(
+                        (float(gain_seg_edges[-2]), float(gain_seg_edges[-1]),
+                         max(2, remaining_pts))
+                    )
+
+                    # Aplicar límite BASE_MAX_SEG dentro de cada segmento de ganancia
+                    segments = []
+                    for gs_idx, (gs_start, gs_end, gs_pts) in enumerate(pts_per_gain_seg):
+                        gs_base_max = max_points_per_segment(gs_start)
+                        print(f"  Ganancia-seg {gs_idx+1}/{n_gain_segs}: "
+                              f"{gs_start:.4g}–{gs_end:.4g} Hz ({gs_pts} pts)")
+                        if gs_pts <= gs_base_max:
+                            if gs_pts == 1 and segments:
+                                prev = segments[-1]
+                                segments[-1] = (prev[0], gs_end, prev[2] + 1)
+                            else:
+                                segments.append((gs_start, gs_end, gs_pts))
+                        else:
+                            # Sub-split este segmento de ganancia por conteo
+                            n_sub = (gs_pts + gs_base_max - 1) // gs_base_max
+                            sub_freqs = np.logspace(np.log10(gs_start), np.log10(gs_end), gs_pts)
+                            for j in range(n_sub):
+                                sub_s_idx = j * gs_base_max
+                                sub_e_idx = min((j + 1) * gs_base_max, gs_pts)
+                                sub_pts = sub_e_idx - sub_s_idx
+                                sub_s = float(sub_freqs[sub_s_idx])
+                                sub_e = float(sub_freqs[sub_e_idx - 1])
+                                if sub_pts == 1 and segments:
+                                    prev = segments[-1]
+                                    segments[-1] = (prev[0], sub_e, prev[2] + 1)
+                                else:
+                                    segments.append((sub_s, sub_e, sub_pts))
+
+                elif points <= BASE_MAX_SEG:
                     print(f"Barrido simple: {points} puntos")
                     segments = [(start, end, points)]
                 else:
@@ -767,6 +831,15 @@ def sweep_worker(config):
                     if len(segments) > 1:
                         print(f"Ejecutando segmento {seg_idx+1}/{len(segments)}: {seg_start:.1f}-{seg_end:.1f} Hz, {seg_points} puntos")
 
+                    # === GANANCIA: setgain auto para cada segmento ===
+                    # El firmware auto-rangea el primer punto de cada sweep.
+                    # Para segmentos pequeños (≤1.5 décadas) el cambio de |Z| es
+                    # controlado y setgain auto suele ser suficiente.
+                    try:
+                        device_state.device.set_gain_auto()
+                    except Exception:
+                        pass
+
                     print(f"CONFIGURANDO SWEEP:")
                     print(f"   Tipo: FREQUENCY")
                     print(f"   Start: {seg_start:.1f} Hz ({seg_start/1000:.3f} kHz)")
@@ -802,6 +875,8 @@ def sweep_worker(config):
                     segment_start_point = sum(seg[2] for seg in segments[:seg_idx]) + ((run_index - 1) * points)
 
                     point_counter = [0]
+                    last_valid_point = [None]  # Guarda el último punto válido recibido
+
                     def process_point_realtime(point):
                         try:
                             freq_hz = point['sweep_value']
@@ -814,13 +889,18 @@ def sweep_worker(config):
                                 phase = np.arctan2(z_imag, z_real)
                                 device_state.add_sweep_point(freq_hz, z_real, z_imag, z_mag, phase)
 
+                                # Guardar el último punto válido para posible reintento
+                                last_valid_point[0] = {
+                                    'freq': freq_hz, 'z_real': z_real, 'z_imag': z_imag,
+                                    'z_mag': z_mag, 'phase': phase
+                                }
+
                                 point_counter[0] += 1
                                 if point_counter[0] % 10 == 0 or point_counter[0] == 1:
                                     print(f"[Real-time Callback] Punto {point_counter[0]} procesado y enviado al buffer")
                         except Exception as e:
                             print(f"Error procesando punto en tiempo real: {e}")
 
-                    import time
                     import threading
 
                     segment_results = None
@@ -841,60 +921,89 @@ def sweep_worker(config):
 
                     acq_thread = threading.Thread(target=acquire_segment, daemon=True)
                     acq_thread.start()
-                    acq_thread.join()
+                    # Timeout en join para evitar bloqueo infinito si perform_sweep se cuelga
+                    join_timeout = sweep_timeout + 30
+                    acq_thread.join(timeout=join_timeout)
 
-                    if segment_exception[0] is not None:
+                    if acq_thread.is_alive():
+                        # El thread no terminó en el tiempo esperado — forzar continuación
+                        print(f"⚠️ Seg {seg_idx+1}: timeout de adquisición ({join_timeout}s). Omitiendo segmento.")
+                        segment_results = []
+                    elif segment_exception[0] is not None:
                         error_text = str(segment_exception[0]).lower()
                         is_saturation_error = ('saturat' in error_text) or ('measurement failed' in error_text)
 
                         if is_saturation_error:
-                            # Reintentos adaptativos: reducir magnitud 50% por intento hasta 4 veces
-                            MAX_SAT_RETRIES = 4
-                            last_sat_exc = segment_exception[0]
+                            # === REINTENTO POR SATURACIÓN: ajustar GANANCIA según impedancia medida ===
+                            print(f"⚠️ Saturación seg {seg_idx+1}. Ajustando ganancia según última impedancia válida...")
+
+                            # Revertir puntos parciales del buffer
+                            partial_pts = point_counter[0]
+                            if partial_pts > 0:
+                                device_state.rollback_sweep_points(partial_pts)
+                                print(f"  Rollback: {partial_pts} puntos parciales eliminados del buffer")
+                            point_counter[0] = 0
+
+                            # Determinar ganancia según el último punto válido recibido
+                            # antes de la saturación (la sonda con measure() falla tras un
+                            # sweep con error porque el dispositivo queda en estado inconsistente)
                             sat_retry_ok = False
+                            try:
+                                if last_valid_point[0] is not None:
+                                    _probe_z = last_valid_point[0]['z_mag']
+                                else:
+                                    # Fallback: usar el primer punto del segmento si disponible
+                                    _probe_z = 1000.0  # valor conservador medio
+                                    print(f"  [Reintento] No hay punto válido previo — usando Z=1000Ω como fallback")
 
-                            for sat_attempt in range(1, MAX_SAT_RETRIES + 1):
-                                next_magnitude = configured_magnitude * (0.5 ** sat_attempt)
-                                if next_magnitude < 0.01:
-                                    print(f"  Magnitud {next_magnitude:.4f}V < 0.01V mínimo — deteniendo reintentos")
-                                    break
+                                _seg_rng = device_state.device.recommend_impedance_range(_probe_z)
+                                _ch0, _ch1 = _seg_rng.value
+                                device_state.device.set_gain_manual(_ch0, _ch1)
+                                print(f"  [Reintento] Último |Z|={_probe_z:.2f}Ω → {_seg_rng.name} → ch0={_ch0}, ch1={_ch1}")
 
-                                # Revertir puntos parciales del intento fallido del buffer en tiempo real
-                                partial_pts = point_counter[0]
-                                if partial_pts > 0:
-                                    device_state.rollback_sweep_points(partial_pts)
-                                    print(f"  Rollback: {partial_pts} puntos parciales eliminados del buffer")
-                                point_counter[0] = 0
+                                # Reconfigurar sweep con la ganancia fijada manualmente
+                                device_state.device.configure_sweep(
+                                    SweepType.FREQUENCY,
+                                    seg_start / 1000,
+                                    seg_end / 1000,
+                                    sweep_scale,
+                                    seg_points
+                                )
 
-                                configured_magnitude = next_magnitude
-                                print(f"⚠️ Saturación seg {seg_idx+1}, intento {sat_attempt}/{MAX_SAT_RETRIES}: magnitud → {configured_magnitude:.4f}V")
+                                # Ejecutar sweep de reintento con timeout controlado
+                                retry_exception = [None]
+                                retry_results = None
+                                retry_complete = threading.Event()
 
-                                try:
-                                    device_state.device.set_gain_auto()
-                                    device_state.device.set_magnitude(configured_magnitude)
-                                    device_state.device.configure_sweep(
-                                        SweepType.FREQUENCY,
-                                        seg_start / 1000,
-                                        seg_end / 1000,
-                                        sweep_scale,
-                                        seg_points
-                                    )
-                                    segment_results = device_state.device.perform_sweep(
-                                        timeout=sweep_timeout,
-                                        point_callback=process_point_realtime
-                                    )
+                                def retry_acquire():
+                                    nonlocal retry_results
+                                    try:
+                                        retry_results = device_state.device.perform_sweep(
+                                            timeout=sweep_timeout,
+                                            point_callback=process_point_realtime
+                                        )
+                                    except Exception as e:
+                                        retry_exception[0] = e
+                                    finally:
+                                        retry_complete.set()
+
+                                retry_thread = threading.Thread(target=retry_acquire, daemon=True)
+                                retry_thread.start()
+                                retry_thread.join(timeout=join_timeout)
+
+                                if retry_thread.is_alive():
+                                    print(f"⚠️ Seg {seg_idx+1}: reintento hizo timeout. Omitiendo segmento.")
+                                elif retry_exception[0] is not None:
+                                    print(f"⚠️ Seg {seg_idx+1}: reintento falló: {retry_exception[0]}. Omitiendo segmento.")
+                                else:
+                                    segment_results = retry_results
                                     sat_retry_ok = True
-                                    print(f"✅ Recuperado de saturación en seg {seg_idx+1} tras {sat_attempt} intento(s). Magnitud: {configured_magnitude:.4f}V")
-                                    break
-                                except Exception as sat_exc:
-                                    last_sat_exc = sat_exc
-                                    sat_err = str(sat_exc).lower()
-                                    if 'saturat' not in sat_err and 'measurement failed' not in sat_err:
-                                        raise sat_exc  # Error distinto, propagar
+                                    print(f"✅ Recuperado de saturación en seg {seg_idx+1} con ganancia {_seg_rng.name}.")
+
+                            except Exception as _probe_err:
+                                print(f"⚠️ Seg {seg_idx+1}: reintento fallido ({_probe_err}). Omitiendo segmento.")
 
                             if not sat_retry_ok:
-                                # Saturación persistente tras todos los intentos — omitir segmento
-                                print(f"⚠️ Seg {seg_idx+1}: saturación persistente tras {MAX_SAT_RETRIES} intentos. Segmento omitido, continuando.")
                                 segment_results = []
                         else:
                             raise segment_exception[0]
@@ -1026,6 +1135,8 @@ def sweep_worker(config):
         sweep_queue.put({'error': True, 'message': str(e), 'phase': sweep_phase})
     
     finally:
+        # Garantizar que el streaming quede marcado como terminado en cualquier caso
+        device_state.end_sweep_streaming()
         # Liberar lock de operación
         device_state._operation_lock.release()
         print("Lock de operación liberado")
@@ -2322,9 +2433,12 @@ setTimeout(function() {
                             streaming_interval_disabled = True  # Detener streaming
                             modal_close_interval_disabled = True  # No necesita cerrar (ya cerrado)
                             
-                            # Detener sweep streaming
+                            # Detener sweep streaming y limpiar datos parciales
                             device_state.end_sweep_streaming()
-                            print(f"Error en sweep - modal cerrado, intervals detenidos")
+                            stored_data = {'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}
+                            bode_fig = create_empty_figure(theme=theme)
+                            nyquist_fig = create_empty_figure(theme=theme)
+                            print(f"Error en sweep - modal cerrado, intervals detenidos, datos parciales limpiados")
 
                     except Exception as e:
                         # Si hay error procesando el mensaje, simplemente mantener estado actual
@@ -3342,11 +3456,12 @@ True, [html.I(className="fas fa-check-circle me-2"), i18n_t('conn.connected')],
         
         print(f"[Sweep Poll] Actualizando gráficos con {len(new_points)} nuevos puntos")
 
-        # Limpiar datos previos EXACTAMENTE al entrar el primer punto del nuevo sweep
-        # El primer punto siempre llega con index == 0 (reseteado en start_sweep_streaming)
+        # Limpiar datos previos SIEMPRE que llegue el primer punto (index==0) de un nuevo sweep.
+        # No condicionar a que current_data tenga datos — así se elimina la race condition entre
+        # manage_sweep (que limpia stored_data) y poll_sweep_streaming (que lee el State).
         first_point_of_new_sweep = any(point.get('index') == 0 for point in new_points)
-        if first_point_of_new_sweep and len(current_data.get('param', [])) > 0:
-            print(f"[Sweep Poll] Primer punto detectado (index=0) - limpiando {len(current_data['param'])} datos previos")
+        if first_point_of_new_sweep:
+            print(f"[Sweep Poll] Primer punto (index=0) — limpiando {len(current_data.get('param', []))} puntos previos")
             current_data = {'param': [], 'z_real': [], 'z_imag': [], 'z_mag': [], 'phase': []}
         
         # Agregar nuevos puntos a los datos actuales
@@ -3356,6 +3471,12 @@ True, [html.I(className="fas fa-check-circle me-2"), i18n_t('conn.connected')],
             current_data['z_imag'].append(point['z_imag'])
             current_data['z_mag'].append(point['z_mag'])
             current_data['phase'].append(point['phase'])
+        
+        # Garantizar orden por frecuencia ascendente (defensivo ante retries/segmentos)
+        if len(current_data['param']) > 1:
+            sorted_idx = sorted(range(len(current_data['param'])), key=lambda i: current_data['param'][i])
+            for key in current_data:
+                current_data[key] = [current_data[key][i] for i in sorted_idx]
         
         print(f"[Sweep Poll] Total de puntos en gráficos: {len(current_data['param'])}")
         
