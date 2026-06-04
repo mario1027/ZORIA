@@ -5,8 +5,15 @@ Permite que todas las páginas accedan al dispositivo conectado.
 import threading
 import time
 import logging
+from typing import Callable, List, Optional, Set
 
 logger = logging.getLogger(__name__)
+
+# Dueños permitidos por sesión exclusiva (el ADMX2001 procesa una solicitud a la vez)
+_EXCLUSIVE_ALLOWED_OWNERS = {
+    'terminal': frozenset({'terminal', 'terminal_streaming'}),
+    'calibration_wizard': frozenset({'calibration_wizard'}),
+}
 
 class DeviceState:
     """Singleton para mantener el estado del dispositivo"""
@@ -25,6 +32,10 @@ class DeviceState:
                     cls._instance._port_info = None
                     cls._instance._connection_errors = 0
                     cls._instance._operation_lock = threading.Lock()  # Lock para operaciones de I/O
+                    cls._instance._operation_lock_owner = None
+                    cls._instance._exclusive_session = None  # None | 'terminal' | 'calibration_wizard'
+                    cls._instance._exclusive_lock = threading.Lock()
+                    cls._instance._halt_callbacks: List[Callable[[], None]] = []
                     # Streaming de comandos en tiempo real
                     cls._instance._streaming_buffer = []  # Buffer de líneas que van llegando
                     cls._instance._streaming_lock = threading.Lock()
@@ -78,8 +89,68 @@ class DeviceState:
     def register_callback(self, callback):
         """Registra un callback para cambios de estado"""
         self._callbacks.append(callback)
-    
-    def verify_connection(self, force=False):
+
+    def register_halt_callback(self, callback: Callable[[], None]) -> None:
+        """Registra función para detener barridos u otras tareas en segundo plano."""
+        if callback not in self._halt_callbacks:
+            self._halt_callbacks.append(callback)
+
+    def get_exclusive_session(self) -> Optional[str]:
+        """Sesión que reserva el puerto: terminal, calibration_wizard o None."""
+        with self._exclusive_lock:
+            return self._exclusive_session
+
+    def is_background_io_allowed(self) -> bool:
+        """True si monitor, barridos y autoconexión pueden usar el puerto."""
+        return self.get_exclusive_session() is None
+
+    def is_owner_allowed(self, owner: str) -> bool:
+        """Comprueba si el dueño puede acceder al puerto en la sesión actual."""
+        session = self.get_exclusive_session()
+        if session is None:
+            return True
+        allowed: Set[str] = set(_EXCLUSIVE_ALLOWED_OWNERS.get(session, ()))
+        return owner in allowed
+
+    def _halt_background_operations(self) -> None:
+        """Detiene streaming CLI y solicita parada de barridos u otras tareas."""
+        self.prepare_exclusive_access(stop_streaming_timeout=8.0)
+        for callback in self._halt_callbacks:
+            try:
+                callback()
+            except Exception as exc:
+                logger.warning(f"[DeviceState] halt callback falló: {exc}")
+
+    def force_exclusive_session(self, mode: str) -> None:
+        """
+        Reserva el puerto para terminal CLI o wizard de calibración.
+        Detiene peticiones en paralelo (monitor *idn, barridos, etc.).
+        """
+        if mode not in _EXCLUSIVE_ALLOWED_OWNERS:
+            raise ValueError(f"Sesión exclusiva desconocida: {mode}")
+        previous = self.get_exclusive_session()
+        with self._exclusive_lock:
+            if self._exclusive_session != mode:
+                logger.info(
+                    f"[DeviceState] Sesión exclusiva: {self._exclusive_session!r} → {mode!r}"
+                )
+                self._exclusive_session = mode
+        if previous != mode:
+            self._halt_background_operations()
+
+    def release_exclusive_session(self, mode: str) -> None:
+        """Libera la reserva si coincide con la sesión activa."""
+        with self._exclusive_lock:
+            if self._exclusive_session == mode:
+                logger.info(f"[DeviceState] Sesión exclusiva liberada: {mode}")
+                self._exclusive_session = None
+
+    def _cached_connection_status(self):
+        connected = self._is_connected.is_set()
+        msg = "Conectado" if connected else "Desconectado"
+        return connected, msg, self._port_info
+
+    def verify_connection(self, force=False, owner='connection_monitor'):
         """
         Verifica activamente si el dispositivo sigue conectado y respondiendo.
         
@@ -89,22 +160,22 @@ class DeviceState:
         Returns:
             tuple: (is_connected: bool, status_message: str, port: str)
         """
+        if not self.is_owner_allowed(owner):
+            return self._cached_connection_status()
+
         # Caché de verificación (no verificar más de una vez por segundo)
         now = time.time()
         if not force and (now - self._last_check) < 1.0:
-            return (self._is_connected.is_set(), 
-                    "Conectado" if self._is_connected.is_set() else "Desconectado",
-                    self._port_info)
+            return self._cached_connection_status()
         
         # Intentar obtener el lock - si hay otra operación en curso, usar estado cacheado
         if not self._operation_lock.acquire(blocking=False):
             # Hay otra operación en curso (ej: sweep), retornar estado actual sin verificar
-            return (self._is_connected.is_set(), 
-                    "Conectado" if self._is_connected.is_set() else "Desconectado",
-                    self._port_info)
+            return self._cached_connection_status()
         
         try:
             self._last_check = now
+            self._operation_lock_owner = owner
             
             # Si no hay dispositivo, claramente no está conectado
             if not self._device:
@@ -123,9 +194,8 @@ class DeviceState:
                         self._connection_errors += 1
                         return False, "Puerto cerrado", self._port_info
                 
-                # Verificación rápida: enviar un comando simple
-                # Usar timeout corto para no bloquear el monitor
-                response = self._device.send_command('*idn')
+                # Verificación rápida: timeout corto para no bloquear el CLI/calibración
+                response = self._device.send_command('*idn', timeout=2.0)
                 logger.debug(f"[Monitor] *idn respuesta: {len(response) if response else 0} líneas")
                 
                 if response and len(response) > 0:
@@ -158,47 +228,73 @@ class DeviceState:
                 return self._is_connected.is_set(), "Error de comunicación", self._port_info
         
         finally:
+            self._operation_lock_owner = None
             self._operation_lock.release()
     
-    def send_command(self, command, timeout=None, lock_timeout=90.0):
+    def prepare_exclusive_access(self, stop_streaming_timeout: float = 8.0) -> None:
+        """Detiene streaming CLI residual antes de comandos exclusivos (p. ej. calibrate)."""
+        if self._command_in_progress:
+            logger.info("[DeviceState] Deteniendo streaming antes de comando exclusivo...")
+            self.stop_streaming_command(wait_timeout=stop_streaming_timeout)
+
+    def send_command(
+        self,
+        command,
+        timeout=None,
+        lock_timeout=90.0,
+        preempt_streaming=True,
+        owner='background',
+    ):
         """
         Envía un comando al dispositivo si está conectado.
         
         Args:
             command: Comando a enviar
             timeout: Timeout opcional para este comando (en segundos)
+            lock_timeout: Segundos máximos esperando el mutex del puerto
+            preempt_streaming: Si True, intenta detener streaming CLI previo
+            owner: Identificador del solicitante (terminal, calibration_wizard, ...)
         """
         if not self._device or not self._is_connected.is_set():
             raise ConnectionError("Dispositivo no conectado")
 
-        # Si hay streaming activo, solicitar stop antes de enviar otro comando
+        if not self.is_owner_allowed(owner):
+            session = self.get_exclusive_session()
+            raise TimeoutError(
+                f"Puerto reservado para {session}. "
+                f"Cierre el {'wizard de calibración' if session == 'calibration_wizard' else 'terminal CLI'} "
+                f"o espere a que termine."
+            )
+
         cmd_lower = (command or "").strip().lower()
-        if cmd_lower and cmd_lower != 'stop' and self._command_in_progress:
-            self.stop_streaming_command(wait_timeout=3.0)
-        
-        # Usar lock para evitar comandos simultáneos
-        # Timeout muy largo (90s) para dar tiempo a comandos lentos + overhead
-        # (comandos pueden tardar hasta 60s con averaging alto)
+        if preempt_streaming and cmd_lower and cmd_lower != 'stop' and self._command_in_progress:
+            self.prepare_exclusive_access()
+
         if not self._operation_lock.acquire(blocking=True, timeout=lock_timeout):
-            raise TimeoutError("No se pudo obtener acceso al dispositivo (ocupado)")
-        
+            lock_owner = getattr(self, '_operation_lock_owner', None)
+            session = self.get_exclusive_session()
+            detail = f" (lock: {lock_owner})" if lock_owner else ""
+            session_hint = f" [sesión: {session}]" if session else ""
+            raise TimeoutError(
+                f"No se pudo obtener acceso al dispositivo (ocupado){detail}{session_hint}"
+            )
+
+        self._operation_lock_owner = owner or cmd_lower or command
         try:
             logger.info(f"[DeviceState] >>> Enviando: '{command}'")
-            
-            # Pasar timeout al dispositivo si se especificó
+
             if timeout:
                 response = self._device.send_command(command, timeout=timeout)
             else:
                 response = self._device.send_command(command)
-                
+
             logger.info(f"[DeviceState] <<< Respuesta: {len(response) if response else 0} líneas")
-            # Log de las primeras líneas para debug
             if response:
                 for i, line in enumerate(response[:5]):
                     logger.info(f"[DeviceState]     Línea {i}: '{line.strip()}'")
                 if len(response) > 5:
                     logger.info(f"[DeviceState]     ... y {len(response)-5} líneas más")
-            self._connection_errors = 0  # Reset en comando exitoso
+            self._connection_errors = 0
             return response
         except Exception as e:
             self._connection_errors += 1
@@ -207,15 +303,20 @@ class DeviceState:
                 self._is_connected.clear()
             raise e
         finally:
+            self._operation_lock_owner = None
             self._operation_lock.release()
     
-    def start_streaming_command(self, command, timeout=None):
+    def start_streaming_command(self, command, timeout=None, owner='terminal_streaming'):
         """
         Inicia un comando en modo streaming.
         Las líneas se van agregando al buffer a medida que llegan.
         """
         if not self._device or not self._is_connected.is_set():
             raise ConnectionError("Dispositivo no conectado")
+
+        if not self.is_owner_allowed(owner):
+            session = self.get_exclusive_session() or 'otra sesión'
+            raise TimeoutError(f"Streaming bloqueado: puerto reservado para {session}")
         
         # Limpiar buffer anterior
         with self._streaming_lock:
@@ -228,6 +329,16 @@ class DeviceState:
         # Iniciar comando en un thread separado
         def _execute_streaming():
             try:
+                if not self.is_owner_allowed(owner):
+                    with self._streaming_lock:
+                        self._streaming_buffer.append({
+                            'type': 'error',
+                            'line': f'Puerto reservado para {self.get_exclusive_session()}'
+                        })
+                        self._command_in_progress = False
+                        self._streaming_complete.set()
+                    return
+
                 if not self._operation_lock.acquire(blocking=True, timeout=30.0):
                     with self._streaming_lock:
                         self._streaming_buffer.append({
@@ -239,6 +350,7 @@ class DeviceState:
                     return
                 
                 try:
+                    self._operation_lock_owner = owner
                     logger.info(f"[Streaming] >>> Iniciando: '{command}'")
                     
                     # Enviar comando
@@ -378,6 +490,7 @@ class DeviceState:
                         })
                     self._connection_errors += 1
                 finally:
+                    self._operation_lock_owner = None
                     self._operation_lock.release()
             finally:
                 with self._streaming_lock:
@@ -482,17 +595,12 @@ class DeviceState:
                 'index': self._sweep_current_point
             })
             self._sweep_current_point += 1
-            # Log cada 10 puntos para no saturar
-            if self._sweep_current_point % 10 == 0 or self._sweep_current_point == 1:
-                logger.info(f"[Sweep Buffer] Punto {self._sweep_current_point}/{self._sweep_total_points} agregado ({len(self._sweep_buffer)} en buffer)")
-    
+
     def get_sweep_points(self):
         """Obtiene nuevos puntos del buffer sweep y los elimina."""
         with self._sweep_lock:
             points = self._sweep_buffer.copy()
             self._sweep_buffer.clear()
-            if points:
-                logger.info(f"[Sweep GET] Recuperando {len(points)} puntos del buffer")
             return points
     
     def get_sweep_progress(self):

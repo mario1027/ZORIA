@@ -124,15 +124,14 @@ ZORIA_THEME = {
 
 
 def get_theme(theme_name: str = 'dark') -> dict:
-    """Retorna el diccionario de tokens para el tema indicado.
-
-    Args:
-        theme_name: 'dark' o 'light'
-
-    Returns:
-        Diccionario con todos los tokens del tema.
-    """
-    return ZORIA_THEME.get(theme_name, ZORIA_THEME['dark'])
+    """Retorna el diccionario de tokens para el tema indicado."""
+    if theme_name in ZORIA_THEME:
+        return ZORIA_THEME[theme_name]
+    if isinstance(theme_name, str):
+        lowered = theme_name.strip().lower()
+        if lowered in ZORIA_THEME:
+            return ZORIA_THEME[lowered]
+    return ZORIA_THEME['dark']
 
 
 def create_empty_figure(title: str = None, theme: str = 'dark', hint: bool = False) -> 'go.Figure':

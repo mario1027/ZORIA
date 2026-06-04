@@ -121,7 +121,7 @@ def footer():
                                                     html.I(className="fas fa-book-open me-3 footer-icon"),
                                                     html.Span("Wiki Analog")
                                                 ],
-                                                href="https://wiki.analog.com/eval-admx2001",
+                                                href="https://wiki.analog.com/resources/eval/user-guides/admx/eval-admx2001ebz",
                                                 target="_blank",
                                                 className="footer-link"
                                             )

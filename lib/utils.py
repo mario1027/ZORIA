@@ -12,7 +12,7 @@ import math
 import logging
 import os
 import numpy as np
-from typing import List, Optional, Tuple, Dict, Any
+from typing import List, Optional, Tuple, Dict, Any, Union
 from .exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
@@ -368,11 +368,45 @@ def calculate_dut_current(magnitude: float, impedance: float) -> float:
     return magnitude / (impedance + TOTAL_SERIES_RESISTANCE)
 
 
+def resolve_impedance_range(impedance: float) -> 'ImpedanceRange':
+    """
+    Resuelve el rango de impedancia de la tabla oficial (ImpedanceRange).
+
+    Umbrales alineados con la página de documentación y el enum ImpedanceRange.
+    Entre 50 Ω y 100 Ω se mantiene CH0=1, CH1=0 (mismo rango que < 50 Ω).
+    """
+    from .enums import ImpedanceRange
+
+    z = max(float(impedance), 0.1)
+    if z < 10:
+        return ImpedanceRange.UNDER_10_OHM
+    if z < 25:
+        return ImpedanceRange.UNDER_25_OHM
+    if z < 50:
+        return ImpedanceRange.UNDER_50_OHM
+    if z < 100:
+        return ImpedanceRange.UNDER_50_OHM
+    # Hasta ~1.1 kΩ: (0,0). El firmware con setgain auto suele elegir (0,1) en el límite.
+    if z <= 1100:
+        return ImpedanceRange.RANGE_100_1K
+    if z < 10000:
+        return ImpedanceRange.RANGE_1K_10K
+    if z < 100000:
+        return ImpedanceRange.RANGE_10K_100K
+    return ImpedanceRange.OVER_100K
+
+
+def gain_settings_from_impedance_table(impedance: float) -> Tuple[int, int]:
+    """Devuelve (ch0_gain, ch1_gain) según la tabla de rangos de impedancia."""
+    return resolve_impedance_range(impedance).value
+
+
 def recommend_gain_settings(impedance: float, magnitude: float = 1.0, offset: float = 0.0) -> Tuple[int, int]:
     """
-    Recomienda configuración de ganancia basada en impedancia estimada.
-    
-    Sigue las tablas de la documentación oficial.
+    Recomienda ganancia según corriente y voltaje esperados en el DUT.
+
+    Para la tabla de rangos por Ω (calibración, wizard), usar
+    gain_settings_from_impedance_table().
     
     Args:
         impedance: Impedancia estimada del DUT (Ohms)
@@ -416,6 +450,79 @@ def recommend_gain_settings(impedance: float, magnitude: float = 1.0, offset: fl
     return (ch0_gain, ch1_gain)
 
 
+def normalize_cli_command(command: str) -> tuple:
+    """
+    Limpia el comando CLI antes de enviarlo al ADMX2001.
+
+    Corrige artefactos comunes del teclado (p. ej. ``calibrate open+``).
+
+    Returns:
+        (comando_normalizado, mensaje_aviso o None)
+    """
+    import re
+
+    original = (command or "").strip()
+    if not original:
+        return original, None
+
+    normalized = original
+    warning = None
+
+    stripped = re.sub(r'[+\-,;]+$', '', normalized).strip()
+    if stripped != normalized:
+        normalized = stripped
+        warning = (
+            f"Comando corregido: se quitaron caracteres finales inválidos "
+            f"({original!r} → {normalized!r})"
+        )
+
+    corrections = (
+        (re.compile(r'^calibrate\s+open\+*$', re.IGNORECASE), 'calibrate open'),
+        (re.compile(r'^calibrate\s+short\+*$', re.IGNORECASE), 'calibrate short'),
+    )
+    for pattern, replacement in corrections:
+        if pattern.fullmatch(normalized):
+            if normalized.lower() != replacement:
+                normalized = replacement
+                warning = (
+                    f"Comando corregido a {replacement!r} "
+                    f"(entrada: {original!r})"
+                )
+            break
+
+    return normalized, warning
+
+
+def format_calibrate_load_command(r_ohms: float, x_ohms: float) -> str:
+    """Formatea ``calibrate rt … xt …`` como espera el firmware ADMX2001."""
+
+    def _fmt(value: float) -> str:
+        if value == 0.0:
+            return "0"
+        if abs(value) < 0.001 or abs(value) > 1e6:
+            return f"{value:.6e}"
+        if float(value).is_integer():
+            return str(int(value))
+        return f"{value:g}"
+
+    return f"calibrate rt {_fmt(r_ohms)} xt {_fmt(x_ohms)}"
+
+
+def strip_serial_terminal_noise(data: Union[str, bytes]) -> str:
+    """
+    Quita ruido del terminal serie del EVAL-ADMX2001 (eco local con VT100).
+
+    El firmware a veces devuelve el eco del comando con ESC 7 + ESC 8 entre
+    cada carácter (save/restore cursor), p. ej. ``c\\x1b7\\x1b8a\\x1b7\\x1b8l...``
+    """
+    if isinstance(data, bytes):
+        text = data.decode('utf-8', errors='ignore')
+    else:
+        text = data or ''
+    text = re.sub(r'\x1b7\x1b8', '', text)
+    return text
+
+
 def clean_response_line(line: str, preserve_indent: bool = False) -> str:
     """
     Limpia una línea de respuesta del dispositivo (MEJORADO estilo TeraTerm).
@@ -435,6 +542,8 @@ def clean_response_line(line: str, preserve_indent: bool = False) -> str:
     Returns:
         Línea limpia
     """
+    line = strip_serial_terminal_noise(line)
+
     # 1. Remover códigos ANSI estándar (secuencias de escape complejas)
     ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
     line = ansi_escape.sub('', line)

@@ -2,7 +2,7 @@
 ZORIA Documentation Page - Diseño Premium con Contenido Completo
 Documentación completa con navegación tipo cards y todo el contenido original
 """
-from dash import html, dcc, register_page
+from dash import html, dcc
 from dash_spa import register_page
 
 # Importar componentes comunes
@@ -20,176 +20,184 @@ register_page(
 )
 
 
-# ==================== IMÁGENES ====================
+# ==================== IMÁGENES (local + wiki Analog Devices) ====================
+_WIKI = '/assets/images/documentation/wiki'
 IMAGES = {
-    'basic_connections': '/assets/images/documentation/basic_connections.png',
-    'open_load': '/assets/images/documentation/open_load.png',
-    'bnc_load': '/assets/images/documentation/bnc_load.png',
-    'photo_setup': '/assets/images/documentation/photo_setup.jpg',
-    'cal_connections': '/assets/images/documentation/cal_connections.jpg',
-    'open_config_clips': '/assets/images/documentation/open_config_clips.png',
-    'uart_connection': '/assets/images/documentation/uart_connection.jpg',
-    'dev_mgr_vcp': '/assets/images/documentation/dev_mgr_vcp.png',
+    'basic_connections': f'{_WIKI}/eval-admx2001ebz_basic_connections_labeled.png',
+    'open_load': f'{_WIKI}/open_load.png',
+    'bnc_load': f'{_WIKI}/bnc_load.png',
+    'photo_setup': f'{_WIKI}/photo_setup_labeled.jpg',
+    'cal_connections': f'{_WIKI}/cal_connections_5.jpg',
+    'open_config_clips': f'{_WIKI}/open_config_test_clips_2.png',
+    'uart_connection': f'{_WIKI}/img_0937.jpg',
+    'dev_mgr_vcp': f'{_WIKI}/dev_mgr_vcp_installed.png',
+    'help_cli': f'{_WIKI}/help_command_printout_teraterm.png',
+    'help_display': f'{_WIKI}/help_display_teraterm.png',
+    'channels': f'{_WIKI}/Source_and_measurement_channels_v3_renumbered.png',
+    'reactance_chart': f'{_WIKI}/reactance_chart_labeled.jpg',
+    'timing': f'{_WIKI}/command_timing_diagram.png',
+    'trigger_mode': f'{_WIKI}/trigger_mode.png',
+    'measurement_time': f'{_WIKI}/measurement_time.png',
+    'osl_config': f'{_WIKI}/open_short_load_config.png',
+    'osl_photo': f'{_WIKI}/open_short_load_config_photo.png',
+    'cal_boundary': f'{_WIKI}/calibration_compensation_boundary_2.png',
+    'board_diagram': f'{_WIKI}/eval-admx2001ebz_diagram_3.png',
+    'pinout': f'{_WIKI}/admx2001b_pinout_top.png',
 }
 
 
 # ==================== COMPONENTES AUXILIARES ====================
 
-def info_box(content, type="info"):
-    """Caja de información estilizada — token-based, dual-theme"""
-    colors = {
-        "info": ("var(--z-color-info-subtle)", "var(--z-color-primary)", "var(--z-color-info-border)"),
-        "warning": ("var(--z-color-warning-subtle)", "var(--z-color-warning)", "var(--z-color-warning)"),
-        "danger": ("var(--z-color-danger-subtle)", "var(--z-color-danger)", "var(--z-color-danger)"),
-        "success": ("var(--z-color-success-subtle)", "var(--z-color-success)", "var(--z-color-success)"),
-        "tip": ("var(--z-color-warning-subtle)", "var(--z-color-warning)", "var(--z-footer-accent)")
+def info_box(content, type="info", anchor_id=None):
+    """Caja de información estilizada — clases CSS doc-callout."""
+    type_map = {
+        "info": "doc-callout--info",
+        "warning": "doc-callout--warning",
+        "danger": "doc-callout--danger",
+        "success": "doc-callout--success",
+        "tip": "doc-callout--tip",
     }
-    bg, text, border = colors.get(type, colors["info"])
-    
+    wrap_kw = {'id': anchor_id} if anchor_id else {}
     return html.Div(
         content,
-        style={
-            'background': bg,
-            'borderLeft': f'4px solid {border}',
-            'padding': '15px 20px',
-            'borderRadius': '8px',
-            'marginBottom': '20px',
-            'color': text
-        }
+        className=f"doc-callout {type_map.get(type, 'doc-callout--info')}",
+        **wrap_kw,
     )
 
 
-def step_number(number, color="var(--z-footer-accent)"):
+def doc_important(content):
+    """Aviso crítico dentro de un callout."""
+    return html.Div(content, className="doc-callout-important")
+
+
+def step_number(number, color=None):
     """Número de paso circular"""
-    return html.Span(
-        str(number),
-        style={
-            'display': 'inline-flex',
-            'width': '32px',
-            'height': '32px',
-            'background': color,
-            'color': 'var(--z-color-text-inverse)',
-            'borderRadius': '50%',
-            'alignItems': 'center',
-            'justifyContent': 'center',
-            'fontWeight': '700',
-            'fontSize': '0.9rem',
-            'marginRight': '12px'
-        }
-    )
+    cls = "doc-step-badge"
+    if color:
+        return html.Span(str(number), className=cls, style={'background': color})
+    return html.Span(str(number), className=cls)
+
+
+def doc_procedure(title, children, procedure_id=None, title_i18n=None):
+    """Bloque de procedimiento numerado."""
+    kw = {'id': procedure_id} if procedure_id else {}
+    title_kw = {'data-i18n': title_i18n} if title_i18n else {}
+    return html.Div([
+        html.H6(title, className="doc-procedure-title", **title_kw),
+        children,
+    ], className="doc-procedure", **kw)
 
 
 def image_card(src, caption=None):
-    """Tarjeta de imagen con caption"""
+    """Tarjeta de imagen con caption — ancho completo del contenedor."""
     return html.Div([
-        html.Img(
-            src=src,
-            style={
-                'width': '100%',
-                'maxWidth': '800px',
-                'borderRadius': '12px',
-                'border': '1px solid var(--z-color-border)',
-                'boxShadow': '0 4px 12px rgba(0,0,0,0.1)'
-            }
-        ),
+        html.Img(src=src, className="doc-figure-img") if src else None,
         html.P(
             caption,
-            style={
-                'fontSize': '0.85rem',
-                'color': 'var(--z-color-text-tertiary)',
-                'fontStyle': 'italic',
-                'marginTop': '10px',
-                'textAlign': 'center'
-            }
-        ) if caption else None
-    ], style={'marginBottom': '30px', 'textAlign': 'center'})
+            className="doc-figure-caption",
+        ) if caption else None,
+    ], className="doc-figure-card")
 
 
 # ==================== CONTENIDO: INICIO RÁPIDO ====================
 
 def content_inicio_rapido():
     return html.Div([
-        # Intro
-        html.Div([
-            html.H3([
-                html.I(className="fas fa-rocket me-3", style={'color': 'var(--z-footer-accent)'}),
-                html.Span("Inicio Rápido - Five Simple Steps", **{'data-i18n': 'doc.section.start'})
-            ], className="mb-3 fw-bold", style={'color': 'var(--z-color-text-primary)'}),
+        html.Div(className="doc-section-intro", children=[
+            html.H2([
+                html.I(className="fas fa-rocket doc-section-icon"),
+                html.Span("Inicio Rápido — Five Simple Steps", **{'data-i18n': 'doc.section.start'}),
+            ], className="doc-section-title"),
             html.P([
                 "Esta guía te ayudará a configurar y comenzar a usar tu ",
-                html.Strong("EVAL-ADMX2001", style={'color': 'var(--z-footer-accent)'}),
-                " en cinco simples pasos para realizar tus primeras mediciones."
-            ], style={'color': 'var(--z-color-text-secondary)', 'fontSize': '1.1rem', 'marginBottom': '30px'})
+                html.Strong("EVAL-ADMX2001"),
+                " en cinco simples pasos para realizar tus primeras mediciones.",
+            ], className="doc-section-lead-text"),
         ]),
-        
+
+        info_box([
+            html.Strong("Documentación oficial Analog Devices: "),
+            html.A(
+                "EVAL-ADMX2001EBZ User Guide",
+                href="https://wiki.analog.com/resources/eval/user-guides/admx/eval-admx2001ebz",
+                target="_blank",
+                className="doc-inline-link",
+            ),
+            html.Span(" — referencia completa de hardware, calibración, CLI y firmware."),
+        ], "tip", anchor_id='doc-sec-wiki-link'),
+
         info_box([
             html.Strong("Contenido del Kit:"),
             html.Ul([
                 html.Li("Placa EVAL-ADMX2001EBZ"),
                 html.Li("Cable UART a USB (TTL-232R-RPI)"),
                 html.Li("Adaptador de corriente universal con salida de 9VDC"),
-                html.Li("Pinzas de prueba para medidor LCR")
-            ], style={'marginBottom': '0'}),
-            html.Div([
-                html.Strong("IMPORTANTE: "), 
-                "El módulo ADMX2001B se vende por separado. Es crítico comprar AMBOS componentes."
-            ], style={'marginTop': '15px', 'padding': '10px', 'background': 'var(--z-color-warning-subtle)', 'borderRadius': '6px'})
+                html.Li("Pinzas de prueba para medidor LCR"),
+            ], className="doc-callout-list"),
+            doc_important([
+                html.I(className="fas fa-exclamation-triangle me-2"),
+                html.Strong("IMPORTANTE: "),
+                "El módulo ADMX2001B se vende por separado. Es crítico comprar AMBOS componentes.",
+            ]),
         ], "info"),
-        
-        # Paso 1
-        html.Div([
-            html.H5([step_number(1), html.Span("Instalación de Drivers FTDI VCP", **{'data-i18n': 'doc.qs.h5.ftdi'})], className="fw-bold mb-3", style={'color': 'var(--z-color-text-primary)'}),
+
+        html.Div(className="doc-step-section", id="doc-sec-drivers", children=[
+            html.H3([
+                step_number(1),
+                html.Span("Instalación de Drivers FTDI VCP", **{'data-i18n': 'doc.qs.h5.ftdi'}),
+            ], className="doc-step-title"),
             html.P([
                 "El ", html.Strong("EVAL-ADMX2001EBZ"), " se comunica con tu PC mediante UART. "
                 "El cable USB-to-UART incluido requiere drivers ",
-                html.Strong("Virtual COM Port (VCP)"), " de FTDI."
-            ], style={'color': 'var(--z-color-text-secondary)', 'marginBottom': '15px'}),
-            html.Div([
-                html.H6("Procedimiento:", className="fw-bold mt-3 mb-2", style={'color': 'var(--z-color-text-primary)'}, **{'data-i18n': 'doc.qs.h6.procedure'}),
-                html.Ol([
-                    html.Li([
-                        "Descargar el setup executable del driver desde: ",
-                        html.A("https://www.ftdichip.com/Drivers/VCP.htm", href="https://www.ftdichip.com/Drivers/VCP.htm", target="_blank", style={'color': 'var(--z-color-primary)'})
-                    ], style={'color': 'var(--z-color-text-secondary)', 'marginBottom': '10px'}),
-                    html.Li("Descomprimir y ejecutar el instalador", style={'color': 'var(--z-color-text-secondary)', 'marginBottom': '10px'}),
-                    html.Li([html.Strong("Conectar"), " el cable USB-UART al PC"], style={'color': 'var(--z-color-text-secondary)', 'marginBottom': '10px'}),
-                    html.Li("Abrir el Administrador de Dispositivos (Windows) / System Profiler (Mac)", style={'color': 'var(--z-color-text-secondary)', 'marginBottom': '10px'}),
-                    html.Li("Verificar que el Puerto Serial USB aparezca bajo 'Ports (COM & LPT)' con un identificador asignado (ej. COM3)", style={'color': 'var(--z-color-text-secondary)'})
-                ])
-            ], style={'background': 'var(--z-color-bg-primary)', 'padding': '20px', 'borderRadius': '8px', 'marginBottom': '15px'}),
+                html.Strong("Virtual COM Port (VCP)"), " de FTDI.",
+            ], className="doc-body-text"),
+            doc_procedure("Procedimiento:", html.Ol([
+                html.Li([
+                    "Descargar el setup executable del driver desde: ",
+                    html.A(
+                        "https://www.ftdichip.com/Drivers/VCP.htm",
+                        href="https://www.ftdichip.com/Drivers/VCP.htm",
+                        target="_blank",
+                        className="doc-inline-link",
+                    ),
+                ]),
+                html.Li("Descomprimir y ejecutar el instalador"),
+                html.Li([html.Strong("Conectar"), " el cable USB-UART al PC"]),
+                html.Li("Abrir el Administrador de Dispositivos (Windows) / System Profiler (Mac)"),
+                html.Li("Verificar que el Puerto Serial USB aparezca bajo 'Ports (COM & LPT)' con un identificador asignado (ej. COM3)"),
+            ], className="doc-procedure-list"), title_i18n='doc.qs.h6.procedure'),
             info_box([
                 html.Strong("Verificación: "),
-                "En Windows busca 'USB Serial Port (COMx)' bajo 'Ports (COM & LPT)'. Anota el número de puerto COM para el paso 4."
+                "En Windows busca 'USB Serial Port (COMx)' bajo 'Ports (COM & LPT)'. Anota el número de puerto COM para el paso 4.",
             ], "tip"),
-            image_card(IMAGES.get('dev_mgr_vcp'), "Administrador de dispositivos Windows mostrando puerto COM")
-        ], style={'marginBottom': '40px'}),
-        
-        # Paso 2
-        html.Div([
-            html.H5([step_number(2), html.Span("Instalación del Emulador de Terminal", **{'data-i18n': 'doc.qs.h5.terminal'})], className="fw-bold mb-3", style={'color': 'var(--z-color-text-primary)'}),
+            image_card(IMAGES.get('dev_mgr_vcp'), "Administrador de dispositivos Windows mostrando puerto COM"),
+        ]),
+
+        html.Div(className="doc-step-section", children=[
+            html.H3([
+                step_number(2),
+                html.Span("Instalación del Emulador de Terminal", **{'data-i18n': 'doc.qs.h5.terminal'}),
+            ], className="doc-step-title"),
             html.P([
                 "Para comunicarse con el ADMX2001B mediante su interfaz CLI y UART, se recomienda ",
-                html.Strong("TeraTerm"), " (soporta códigos ANSI para colores y cursor)."
-            ], style={'color': 'var(--z-color-text-secondary)', 'marginBottom': '15px'}),
+                html.Strong("TeraTerm"), " (soporta códigos ANSI para colores y cursor).",
+            ], className="doc-body-text"),
             html.A([
                 html.I(className="fas fa-download me-2"),
-                "Descargar TeraTerm"
+                "Descargar TeraTerm",
             ], href="https://github.com/TeraTermProject/teraterm/releases", target="_blank",
-               className="btn mb-3", style={'background': 'var(--z-footer-accent)', 'color': '#ffffff', 'textDecoration': 'none', 'display': 'inline-block', 'padding': '10px 20px', 'borderRadius': '8px'}),
+               className="doc-btn doc-btn--accent"),
             html.P([
-                html.Strong("Alternativas: "), "PuTTY, CoolTerm (pueden tener problemas con códigos ANSI)"
-            ], style={'color': 'var(--z-color-text-tertiary)', 'fontSize': '0.9rem', 'marginTop': '15px'}),
-            html.Div([
-                html.H6("Configuración de TeraTerm:", className="fw-bold mb-2", style={'color': 'var(--z-color-text-primary)'}, **{'data-i18n': 'doc.qs.h6.teraterm_config'}),
-                html.Ul([
-                    html.Li([html.Strong("Speed: "), "115200"], style={'color': 'var(--z-color-text-secondary)'}),
-                    html.Li([html.Strong("Data: "), "8 bits"], style={'color': 'var(--z-color-text-secondary)'}),
-                    html.Li([html.Strong("Parity: "), "none"], style={'color': 'var(--z-color-text-secondary)'}),
-                    html.Li([html.Strong("Stop bits: "), "1 bits"], style={'color': 'var(--z-color-text-secondary)'}),
-                    html.Li([html.Strong("Flow control: "), "none"], style={'color': 'var(--z-color-text-secondary)'})
-                ])
-            ], style={'background': 'var(--z-color-bg-primary)', 'padding': '15px', 'borderRadius': '8px', 'marginTop': '15px'})
-        ], style={'marginBottom': '40px'}),
+                html.Strong("Alternativas: "), "PuTTY, CoolTerm (pueden tener problemas con códigos ANSI)",
+            ], className="doc-muted-text"),
+            doc_procedure("Configuración de TeraTerm:", html.Ul([
+                html.Li([html.Strong("Speed: "), "115200"]),
+                html.Li([html.Strong("Data: "), "8 bits"]),
+                html.Li([html.Strong("Parity: "), "none"]),
+                html.Li([html.Strong("Stop bits: "), "1 bits"]),
+                html.Li([html.Strong("Flow control: "), "none"]),
+            ], className="doc-procedure-list"), title_i18n='doc.qs.h6.teraterm_config'),
+        ]),
         
         # Paso 3
         html.Div([
@@ -1591,20 +1599,26 @@ y se grafica en tiempo real:
 
 def content_calibracion():
     return html.Div([
+        html.Div(className="doc-section-lead", id="doc-sec-cal-open", children=[
+            html.H2([
+                html.I(className="fas fa-balance-scale me-2"),
+                html.Span("Calibración OSL (Open · Short · Load)", **{'data-i18n': 'doc.section.calibration'}),
+            ], className="doc-h2"),
+            html.P(
+                "Procedimiento oficial del EVAL-ADMX2001EBZ. La calibración elimina el efecto de cables "
+                "y conectores para medir solo el DUT.",
+                className="doc-lead",
+            ),
+        ]),
+        html.Div(className="doc-figure-grid", children=[
+            image_card(IMAGES.get('osl_config'), "Configuración Open / Short / Load (diagrama)"),
+            image_card(IMAGES.get('osl_photo'), "Foto: conexiones para calibración OSL"),
+        ]),
         html.Div([
             html.H3([
-                html.I(className="fas fa-balance-scale me-3", style={'color': 'var(--z-color-warning)'}),
-                html.Span("Procedimiento de Calibración OSL", **{'data-i18n': 'doc.section.calibration'})
-            ], className="mb-3 fw-bold", style={'color': 'var(--z-color-text-primary)'}),
-            html.P([
-                "La calibración Open/Short/Load (OSL) es esencial para mediciones precisas. ",
-                "Elimina los efectos de cables y conectores, proporcionando mediciones precisas del DUT."
-            ], style={'color': 'var(--z-color-text-secondary)', 'fontSize': '1.1rem', 'marginBottom': '30px'})
-        ]),
-        
-        # ========== WIZARD DE CALIBRACIÓN EN ZORIA ==========
-        html.Div([
-            html.H4(" Wizard de Calibración Automatizado en ZORIA", className="fw-bold mb-3", style={'color': 'var(--z-color-success)', 'fontSize': '1.5rem'}, **{'data-i18n': 'doc.cal.h4.wizard'}),
+                html.I(className="fas fa-magic me-2 text-success"),
+                html.Span("Wizard de calibración en ZORIA", **{'data-i18n': 'doc.cal.h4.wizard'}),
+            ], className="doc-h3"),
             html.P([
                 "ZORIA incluye un ",
                 html.Strong("Wizard de Calibración Automatizado"),
@@ -1614,7 +1628,7 @@ def content_calibracion():
             
             # Acceso al Wizard
             html.Div([
-                html.H6(" Acceso al Wizard", className="fw-bold mb-3", style={'color': 'var(--z-color-text-primary)'}, **{'data-i18n': 'doc.cal.h6.wizard_access'}),
+                html.H6("Acceso al wizard", className="fw-bold mb-3", **{'data-i18n': 'doc.cal.h6.wizard_access'}),
                 html.Ol([
                     html.Li("Navega a la página \"Calibración\" en el menú lateral izquierdo", style={'marginBottom': '8px'}),
                     html.Li("Haz clic en el botón \" Iniciar Wizard de Calibración\"", style={'marginBottom': '8px'}),
@@ -2897,84 +2911,112 @@ def content_firmware():
 # ==================== COMPONENTES PREMIUM ====================
 
 def hero_section():
-    """Hero ejecutivo para documentación"""
-    return html.Div([
-        html.Div([
-            # Badge
+    """Barra superior: título + buscador alineados con la columna de artículo."""
+    return html.Header([
+        html.Div(className="doc-hero-inner", children=[
+            html.Div(className="doc-hero-nav-gap", **{"aria-hidden": "true"}),
+            html.Div(className="doc-hero-content", children=[
+                html.Div(className="doc-hero-top-row", children=[
+                    html.Div(className="doc-hero-text", children=[
+                        html.A(
+                            [html.I(className="fas fa-external-link-alt me-1"), "Wiki Analog Devices"],
+                            href="https://wiki.analog.com/resources/eval/user-guides/admx/eval-admx2001ebz",
+                            target="_blank",
+                            className="doc-hero-wiki-link",
+                        ),
+                        html.P("Guía de usuario", className="doc-hero-eyebrow"),
+                        html.H1(html.Span("Guía ZORIA", **{'data-i18n': 'doc.hero.title'}), className="doc-hero-title"),
+                        html.P(
+                            "EVAL-ADMX2001EBZ — procedimientos, imágenes y referencia integrada con la wiki oficial de Analog Devices.",
+                            className="doc-hero-desc",
+                        ),
+                        html.Div([
+                            html.Span([html.I(className="fas fa-book-open me-1"), "9 secciones"], className="doc-hero-meta-chip"),
+                            html.Span([html.I(className="fas fa-image me-1"), "Wiki + capturas"], className="doc-hero-meta-chip"),
+                        ], className="doc-hero-meta"),
+                    ]),
+                    html.Div(className="doc-search-wrap", id="doc-search-wrap", children=[
+                        html.Label("Buscar en la guía", className="doc-search-label", htmlFor="doc-search-input"),
+                        html.Div(className="doc-search-bar", children=[
+                            html.I(className="fas fa-search doc-search-icon"),
+                            dcc.Input(
+                                id="doc-search-input",
+                                type="search",
+                                placeholder="Ej. calibración, sweep, setgain, drivers…",
+                                debounce=True,
+                                className="doc-search-input",
+                            ),
+                            html.Button(
+                                html.I(className="fas fa-times"),
+                                id="doc-search-clear",
+                                className="doc-search-clear",
+                                type="button",
+                                title="Limpiar",
+                            ),
+                        ]),
+                        html.Div(id="doc-search-results", className="doc-search-results"),
+                    ]),
+                ]),
+            ]),
+        ]),
+    ], className="doc-hero", id="doc-hero-top")
+
+
+DOC_SECTIONS = [
+    ('inicio', 'fa-rocket', 'Inicio rápido'),
+    ('hardware', 'fa-microchip', 'Hardware'),
+    ('software', 'fa-laptop-code', 'Software'),
+    ('matematica', 'fa-square-root-alt', 'Matemática'),
+    ('calibracion', 'fa-balance-scale', 'Calibración'),
+    ('cli', 'fa-terminal', 'CLI'),
+    ('firmware', 'fa-microchip', 'Firmware'),
+    ('overview', 'fa-chart-line', 'ZORIA'),
+    ('contribuir', 'fa-hands-helping', 'Contribuir'),
+]
+
+
+def _render_doc_section(tab_id):
+    """Devuelve el contenido de la sección activa."""
+    sections = {
+        'inicio': content_inicio_rapido,
+        'hardware': content_hardware,
+        'software': content_software,
+        'matematica': content_matematica_background,
+        'calibracion': content_calibracion,
+        'cli': content_cli,
+        'firmware': content_firmware,
+        'overview': content_overview,
+        'contribuir': content_contribuir,
+    }
+    renderer = sections.get(tab_id, content_inicio_rapido)
+    return html.Div(renderer(), className="doc-article-inner")
+
+
+def _doc_sidebar_nav():
+    return html.Aside([
+        html.Div(className="doc-sidebar-sticky", children=[
+            html.Div(className="doc-nav-header", children=[
+                html.I(className="fas fa-list-ul doc-nav-header-icon"),
+                html.P("Tabla de contenido", className="doc-nav-label"),
+            ]),
             html.Div([
-                html.Span("●", style={
-                    'color': 'var(--z-footer-accent)',
-                    'fontSize': '8px',
-                    'marginRight': '12px',
-                    'animation': 'pulse 2s infinite'
-                }),
-                html.Span("DOCUMENTACIÓN OFICIAL", style={
-                    'fontSize': '0.75rem',
-                    'letterSpacing': '0.3em',
-                    'fontWeight': '500',
-                    'color': 'var(--z-color-text-tertiary)'
-                }, **{'data-i18n': 'doc.hero.badge'})
-            ], style={
-                'marginBottom': '40px',
-                'display': 'flex',
-                'alignItems': 'center',
-                'justifyContent': 'center'
-            }),
-            
-            # Título
-            html.H1([
-                html.Span("Guía ZORIA", style={
-                    'display': 'block',
-                    'fontSize': 'clamp(3rem, 8vw, 6rem)',
-                    'fontWeight': '200',
-                    'letterSpacing': '-0.03em',
-                    'lineHeight': '0.9',
-                    'color': 'var(--z-color-text-primary)',
-                    'marginBottom': '10px'
-                }, **{'data-i18n': 'doc.hero.title'}),
-                html.Span("EVAL-ADMX2001", style={
-                    'display': 'block',
-                    'fontSize': 'clamp(1rem, 2vw, 1.5rem)',
-                    'fontWeight': '300',
-                    'letterSpacing': '0.3em',
-                    'color': 'var(--z-footer-accent)',
-                    'textTransform': 'uppercase'
-                })
-            ], style={
-                'textAlign': 'center',
-                'marginBottom': '40px'
-            }),
-            
-            # Línea decorativa
-            html.Div(style={
-                'width': '60px',
-                'height': '1px',
-                'background': 'linear-gradient(90deg, transparent, #d4af37, transparent)',
-                'margin': '0 auto 40px'
-            }),
-            
-            # Descripción
-            html.P([
-                html.Span("Documentación completa del sistema de análisis de impedancia.", **{'data-i18n': 'doc.hero.desc1'}),
-                html.Br(),
-                html.Span("Selecciona una sección para comenzar.", **{'data-i18n': 'doc.hero.desc2'})
-            ], style={
-                'fontSize': 'clamp(1rem, 1.5vw, 1.25rem)',
-                'fontWeight': '300',
-                'color': 'var(--z-color-text-secondary)',
-                'textAlign': 'center',
-                'maxWidth': '600px',
-                'margin': '0 auto'
-            })
-        ], style={
-            'maxWidth': '1200px',
-            'margin': '0 auto',
-            'padding': '100px 40px 60px'
-        })
-    ], style={
-        'background': 'var(--z-color-bg-card)',
-        'position': 'relative'
-    })
+                html.Button([
+                    html.I(className=f"fas {icon} doc-nav-icon"),
+                    html.Span(label, className="doc-nav-label-text"),
+                ],
+                id={'type': 'doc-nav-btn', 'index': key},
+                className='doc-nav-btn' + (' doc-nav-btn--active' if key == 'inicio' else ''),
+                n_clicks=0,
+                type='button',
+                )
+                for key, icon, label in DOC_SECTIONS
+            ], className="doc-nav-list"),
+            html.Button([
+                html.I(className="fas fa-arrow-up me-2"),
+                "Ir arriba",
+            ], id="doc-scroll-top", className="doc-scroll-top-btn", type="button", n_clicks=0),
+        ]),
+    ], className="doc-sidebar", **{'aria-label': 'Tabla de contenido de la documentación'})
 
 
 # ==================== CONTENIDO: OVERVIEW ZORIA ====================
@@ -3718,9 +3760,13 @@ chore(deps): upgrade plotly to 5.18.0"""),
             html.Div([
                 html.I(className="fas fa-book-open fa-lg me-3", style={'color': 'var(--z-color-primary)'}),
                 html.Div([
-                    html.Strong("Wiki Analog Devices ADMX2001", style={'display': 'block', 'color': 'var(--z-color-text-primary)'}),
-                    html.A("wiki.analog.com/resources/eval/eval-admx2001", href="https://wiki.analog.com/resources/eval/eval-admx2001",
-                           target="_blank", style={'color': 'var(--z-color-primary)', 'fontSize': '0.875rem'}),
+                    html.Strong("Wiki Analog Devices EVAL-ADMX2001EBZ", style={'display': 'block', 'color': 'var(--z-color-text-primary)'}),
+                    html.A(
+                        "wiki.analog.com/.../eval-admx2001ebz",
+                        href="https://wiki.analog.com/resources/eval/user-guides/admx/eval-admx2001ebz",
+                        target="_blank",
+                        style={'color': 'var(--z-color-primary)', 'fontSize': '0.875rem'},
+                    ),
                 ]),
             ], style={'display': 'flex', 'alignItems': 'center', 'padding': '16px',
                       'background': 'var(--z-color-bg-primary)', 'borderRadius': '10px', 'flex': '1'}),
@@ -3739,106 +3785,213 @@ chore(deps): upgrade plotly to 5.18.0"""),
 layout = html.Div([
     sideBar(),
     mobileNavBar(),
-    
-    html.Main([
-        # Hero
-        hero_section(),
-        
-        # Tabs con contenido
-        html.Div([
-            html.Div([
-                dcc.Tabs([
-                    dcc.Tab(
-                        label=' Inicio Rápido',
-                        value='inicio',
-                        children=content_inicio_rapido(),
-                        className='doc-tab',
-                        selected_className='doc-tab-selected'
-                    ),
-                    dcc.Tab(
-                        label=' Hardware',
-                        value='hardware',
-                        children=content_hardware(),
-                        className='doc-tab',
-                        selected_className='doc-tab-selected'
-                    ),
-                    dcc.Tab(
-                        label=' Software',
-                        value='software',
-                        children=content_software(),
-                        className='doc-tab',
-                        selected_className='doc-tab-selected'
-                    ),
-                    dcc.Tab(
-                        label=' Matemática',
-                        value='matematica',
-                        children=content_matematica_background(),
-                        className='doc-tab',
-                        selected_className='doc-tab-selected'
-                    ),
-                    dcc.Tab(
-                        label=' Calibración',
-                        value='calibracion',
-                        children=content_calibracion(),
-                        className='doc-tab',
-                        selected_className='doc-tab-selected'
-                    ),
-                    dcc.Tab(
-                        label='⌨ CLI',
-                        value='cli',
-                        children=content_cli(),
-                        className='doc-tab',
-                        selected_className='doc-tab-selected'
-                    ),
-                    dcc.Tab(
-                        label=' Firmware',
-                        value='firmware',
-                        children=content_firmware(),
-                        className='doc-tab',
-                        selected_className='doc-tab-selected'
-                    ),
-                    dcc.Tab(
-                        label=' ZORIA',
-                        value='overview',
-                        children=content_overview(),
-                        className='doc-tab',
-                        selected_className='doc-tab-selected'
-                    ),
-                    dcc.Tab(
-                        label='Contribuir',
-                        value='contribuir',
-                        children=content_contribuir(),
-                        className='doc-tab',
-                        selected_className='doc-tab-selected'
-                    )
-                ], 
-                id='doc-tabs',
-                value='inicio',
-                className='doc-tabs-container',
-                parent_className='doc-tabs-parent',
-                content_className='doc-tabs-content'
-                )
-            ], style={
-                'maxWidth': '1200px',
-                'margin': '0 auto',
-                'padding': '0 40px 80px'
-            })
-        ])
-    ], className="content", style={'background': 'var(--z-color-bg-card)'}),
-    
-    footer(),
-    floating_terminal_button()
-    
-], className="sc-chart d-flex flex-column", style={
-    'minHeight': '100vh',
-    'background': 'var(--z-color-bg-card)'
-})
 
-# Store dummy para los callbacks i18n de esta página
+    html.Main([
+        hero_section(),
+        html.Div(className="doc-layout", children=[
+            _doc_sidebar_nav(),
+            html.Article(
+                id='doc-content-panel',
+                className='doc-article',
+                children=_render_doc_section('inicio'),
+            ),
+        ]),
+    ], className="main-content w-100 doc-main"),
+
+    footer(),
+    floating_terminal_button(),
+
+], className="sc-chart d-flex flex-column doc-page")
+
+# Stores y estado de navegación
+layout.children.insert(0, dcc.Store(id='doc-active-tab', data='inicio', storage_type='memory'))
+layout.children.insert(0, dcc.Store(id='doc-search-nav', storage_type='memory'))
 layout.children.insert(0, dcc.Store(id='doc-i18n-dummy', storage_type='memory'))
 
 
 def register_callbacks(app):
+    from dash import Input, Output, State, ALL, ctx
+    from dash.exceptions import PreventUpdate
+    from pages.documentation.doc_search_index import search_documentation, DOC_SEARCH_INDEX
+
+    @app.callback(
+        Output('doc-search-results', 'children'),
+        Output('doc-search-wrap', 'className'),
+        Input('doc-search-input', 'value'),
+    )
+    def render_doc_search(query):
+        q = (query or '').strip()
+        if len(q) < 2:
+            return None, 'doc-search-wrap'
+        hits = search_documentation(q)
+        if not hits:
+            return html.Div(
+                "Sin resultados. Prueba: open, short, setgain, teraterm.",
+                className="doc-search-empty",
+            ), 'doc-search-wrap doc-search-wrap--open'
+        tab_labels = {
+            'inicio': 'Inicio',
+            'hardware': 'Hardware',
+            'software': 'Software',
+            'matematica': 'Matemática',
+            'calibracion': 'Calibración',
+            'cli': 'CLI',
+            'firmware': 'Firmware',
+            'overview': 'ZORIA',
+            'contribuir': 'Contribuir',
+        }
+        return html.Div([
+            html.Div(f"{len(hits)} resultados", className="doc-search-count"),
+            html.Div([
+                html.Button([
+                    html.Div([
+                        html.Span(hit['title'], className="doc-search-hit-title"),
+                        html.Span(tab_labels.get(hit['tab'], hit['tab']), className="doc-search-hit-tab"),
+                    ], className="doc-search-hit-head"),
+                    html.Span(hit['snippet'], className="doc-search-hit-snippet"),
+                ],
+                id={'type': 'doc-search-hit', 'index': hit['id']},
+                className="doc-search-hit",
+                n_clicks=0,
+                type='button',
+                )
+                for hit in hits
+            ], className="doc-search-hits"),
+        ], className="doc-search-panel"), 'doc-search-wrap doc-search-wrap--open'
+
+    @app.callback(
+        Output('doc-search-input', 'value'),
+        Input('doc-search-clear', 'n_clicks'),
+        prevent_initial_call=True,
+    )
+    def clear_doc_search(n):
+        if not n:
+            raise PreventUpdate
+        return ''
+
+    @app.callback(
+        Output('doc-content-panel', 'children'),
+        Output('doc-active-tab', 'data'),
+        Output({'type': 'doc-nav-btn', 'index': ALL}, 'className'),
+        Input({'type': 'doc-nav-btn', 'index': ALL}, 'n_clicks'),
+        Input('doc-active-tab', 'data'),
+        State({'type': 'doc-nav-btn', 'index': ALL}, 'id'),
+        prevent_initial_call=False,
+    )
+    def switch_doc_section(nav_clicks, active_tab, nav_ids):
+        tab = active_tab or 'inicio'
+        if ctx.triggered_id and isinstance(ctx.triggered_id, dict):
+            if ctx.triggered_id.get('type') == 'doc-nav-btn':
+                tab = ctx.triggered_id['index']
+        classes = [
+            'doc-nav-btn doc-nav-btn--active' if (nid or {}).get('index') == tab else 'doc-nav-btn'
+            for nid in (nav_ids or [])
+        ]
+        return _render_doc_section(tab), tab, classes
+
+    @app.callback(
+        Output('doc-active-tab', 'data', allow_duplicate=True),
+        Output('doc-search-nav', 'data'),
+        Input({'type': 'doc-search-hit', 'index': ALL}, 'n_clicks'),
+        State({'type': 'doc-search-hit', 'index': ALL}, 'id'),
+        prevent_initial_call=True,
+    )
+    def navigate_doc_search(n_clicks_list, ids):
+        if not ctx.triggered_id or not any(n_clicks_list):
+            raise PreventUpdate
+        hit_id = ctx.triggered_id.get('index')
+        entry = next((e for e in DOC_SEARCH_INDEX if e['id'] == hit_id), None)
+        if not entry:
+            raise PreventUpdate
+        return entry['tab'], {'anchor': entry['anchor']}
+
+    app.clientside_callback(
+        """
+        function(nav) {
+            if (!nav || !nav.anchor) return window.dash_clientside.no_update;
+            setTimeout(function() {
+                var el = document.getElementById(nav.anchor);
+                if (el) el.scrollIntoView({behavior: 'smooth', block: 'start'});
+            }, 350);
+            return window.dash_clientside.no_update;
+        }
+        """,
+        Output('doc-i18n-dummy', 'data', allow_duplicate=True),
+        Input('doc-search-nav', 'data'),
+        prevent_initial_call=True,
+    )
+
+    app.clientside_callback(
+        """
+        function(activeTab) {
+            if (!activeTab) return window.dash_clientside.no_update;
+
+            // Scroll al inicio del contenido de la pestaña activa
+            setTimeout(function() {
+                var layout = document.querySelector('.doc-layout');
+                if (!layout) return;
+                var top = layout.getBoundingClientRect().top + window.pageYOffset - 20;
+                window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+            }, 80);
+
+            // Reaplicar i18n por si Dash monta el DOM de la pestaña en este momento
+            clearTimeout(window._zoriaDocTabTimer1);
+            clearTimeout(window._zoriaDocTabTimer2);
+            window._zoriaDocTabTimer1 = setTimeout(function() {
+                if (window.ZORIA_I18N && typeof window.ZORIA_I18N.apply === 'function') {
+                    window.ZORIA_I18N.apply(window.ZORIA_I18N.current());
+                }
+            }, 100);
+            window._zoriaDocTabTimer2 = setTimeout(function() {
+                if (window.ZORIA_I18N && typeof window.ZORIA_I18N.apply === 'function') {
+                    window.ZORIA_I18N.apply(window.ZORIA_I18N.current());
+                }
+            }, 500);
+
+            // Sidebar sticky (antes en doc-sticky-init)
+            var panel = document.querySelector('.doc-sidebar-sticky');
+            if (panel) {
+                function updateStuck() {
+                    var sidebar = document.querySelector('.doc-sidebar');
+                    if (!sidebar) return;
+                    var rect = sidebar.getBoundingClientRect();
+                    var stuck = rect.top <= 22 && rect.bottom > 120;
+                    panel.classList.toggle('is-stuck', stuck);
+                }
+                if (window._zoriaDocStickyScroll) {
+                    window.removeEventListener('scroll', window._zoriaDocStickyScroll);
+                }
+                window._zoriaDocStickyScroll = updateStuck;
+                window.addEventListener('scroll', updateStuck, { passive: true });
+                updateStuck();
+            }
+
+            return window.dash_clientside.no_update;
+        }
+        """,
+        Output('doc-i18n-dummy', 'data', allow_duplicate=True),
+        Input('doc-active-tab', 'data'),
+        prevent_initial_call=False,
+    )
+
+    app.clientside_callback(
+        """
+        function(n) {
+            if (!n) return window.dash_clientside.no_update;
+            var hero = document.getElementById('doc-hero-top');
+            if (hero) {
+                hero.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            return window.dash_clientside.no_update;
+        }
+        """,
+        Output('doc-i18n-dummy', 'data', allow_duplicate=True),
+        Input('doc-scroll-top', 'n_clicks'),
+        prevent_initial_call=True,
+    )
+
     from dash import Input, Output
 
     # Cuando llegan traducciones frescas (cambio de idioma o carga inicial),
@@ -3854,41 +4007,22 @@ def register_callbacks(app):
             clearTimeout(window._zoriaDocApplyTimer2);
             // Delay para que React termine de montar el DOM de los tabs
             window._zoriaDocApplyTimer1 = setTimeout(function() {
-                if (window.ZORIA_I18N && window.ZORIA_I18N.current() === lang) {
+                if (window.ZORIA_I18N && typeof window.ZORIA_I18N.apply === 'function'
+                    && window.ZORIA_I18N.current() === lang) {
                     window.ZORIA_I18N.apply(lang, translations);
                 }
             }, 150);
             window._zoriaDocApplyTimer2 = setTimeout(function() {
-                if (window.ZORIA_I18N && window.ZORIA_I18N.current() === lang) {
+                if (window.ZORIA_I18N && typeof window.ZORIA_I18N.apply === 'function'
+                    && window.ZORIA_I18N.current() === lang) {
                     window.ZORIA_I18N.apply(lang);
                 }
             }, 600);
             return window.dash_clientside.no_update;
         }
         """,
-        Output('doc-i18n-dummy', 'data'),
-        Input('lang-translations-store', 'data'),
-        prevent_initial_call=False,
-    )
-
-    # También reaplica cuando el usuario cambia de pestaña,
-    # por si Dash renderiza el contenido de la pestaña en ese momento.
-    app.clientside_callback(
-        """
-        function(activeTab) {
-            clearTimeout(window._zoriaDocTabTimer1);
-            clearTimeout(window._zoriaDocTabTimer2);
-            window._zoriaDocTabTimer1 = setTimeout(function() {
-                if (window.ZORIA_I18N) window.ZORIA_I18N.apply(window.ZORIA_I18N.current());
-            }, 100);
-            window._zoriaDocTabTimer2 = setTimeout(function() {
-                if (window.ZORIA_I18N) window.ZORIA_I18N.apply(window.ZORIA_I18N.current());
-            }, 500);
-            return window.dash_clientside.no_update;
-        }
-        """,
         Output('doc-i18n-dummy', 'data', allow_duplicate=True),
-        Input('doc-tabs', 'value'),
+        Input('lang-translations-store', 'data'),
         prevent_initial_call=True,
     )
 

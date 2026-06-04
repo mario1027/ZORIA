@@ -26,6 +26,7 @@ from .utils import (
     validate_frequency, validate_magnitude, validate_offset,
     validate_average, validate_count,
     calculate_impedance_from_rx, clean_response_line,
+    strip_serial_terminal_noise,
     parse_measurement_line, parse_numeric_response,
     estimate_measurement_time
 )
@@ -431,8 +432,11 @@ class ADMX2001:
         
         for attempt in range(retries + 1):
             try:
-                # Limpiar comando
-                command = command.strip()
+                # Limpiar comando (quita '+' u otros sufijos accidentales del teclado)
+                from .utils import normalize_cli_command
+                command, _cmd_warn = normalize_cli_command(command)
+                if _cmd_warn:
+                    logger.warning(f"[ADMX2001] {_cmd_warn}")
 
                 # Preflight: si hay datos entrando, intentar detener streaming residual
                 if command.lower() != 'stop':
@@ -467,6 +471,28 @@ class ADMX2001:
                     except Exception as e:
                         logger.debug(f"Preflight stop falló: {e}")
                 
+                command_lower = command.lower().strip()
+                is_list_command = command_lower.startswith('calibrate list')
+                is_list_detail = (
+                    is_list_command
+                    and command_lower != 'calibrate list'
+                )
+
+                if is_list_command:
+                    # `calibrate list` puede recibir una medida residual si el
+                    # firmware aún está cerrando el comando previo.
+                    try:
+                        self.serial.write(b'abort\n')
+                        self.serial.flush()
+                        time.sleep(0.1)
+                        if self.serial.in_waiting > 0:
+                            discarded = self.serial.read(self.serial.in_waiting)
+                            logger.info(
+                                f"Descartados {len(discarded)} bytes previos a '{command}'"
+                            )
+                    except Exception as e:
+                        logger.debug(f"No se pudo drenar antes de calibrate list: {e}")
+
                 # MEJORA TERATERM: Limpiar buffers SIEMPRE antes de enviar
                 # Esto previene contaminar comando actual con respuestas de comandos previos
                 try:
@@ -491,12 +517,13 @@ class ADMX2001:
                 # Enviar comando
                 cmd_bytes = (command + '\n').encode('utf-8')
                 self.serial.write(cmd_bytes)
+                self.serial.flush()
                 self.command_count += 1
-                
-                logger.debug(f"Comando enviado: {command}")
+
+                logger.info(f"Comando enviado al puerto serie: {command}")
                 
                 # Log especial para comandos lentos
-                if any(slow_cmd in command.lower() for slow_cmd in ['calibrate', 'sweep', '*idn']):
+                if any(slow_cmd in command_lower for slow_cmd in ['calibrate', 'sweep', '*idn']):
                     logger.info(f"⏳ Comando lento detectado: '{command}' - esperando respuesta completa...")
                 
                 # Leer respuesta
@@ -506,8 +533,7 @@ class ADMX2001:
                 
                 response_lines = []
                 start_time = time.time()
-                is_list_command = command.lower().startswith('calibrate list')
-                is_display_command = command.lower().startswith('display')
+                is_display_command = command_lower.startswith('display')
                 if is_list_command and not timeout:
                     max_time = max(COMMAND_TIMEOUT, 30.0)
                 else:
@@ -523,15 +549,79 @@ class ADMX2001:
                 time.sleep(0.1)
                 
                 # MEJORA: Detectar tipo de comando para estrategia de timeout
-                is_slow_command = any(slow_cmd in command.lower() for slow_cmd in ['calibrate', 'sweep', 'z'])
-                is_very_slow_command = any(cmd in command.lower() for cmd in ['calibrate list', 'calibrate commit'])
-                is_calibration_measurement = any(cmd in command.lower() for cmd in ['calibrate open', 'calibrate short', 'calibrate rt'])
-                
+                is_slow_command = any(slow_cmd in command_lower for slow_cmd in ['calibrate', 'sweep', 'z'])
+                is_very_slow_command = any(cmd in command_lower for cmd in ['calibrate list', 'calibrate commit'])
+                is_calibration_measurement = any(
+                    cmd in command_lower
+                    for cmd in ['calibrate open', 'calibrate short', 'calibrate rt']
+                )
+
+                def _buffer_is_only_command_echo(buf: bytearray) -> bool:
+                    """True si el buffer solo contiene el eco local del comando (sin medición)."""
+                    if not buf:
+                        return True
+                    text = strip_serial_terminal_noise(bytes(buf))
+                    lines = [
+                        clean_response_line(ln)
+                        for ln in text.replace('\r', '\n').split('\n')
+                    ]
+                    lines = [ln for ln in lines if ln]
+                    if not lines:
+                        return True
+                    if len(lines) == 1:
+                        low = lines[0].lower()
+                        return low == command_lower or low.startswith(
+                            command_lower + ' '
+                        )
+                    combined = ' '.join(lines).lower().strip()
+                    return combined == command_lower
+
+                def _calibration_payload_complete(buf: bytearray) -> bool:
+                    """True cuando la respuesta de calibración incluye resultado útil."""
+                    if not buf or _buffer_is_only_command_echo(buf):
+                        return False
+                    text = strip_serial_terminal_noise(bytes(buf))
+                    lower = text.lower()
+                    # Línea de medición CSV (p. ej. "0,-1.1e-09,1.16e-06")
+                    if re.search(r'(?m)^\s*\d+\s*,', text):
+                        return True
+                    # Estado OSL del firmware (open:Done), no "Not Done"
+                    if re.search(
+                        r'(?m)(?:open|short|load)\s*:\s*done\b', lower
+                    ):
+                        return True
+                    if re.search(r'frequency\s*=', lower):
+                        return True
+                    if re.search(
+                        r'(?m)^\s*(?:error|invalid|fail)\b', lower
+                    ):
+                        return True
+                    return False
+
+                def _list_command_payload_complete(buf: bytearray) -> bool:
+                    """True cuando ``calibrate list`` incluye datos del firmware."""
+                    if not buf or _buffer_is_only_command_echo(buf):
+                        return False
+                    text = strip_serial_terminal_noise(bytes(buf))
+                    lower = text.lower()
+                    if re.search(r'freq\s*:', lower):
+                        return True
+                    if re.search(r'vg\s*=', lower):
+                        return True
+                    if re.search(r'(?m)(?:open|short|load)\s*:\s*\S+', lower):
+                        return True
+                    if re.search(
+                        r'(?m)^\s*(?:error|invalid|fail)\b', lower
+                    ):
+                        return True
+                    return False
+
                 # MEJORA TERATERM: Timeout más inteligente (300ms sin datos en lugar de 2-8s)
                 if is_very_slow_command:
-                    no_data_timeout = 1.0  # Flash accessReducido de 8.0s a 1.0s
+                    no_data_timeout = 1.0  # Flash access
                 elif is_calibration_measurement:
-                    no_data_timeout = 3.0  # Calibraciones pueden tardar en responder la primera vez
+                    # La medición puede tardar decenas de segundos antes del primer byte
+                    no_data_timeout = 45.0
                 elif is_slow_command:
                     no_data_timeout = 0.5  # Comandos lentos - Reducido de 3.0s a 0.5s
                 else:
@@ -582,14 +672,14 @@ class ADMX2001:
 
                                 # Protección contra loops infinitos (solo si NO hay prompt)
                                 if not prompt_detected:
-                                    line_count = response_buffer_bytes.count(b'\\n')
+                                    line_count = response_buffer_bytes.count(b'\n')
                                     if is_display_command and line_count >= 50:
                                         try:
                                             logger.warning("Display con demasiadas líneas, enviando abort/stop")
-                                            self.serial.write(b'abort\\n')
+                                            self.serial.write(b'abort\n')
                                             self.serial.flush()
                                             time.sleep(0.05)
-                                            self.serial.write(b'stop\\n')
+                                            self.serial.write(b'stop\n')
                                             self.serial.flush()
                                         except Exception as e:
                                             logger.warning(f"No se pudo enviar stop: {e}")
@@ -597,10 +687,10 @@ class ADMX2001:
                                     if line_count >= 200:
                                         try:
                                             logger.warning("Demasiadas líneas sin prompt, enviando abort/stop")
-                                            self.serial.write(b'abort\\n')
+                                            self.serial.write(b'abort\n')
                                             self.serial.flush()
                                             time.sleep(0.05)
-                                            self.serial.write(b'stop\\n')
+                                            self.serial.write(b'stop\n')
                                             self.serial.flush()
                                         except Exception as e:
                                             logger.warning(f"No se pudo enviar stop: {e}")
@@ -639,18 +729,59 @@ class ADMX2001:
                             if is_slow_command and time_without_data > 1.0 and int(time_without_data * 2) % 2 == 0:
                                 logger.debug(f"⏳ Esperando más datos... ({time_without_data:.1f}s sin datos)")
                             
-                            # MEJORA: Si detectamos prompt, terminar rápido si no hay datos
+                            # Si detectamos prompt, terminar cuando la respuesta esté completa
                             if prompt_detected and self.serial.in_waiting == 0:
-                                # Prompt detectado y no hay datos esperando
-                                # Una última verificación breve (50ms)
-                                if time_without_data > 0.05:
-                                    logger.info(f"Prompt detectado y sin datos por {time_without_data:.3f}s, finalizando")
+                                if is_calibration_measurement:
+                                    if (
+                                        _calibration_payload_complete(response_buffer_bytes)
+                                        and time_without_data > 0.15
+                                    ):
+                                        logger.info(
+                                            "Calibración: payload completo, finalizando lectura"
+                                        )
+                                        break
+                                elif is_list_detail:
+                                    if (
+                                        _list_command_payload_complete(
+                                            response_buffer_bytes
+                                        )
+                                        and time_without_data > 0.1
+                                    ):
+                                        logger.info(
+                                            "calibrate list detail: payload completo"
+                                        )
+                                        break
+                                    if time_without_data > 3.0:
+                                        logger.warning(
+                                            "calibrate list detail: timeout sin payload"
+                                        )
+                                        break
+                                elif time_without_data > 0.05:
+                                    logger.info(
+                                        f"Prompt detectado y sin datos por "
+                                        f"{time_without_data:.3f}s, finalizando"
+                                    )
                                     break
-                            
+
                             # Si NO hay prompt, usar timeout según tipo de comando
                             if not prompt_detected and time_without_data > no_data_timeout:
-                                logger.info(f"Sin datos por {time_without_data:.1f}s (sin prompt), finalizando lectura")
-                                # Dar una última oportunidad
+                                if (
+                                    is_calibration_measurement
+                                    and _buffer_is_only_command_echo(
+                                        response_buffer_bytes
+                                    )
+                                    and (time.time() - start_time) < (max_time - 2.0)
+                                ):
+                                    logger.info(
+                                        "Calibración: solo eco local del terminal, "
+                                        f"esperando medición del firmware ({time_without_data:.0f}s)..."
+                                    )
+                                    last_data_time = time.time()
+                                    continue
+                                logger.info(
+                                    f"Sin datos por {time_without_data:.1f}s "
+                                    f"(sin prompt), finalizando lectura"
+                                )
                                 time.sleep(0.1)
                                 if self.serial.in_waiting == 0:
                                     break
@@ -667,13 +798,13 @@ class ADMX2001:
                     logger.info(f"Buffer completo ({len(response_buffer)} chars, {len(response_buffer_bytes)} bytes)")
                     logger.info(f"Buffer (primeros 500): {repr(response_buffer[:500])}")
                     
-                    newline_count = response_buffer.count('\\n')
-                    carriage_count = response_buffer.count('\\r')
-                    logger.info(f"Contadores: \\n={newline_count}, \\r={carriage_count}")
-                    
+                    newline_count = response_buffer.count('\n')
+                    carriage_count = response_buffer.count('\r')
+                    logger.info(f"Contadores: newline={newline_count}, cr={carriage_count}")
+
                     # MEJORA: Filtrar eco SOLO en primera línea
-                    lines = response_buffer.split('\\n')
-                    cmd_lower = command.lower().strip()
+                    lines = response_buffer.replace('\r', '').split('\n')
+                    cmd_lower = command_lower
                     
                     for idx, line in enumerate(lines):
                         line_raw = line
@@ -707,12 +838,76 @@ class ADMX2001:
                         else:
                             logger.debug(f"Línea [{idx}]  DESCARTADA (vacía)")
                 
+                if not response_lines and is_calibration_measurement and response_buffer:
+                    # Segunda pasada: el eco en línea 0 no debe descartar todo el buffer
+                    logger.warning(
+                        "Re-parseando buffer de calibración tras filtro vacío "
+                        f"({len(response_buffer)} chars)"
+                    )
+                    for idx, line_raw in enumerate(
+                        response_buffer.replace('\r', '').split('\n')
+                    ):
+                        line = clean_response_line(line_raw)
+                        if not line:
+                            continue
+                        low = line.lower()
+                        if low == cmd_lower:
+                            continue
+                        if low.startswith(cmd_lower):
+                            line = line[len(cmd_lower):].strip()
+                            if not line:
+                                continue
+                        response_lines.append(line)
+
                 if response_lines:
                     logger.info(f" Total líneas en respuesta: {len(response_lines)}")
                     for idx, line in enumerate(response_lines[:10]):
                         logger.info(f"   [{idx}] '{line[:100]}'")
                 else:
-                    logger.warning(f" RESPUESTA VACÍA después de procesar buffer de {len(response_buffer)} chars")
+                    logger.warning(
+                        f" RESPUESTA VACÍA después de procesar buffer de "
+                        f"{len(response_buffer)} chars: {repr(response_buffer[:200])}"
+                    )
+
+                if not response_lines and is_list_command and response_buffer:
+                    recovered = []
+                    for raw_line in response_buffer.replace('\r', '\n').split('\n'):
+                        line = clean_response_line(raw_line)
+                        if not line:
+                            continue
+                        low = line.lower()
+                        if low == cmd_lower or low.startswith(cmd_lower + ' '):
+                            continue
+                        if re.search(
+                            r'freq\s*:|vg\s*=|(?:open|short|load)\s*:',
+                            line,
+                            re.I,
+                        ):
+                            recovered.append(line)
+                    if recovered:
+                        logger.info(
+                            f"Recuperadas {len(recovered)} líneas de "
+                            f"'{command}' tras filtro vacío"
+                        )
+                        response_lines = recovered
+
+                if (
+                    not response_lines
+                    and (is_calibration_measurement or is_list_command)
+                    and _buffer_is_only_command_echo(response_buffer_bytes)
+                    and attempt < retries
+                ):
+                    logger.warning(
+                        f"Solo eco local en '{command}', reintentando lectura "
+                        f"({attempt + 1}/{retries + 1})"
+                    )
+                    try:
+                        self.serial.reset_input_buffer()
+                        self.serial.reset_output_buffer()
+                    except Exception:
+                        pass
+                    time.sleep(0.25)
+                    continue
                 
                 # Restaurar timeout
                 self.serial.timeout = original_timeout
@@ -920,6 +1115,22 @@ class ADMX2001:
         self.current_config['ch1_gain'] = ch1_gain
         
         logger.info(f"Ganancia manual: ch0={ch0_gain}, ch1={ch1_gain}")
+
+    def set_gain_for_impedance(self, impedance_ohm: float) -> Tuple[int, int]:
+        """
+        Aplica CH0/CH1 según la tabla de impedancia (no ``setgain auto``).
+
+        Cerca de 1 kΩ el autorange del firmware suele fijar (0,1); la tabla
+        oficial usa (0,0) en 100 Ω–1 kΩ.
+        """
+        from . import utils
+
+        ch0, ch1 = utils.gain_settings_from_impedance_table(impedance_ohm)
+        self.set_gain_manual(ch0, ch1)
+        logger.info(
+            f"Ganancia por tabla |Z|≈{impedance_ohm:g}Ω → ch0={ch0}, ch1={ch1}"
+        )
+        return (ch0, ch1)
     
     def set_gain(self, channel: int, gain: int) -> None:
         """
@@ -1060,20 +1271,8 @@ class ADMX2001:
             >>> dev.set_gain(0, ch0_gain)
             >>> dev.set_gain(1, ch1_gain)
         """
-        if impedance < 10:
-            return ImpedanceRange.UNDER_10_OHM
-        elif impedance < 25:
-            return ImpedanceRange.UNDER_25_OHM
-        elif impedance < 50:
-            return ImpedanceRange.UNDER_50_OHM
-        elif impedance < 1000:
-            return ImpedanceRange.RANGE_100_1K
-        elif impedance < 10000:
-            return ImpedanceRange.RANGE_1K_10K
-        elif impedance < 100000:
-            return ImpedanceRange.RANGE_10K_100K
-        else:
-            return ImpedanceRange.OVER_100K
+        from . import utils
+        return utils.resolve_impedance_range(impedance)
     
     # ==================== Mediciones ====================
     

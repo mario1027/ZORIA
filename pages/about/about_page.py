@@ -45,7 +45,7 @@ TEAM_MEMBERS = [
         'name': 'Juan Carlos Alvarez Navarro',
         'role': 'Scientific Advisor',
         'title': 'Físico',
-        'description': 'Especialista en Espectroscopia. Experto en técnicas avanzadas de análisis óptico y metrología.',
+        'description': 'Especialista en instrumentacion, espectroscopia, óptica y emisión láser. Experto en técnicas de análisis óptico y metrología.',
         'image': '/assets/images/abaut/juancarlosalvarez.jpeg',
         'email': '',
         'linkedin': '#',

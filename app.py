@@ -15,14 +15,304 @@ License: MIT
 import os
 import logging
 import sys
+import signal
 from pathlib import Path
 from typing import Optional
+
+
+class _SafeStream:
+    """Evita BrokenPipeError cuando stdout/stderr están cerrados (reloader, background)."""
+
+    __slots__ = ("_stream",)
+
+    def __init__(self, stream):
+        self._stream = stream
+
+    def write(self, data):
+        try:
+            return self._stream.write(data)
+        except (BrokenPipeError, OSError):
+            return 0
+
+    def flush(self):
+        try:
+            self._stream.flush()
+        except (BrokenPipeError, OSError):
+            pass
+
+    def __getattr__(self, name):
+        return getattr(self._stream, name)
+
+
+def _patch_std_streams() -> None:
+    if hasattr(signal, 'SIGPIPE'):
+        signal.signal(signal.SIGPIPE, signal.SIG_IGN)
+    if not isinstance(sys.stdout, _SafeStream):
+        sys.stdout = _SafeStream(sys.stdout)
+    if not isinstance(sys.stderr, _SafeStream):
+        sys.stderr = _SafeStream(sys.stderr)
+
+
+_patch_std_streams()
+
+# =============================================================================
+# PARCHE: hash determinista para dash_redux (ReduxStore)
+# dash_redux usa Python's hash() en _surrogate_input_store, cuyo valor cambia
+# entre reinicios del proceso (hash randomization, PEP 456). Esto provoca que
+# los idx de los surrogate stores (spa_alert_ip / spa_notify_ip) cambien cada
+# vez que se reinicia el servidor, causando errores 500 cuando el navegador
+# todavía tiene el layout anterior cacheado.
+# Parcheamos _surrogate_input_store para usar hashlib.md5, que es determinista.
+# =============================================================================
+def _patch_redux_store_hash():
+    import hashlib
+    from copy import deepcopy
+    from dash import no_update as NOUPDATE, callback, ALL
+    from dash_prefix import match
+
+    try:
+        import dash_redux.redux_store as _rs
+
+        def _surrogate_input_store_deterministic(self, *_args):
+            def unpack(id):
+                if isinstance(id, dict):
+                    id = [part for part in id.values() if isinstance(part, str)]
+                    return '_'.join(id)
+                return id
+
+            def input_hash():
+                inputs = []
+                for inp in _args:
+                    id_str = f"{unpack(inp.component_id)}.{inp.component_property}"
+                    inputs.append(id_str)
+                combined = '|'.join(inputs).encode()
+                return hashlib.md5(combined).hexdigest()[:16]
+
+            id = input_hash()
+
+            if id not in self._surrogate_stores:
+                match_id = self._surrogate_store_match.idx(id)
+                from dash import dcc as _dcc
+                store = _dcc.Store(id=match_id, data=self.data, storage_type='memory')
+                self._surrogate_stores[id] = store
+                self.children.append(store)
+
+            return self._surrogate_stores[id]
+
+        _rs.ReduxStore._surrogate_input_store = _surrogate_input_store_deterministic
+
+    except Exception:
+        pass  # Si falla el parche no bloqueamos el arranque
+
+
+_patch_redux_store_hash()
 
 # =============================================================================
 # IMPORTS DE TERCEROS
 # =============================================================================
 from dash_spa import DashSPA, page_container
 from dash import html, dcc
+from dash.dash import _default_index
+
+# Parche clientside: tras registrar funciones inline, envuelve el namespace para
+# que hashes obsoletos (p. ej. tras hot-reload) no rompan handleClientside.apply.
+ZORIA_CLIENTSIDE_PATCH = """
+<script id="zoria-clientside-patch">
+(function () {
+  'use strict';
+  var dc = window.dash_clientside;
+  if (!dc || !dc._dashprivate_clientside_funcs) {
+    return;
+  }
+  var target = dc._dashprivate_clientside_funcs;
+  if (target.__zoriaPatched) {
+    return;
+  }
+  dc._dashprivate_clientside_funcs = new Proxy(target, {
+    get: function (t, prop) {
+      if (prop === '__zoriaPatched') {
+        return true;
+      }
+      var fn = t[prop];
+      if (typeof fn === 'function') {
+        return fn;
+      }
+      if (typeof prop === 'string' && /^[a-f0-9]{64}$/.test(prop)) {
+        return function () {
+          return dc.no_update;
+        };
+      }
+      return fn;
+    },
+    set: function (t, prop, value) {
+      t[prop] = value;
+      return true;
+    },
+  });
+})();
+</script>
+"""
+
+
+def _configure_dash_index(app) -> None:
+    app.index_string = _default_index.replace(
+        "{%renderer%}",
+        ZORIA_CLIENTSIDE_PATCH + "\n            {%renderer%}",
+    )
+
+
+def _is_broken_pipe(exc: BaseException | None) -> bool:
+    """True si exc o su cadena __cause__/__context__ es EPIPE (cliente desconectado)."""
+    import errno
+
+    seen: set[int] = set()
+    while exc is not None and id(exc) not in seen:
+        seen.add(id(exc))
+        if isinstance(exc, BrokenPipeError):
+            return True
+        if isinstance(exc, OSError) and getattr(exc, "errno", None) in (errno.EPIPE, 32):
+            return True
+        exc = exc.__cause__ or exc.__context__
+    return False
+
+
+def _patch_dash_callback_invoke() -> None:
+    """Evita que BrokenPipeError en callbacks tumbe la UI de Dash."""
+    try:
+        import functools
+        import dash._callback as _cb
+        from dash.exceptions import PreventUpdate
+
+        _orig = _cb._invoke_callback
+
+        @functools.wraps(_orig)
+        def _safe_invoke(func, *args, **kwargs):
+            try:
+                return _orig(func, *args, **kwargs)
+            except BaseException as exc:
+                if _is_broken_pipe(exc):
+                    raise PreventUpdate from None
+                raise
+
+        _cb._invoke_callback = _safe_invoke
+    except Exception:
+        pass
+
+
+def _patch_dash_traceback() -> None:
+    """No enviar tracebacks de BrokenPipeError al overlay del navegador."""
+    try:
+        import dash.dash as _dd
+
+        _orig = _dd._get_traceback
+
+        def _safe_traceback(secret, error):
+            if _is_broken_pipe(error):
+                return ""
+            return _orig(secret, error)
+
+        _dd._get_traceback = _safe_traceback
+    except Exception:
+        pass
+
+
+def _zoria_on_callback_error(err):
+    """Handler global: BrokenPipeError → no_update silencioso."""
+    if _is_broken_pipe(err):
+        from dash import no_update
+        return no_update
+    return None
+
+
+class _SafeWSGIIterator:
+    """Evita BrokenPipeError al escribir el cuerpo de la respuesta WSGI."""
+
+    __slots__ = ("_iter",)
+
+    def __init__(self, iterable):
+        self._iter = iter(iterable)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        import errno
+
+        try:
+            return next(self._iter)
+        except BrokenPipeError:
+            raise StopIteration from None
+        except OSError as exc:
+            if getattr(exc, "errno", None) in (errno.EPIPE, 32):
+                raise StopIteration from None
+            raise
+
+    def close(self):
+        closer = getattr(self._iter, "close", None)
+        if closer:
+            try:
+                closer()
+            except (BrokenPipeError, OSError):
+                pass
+
+
+def _safe_wsgi_app(wsgi_app):
+    """Middleware WSGI: cliente desconectado → respuesta vacía sin debugger."""
+
+    def middleware(environ, start_response):
+        import errno
+
+        try:
+            result = wsgi_app(environ, start_response)
+        except BrokenPipeError:
+            try:
+                start_response("204 No Content", [("Content-Type", "text/plain")])
+            except Exception:
+                pass
+            return [b""]
+        except OSError as exc:
+            if getattr(exc, "errno", None) in (errno.EPIPE, 32):
+                try:
+                    start_response("204 No Content", [("Content-Type", "text/plain")])
+                except Exception:
+                    pass
+                return [b""]
+            raise
+        if hasattr(result, "__iter__") and not isinstance(result, (bytes, str, bytearray)):
+            return _SafeWSGIIterator(result)
+        return result
+
+    return middleware
+
+
+def _configure_flask_safety(app) -> None:
+    """Desactiva el debugger de Werkzeug y suprime BrokenPipe en Flask."""
+    import errno
+    from flask import Response
+
+    app.server.debug = False
+    app.server.config["PROPAGATE_EXCEPTIONS"] = False
+    app.server.wsgi_app = _safe_wsgi_app(app.server.wsgi_app)
+
+    @app.server.errorhandler(BrokenPipeError)
+    def _handle_broken_pipe(_err):
+        return Response(status=204)
+
+    @app.server.errorhandler(OSError)
+    def _handle_os_error(err):
+        if getattr(err, "errno", None) in (errno.EPIPE, 32):
+            return Response(status=204)
+        raise err
+
+    @app.server.errorhandler(Exception)
+    def _handle_any_exception(err):
+        if _is_broken_pipe(err):
+            return Response(status=204)
+        raise err
+
+
+_patch_dash_callback_invoke()
+_patch_dash_traceback()
 
 # =============================================================================
 # IMPORTS LOCALES
@@ -33,6 +323,14 @@ from themes import VOLT
 # =============================================================================
 # CONFIGURACIÓN DE LOGGING
 # =============================================================================
+class _SafeStreamHandler(logging.StreamHandler):
+    def emit(self, record):
+        try:
+            super().emit(record)
+        except (BrokenPipeError, OSError):
+            pass
+
+
 def setup_logging(log_level: Optional[str] = None) -> logging.Logger:
     """
     Configura el sistema de logging de la aplicación.
@@ -51,7 +349,7 @@ def setup_logging(log_level: Optional[str] = None) -> logging.Logger:
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
         handlers=[
-            logging.StreamHandler(sys.stdout),
+            _SafeStreamHandler(sys.stdout),
         ]
     )
     
@@ -165,7 +463,14 @@ def register_global_connection_callbacks(app):
             # auto-connect-on-start está en True pero no fue quien disparó este callback
             # Solo actualizar estado sin intentar conectar de nuevo
             if device_state.is_connected and device_state.device is not None:
-                is_conn, status_msg, port_info = device_state.verify_connection()
+                if device_state.is_background_io_allowed():
+                    is_conn, status_msg, port_info = device_state.verify_connection()
+                else:
+                    is_conn, status_msg, port_info = (
+                        device_state.is_connected,
+                        "Conectado",
+                        device_state.port_info,
+                    )
                 if is_conn:
                     return ("Conectado", "connection-pulse connected",
                             port_info if port_info else "ADMX2001",
@@ -176,7 +481,14 @@ def register_global_connection_callbacks(app):
         # Si ya está conectado y no es desconexión, mostrar estado
         if triggered != 'sidebar-disconnect-btn':
             if device_state.is_connected and device_state.device is not None:
-                is_conn, status_msg, port_info = device_state.verify_connection()
+                if device_state.is_background_io_allowed():
+                    is_conn, status_msg, port_info = device_state.verify_connection()
+                else:
+                    is_conn, status_msg, port_info = (
+                        device_state.is_connected,
+                        "Conectado",
+                        device_state.port_info,
+                    )
                 if is_conn:
                     return ("Conectado", "connection-pulse connected",
                             port_info if port_info else "ADMX2001",
@@ -206,6 +518,11 @@ def register_global_connection_callbacks(app):
                 f"Iniciando conexión, is_manual_quick_connect={is_manual_quick_connect}"
             )
             
+            if not device_state.is_background_io_allowed():
+                logger.warning("Sesión exclusiva activa, omitiendo autoconexión")
+                return ("Ocupado", "connection-pulse disconnected",
+                        "ADMX2001", True, False, False)
+
             # Adquirir lock para evitar conexiones simultáneas
             if not device_state._operation_lock.acquire(blocking=False):
                 logger.warning("Otra operación en curso, saltando intento de conexión")
@@ -251,6 +568,8 @@ def register_global_connection_callbacks(app):
                         logger.info(f"Respuesta: {resp}")
                         
                         if resp and any(x in str(resp).upper() for x in ['ADMX', '2001', 'ANALOG']):
+                            dev.timeout = 2.0
+                            dev.serial.timeout = 2.0
                             dev.set_mdelay(1)
                             dev.set_tdelay(0)
                             device_state.set_device(dev, True)
@@ -299,6 +618,9 @@ def register_global_connection_callbacks(app):
         """
         if n_intervals is None or n_intervals == 0:
             raise PreventUpdate
+
+        if not device_state.is_background_io_allowed():
+            raise PreventUpdate
         
         try:
             # Verificar estado real del dispositivo
@@ -335,6 +657,8 @@ def register_global_connection_callbacks(app):
     )
     def trigger_auto_connect(n_intervals, autoconn_pref):
         """Trigger para auto-conexión al iniciar (solo una vez)"""
+        if not device_state.is_background_io_allowed():
+            raise PreventUpdate
         if n_intervals == 1 and not device_state.is_connected:
             # Respetar preferencia del usuario; si el store nunca fue configurado
             # (None o False por defecto), igualmente intentar conectar
@@ -513,9 +837,11 @@ def register_global_terminal_callbacks(app):
         if triggered_id in ['sidebar-terminal-btn', 'floating-terminal-btn']:
             if (triggered_id == 'sidebar-terminal-btn' and sidebar_clicks and sidebar_clicks > 0) or \
                (triggered_id == 'floating-terminal-btn' and floating_clicks and floating_clicks > 0):
+                device_state.force_exclusive_session('terminal')
                 return {'display': 'flex'}, 'draggable-window terminal-window'
         # Cerrar por botón de cerrar
         elif triggered_id == 'terminal-close-btn' and close_clicks and close_clicks > 0:
+            device_state.release_exclusive_session('terminal')
             return {'display': 'none'}, 'draggable-window terminal-window'
         
         raise PreventUpdate
@@ -603,7 +929,8 @@ def register_global_terminal_callbacks(app):
     def update_terminal_status(style):
         """Actualiza indicador de conexion, badges de telemetria y system-state"""
         if style and style.get('display') == 'flex':
-            is_conn, status_msg, port = device_state.verify_connection(force=False)
+            is_conn = device_state.is_connected
+            port = device_state.port_info
             is_streaming = device_state.is_streaming_in_progress()
             is_sweep = device_state.is_sweep_in_progress()
             
@@ -664,6 +991,8 @@ def register_global_terminal_callbacks(app):
     )
     def update_terminal_badges_periodic(n_intervals):
         """Actualiza badges de telemetria del terminal periodicamente"""
+        if not device_state.is_background_io_allowed():
+            raise PreventUpdate
         is_conn, status_msg, port = device_state.verify_connection(force=False)
         is_streaming = device_state.is_streaming_in_progress()
         is_sweep = device_state.is_sweep_in_progress()
@@ -891,6 +1220,7 @@ def register_global_terminal_callbacks(app):
             return [welcome], "", history_store, {'active': False, 'command': ''}, True, password_state
         
         # ===== DETERMINAR COMANDO =====
+        cmd_normalize_warning = None
         quick_commands = {
             'quick-measure-btn': 'z',
             'quick-help-btn': 'help',
@@ -901,7 +1231,11 @@ def register_global_terminal_callbacks(app):
         if triggered_id in quick_commands:
             command = quick_commands[triggered_id]
         elif triggered_id == 'command-input' and n_submit and n_submit > 0:
-            command = (command_text or "").strip()
+            from lib.utils import normalize_cli_command
+            raw_command = (command_text or "").strip()
+            command, cmd_normalize_warning = normalize_cli_command(raw_command)
+            if cmd_normalize_warning:
+                logger.warning(f"[Terminal] {cmd_normalize_warning}")
             if not command:
                 return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
             # Log para debug
@@ -909,29 +1243,38 @@ def register_global_terminal_callbacks(app):
         else:
             return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
 
+        cmd_lower_early = command.lower()
+
+        # Calibración de medición: nunca interpretar como contraseña interactiva
+        if any(
+            cmd_lower_early == x or cmd_lower_early.startswith(x + ' ')
+            for x in ('calibrate open', 'calibrate short', 'calibrate rt')
+        ):
+            password_state = {'waiting': False, 'original_command': ''}
+
         # ===== AUTO-STOP STREAMING SI HAY COMANDO NUEVO =====
         if not password_state.get('waiting', False):
             try:
-                if device_state.is_streaming_in_progress() and command.lower() != 'stop':
+                if device_state.is_streaming_in_progress() and cmd_lower_early != 'stop':
                     current_output.append(
                         html.Div([
                             html.Span("⏹ ", className="text-warning"),
                             html.Span("Deteniendo streaming activo...", className="text-muted fst-italic")
                         ], className="terminal-line")
                     )
-                    device_state.stop_streaming_command(wait_timeout=3.0)
+                    device_state.prepare_exclusive_access(stop_streaming_timeout=8.0)
             except Exception as e:
                 logger.warning(f"[Terminal] No se pudo detener streaming automáticamente: {e}")
         
         # ===== MANEJO DE PASSWORD: Si estamos esperando una contraseña =====
         if password_state.get('waiting', False):
-            logger.info(f"[Terminal] PASSWORD MODE: Enviando '{command}' como contraseña (TeraTerm style)")
+            logger.info("[Terminal] PASSWORD MODE: enviando contraseña (espera commit flash)")
             
             # El comando actual es la contraseña
             password = command
             if password.lower() == 'analog123':
                 password = 'Analog123'
-            original_command = password_state.get('original_command', 'calibrate commit')
+            original_command = password_state.get('original_command', '')
             keep_password_mode = False
             
             # Mostrar en terminal que se envió la contraseña (oculta)
@@ -949,134 +1292,58 @@ def register_global_terminal_callbacks(app):
             
             if is_device_connected and device is not None:
                 try:
-                    # Enviar contraseña directamente al serial (SIN esperar prompt ADMX2001>)
-                    device.serial.write((password + '\n').encode('utf-8'))
-                    device.serial.flush()
-                    logger.info(f"[Terminal] Contraseña enviada")
-                    
-                    # DETECCIÓN ACTIVA de respuesta (TeraTerm style)
-                    import time
-                    response_buffer = bytearray()
-                    timeout = 5.0
-                    start_time = time.time()
-                    success_detected = False
-                    
-                    while (time.time() - start_time) < timeout:
-                        if device.serial.in_waiting:
-                            chunk = device.serial.read(device.serial.in_waiting)
-                            response_buffer.extend(chunk)
-                            
-                            # Buscar confirmación de éxito o prompt
-                            buffer_str = response_buffer.decode('utf-8', errors='ignore')
-                            if 'success' in buffer_str.lower() or 'ADMX2001>' in buffer_str:
-                                success_detected = True
-                                logger.info(f"[Terminal] Respuesta recibida (success o prompt detectado)")
-                                # Pequeña pausa para datos finales
-                                time.sleep(0.05)
-                                if device.serial.in_waiting:
-                                    response_buffer.extend(device.serial.read(device.serial.in_waiting))
-                                break
-                        else:
-                            # No hay datos, breve pausa
-                            time.sleep(0.05)
-                    
-                    # Decodificar buffer
-                    response_text = response_buffer.decode('utf-8', errors='ignore')
-                    logger.info(f"[Terminal] Respuesta completa: {repr(response_text[:200])}")
-                    
-                    # Procesar respuesta con limpieza robusta (ANSI/VT100)
-                    from lib.utils import clean_response_line
-                    cleaned_lines = []
-                    password_as_command_detected = False
-                    for raw_line in response_text.split('\n'):
-                        line = clean_response_line(raw_line)
-                        if not line:
-                            continue
-                        if line == password:
-                            continue
-                        if line.lower().startswith("password>"):
-                            keep_password_mode = True
-                            continue
-                        if "command" in line.lower() and "not found" in line.lower() and password.lower() in line.lower():
-                            password_as_command_detected = True
-                        cleaned_lines.append(line)
+                    from lib.calibration import send_password_and_read
 
-                    # Fallback: si la contraseña se interpretó como comando, reintentar flujo completo automáticamente
-                    if password_as_command_detected and original_command.lower().startswith('calibrate '):
-                        logger.warning(f"[Terminal] Password interpretada como comando. Reintentando flujo: {original_command}")
-                        try:
-                            # 1) Re-enviar comando original
-                            device.serial.reset_input_buffer()
-                            device.serial.reset_output_buffer()
-                            device.serial.write((original_command + '\n').encode('utf-8'))
-                            device.serial.flush()
+                    device_state.prepare_exclusive_access(stop_streaming_timeout=4.0)
+                    if not device_state._operation_lock.acquire(blocking=True, timeout=30.0):
+                        raise TimeoutError(
+                            "Puerto ocupado; espere a que termine otra operación."
+                        )
+                    device_state._operation_lock_owner = 'terminal'
+                    try:
+                        current_output.append(
+                            html.Div([
+                                html.Span("", className="text-info"),
+                                html.Span(
+                                    "Guardando en flash (puede tardar ~10 s)...",
+                                    className="text-muted fst-italic",
+                                ),
+                            ], className="terminal-line")
+                        )
+                        cleaned_lines, need_retry, success = send_password_and_read(
+                            device, password, read_timeout=45.0
+                        )
+                    finally:
+                        device_state._operation_lock_owner = None
+                        device_state._operation_lock.release()
+                    keep_password_mode = need_retry and not success
 
-                            # 2) Esperar prompt PASSWORD>
-                            retry_buffer = bytearray()
-                            retry_start = time.time()
-                            retry_timeout = 3.0
-                            got_password_prompt = False
+                    if not cleaned_lines and success:
+                        cleaned_lines = ['commit : success']
 
-                            while (time.time() - retry_start) < retry_timeout:
-                                if device.serial.in_waiting:
-                                    retry_buffer.extend(device.serial.read(device.serial.in_waiting))
-                                    retry_text = retry_buffer.decode('utf-8', errors='ignore')
-                                    if 'PASSWORD>' in retry_text.upper():
-                                        got_password_prompt = True
-                                        break
-                                else:
-                                    time.sleep(0.05)
-
-                            if got_password_prompt:
-                                # 3) Enviar contraseña inmediatamente
-                                device.serial.write((password + '\n').encode('utf-8'))
-                                device.serial.flush()
-
-                                # 4) Leer respuesta final
-                                final_buffer = bytearray()
-                                final_start = time.time()
-                                final_timeout = 6.0
-                                while (time.time() - final_start) < final_timeout:
-                                    if device.serial.in_waiting:
-                                        final_buffer.extend(device.serial.read(device.serial.in_waiting))
-                                        final_text = final_buffer.decode('utf-8', errors='ignore')
-                                        if 'success' in final_text.lower() or 'done' in final_text.lower() or 'ADMX2001>' in final_text:
-                                            time.sleep(0.05)
-                                            if device.serial.in_waiting:
-                                                final_buffer.extend(device.serial.read(device.serial.in_waiting))
-                                            break
-                                    else:
-                                        time.sleep(0.05)
-
-                                # Re-procesar líneas con resultado final
-                                cleaned_lines = []
-                                keep_password_mode = False
-                                for raw_line in final_buffer.decode('utf-8', errors='ignore').split('\n'):
-                                    line = clean_response_line(raw_line)
-                                    if not line:
-                                        continue
-                                    if line == password:
-                                        continue
-                                    if line.lower().startswith("password>"):
-                                        keep_password_mode = True
-                                        continue
-                                    cleaned_lines.append(line)
-                            else:
-                                keep_password_mode = True
-                                cleaned_lines = ["No se pudo reabrir prompt PASSWORD>. Intente nuevamente."]
-                        except Exception as retry_error:
-                            logger.warning(f"[Terminal] Reintento automático de password falló: {retry_error}")
-                            keep_password_mode = True
-                            cleaned_lines = ["No se pudo completar reintento automático. Reingrese la contraseña."]
-                    
                     if cleaned_lines:
                         for line in cleaned_lines:
                             # Determinar clase CSS
                             line_lower = line.lower()
-                            if 'success' in line_lower or 'done' in line_lower:
+                            if success or ('commit' in line_lower and 'success' in line_lower):
                                 css_class = "terminal-response-success"
                                 prefix = html.Span("", className="terminal-success-icon")
-                            elif "command" in line_lower and "not found" in line_lower and password.lower() in line_lower:
+                            elif any(
+                                k in line_lower
+                                for k in ('invalid', 'incorrect', 'fail', 'error')
+                            ):
+                                css_class = "terminal-response-error"
+                                prefix = html.Span("", className="terminal-error-icon")
+                                keep_password_mode = True
+                            elif line_lower.startswith('freq :'):
+                                css_class = "terminal-response-warning"
+                                prefix = html.Span("", className="terminal-warning-icon")
+                                line = (
+                                    "Respuesta inesperada (¿prompt PASSWORD> expirado?). "
+                                    "Vuelva a ejecutar calibrate commit."
+                                )
+                                keep_password_mode = False
+                            elif "command" in line_lower and "not found" in line_lower:
                                 css_class = "terminal-response-warning"
                                 prefix = html.Span("", className="terminal-warning-icon")
                                 line = "Contraseña incorrecta o prompt expirado. Intente nuevamente."
@@ -1091,6 +1358,17 @@ def register_global_terminal_callbacks(app):
                             current_output.append(
                                 html.Div([prefix, html.Span(line, className=css_class)], className="terminal-line")
                             )
+                    elif need_retry:
+                        keep_password_mode = True
+                        current_output.append(
+                            html.Div([
+                                html.Span("", className="terminal-warning-icon"),
+                                html.Span(
+                                    "Contraseña incorrecta o prompt expirado.",
+                                    className="terminal-response-warning",
+                                ),
+                            ], className="terminal-line")
+                        )
                     else:
                         current_output.append(
                             html.Div([
@@ -1157,9 +1435,34 @@ def register_global_terminal_callbacks(app):
             ], className="terminal-line")
         ])
         current_output.append(cmd_block)
-        
+
+        if cmd_normalize_warning:
+            current_output.append(
+                html.Div([
+                    html.Span("", className="text-warning"),
+                    html.Span(cmd_normalize_warning, className="text-muted fst-italic")
+                ], className="terminal-line")
+            )
+
         # ===== CORRECCIÓN DE COMANDOS COMUNES =====
         cmd_lower = command.lower()
+
+        import re as _re_cal
+        _rt_match = _re_cal.match(
+            r'^calibrate\s+rt\s+([-+eE0-9.]+)\s+xt\s+([-+eE0-9.]+)\s*$',
+            command.strip(),
+            _re_cal.IGNORECASE,
+        )
+        if _rt_match:
+            from lib.utils import format_calibrate_load_command
+            try:
+                command = format_calibrate_load_command(
+                    float(_rt_match.group(1)),
+                    float(_rt_match.group(2)),
+                )
+                cmd_lower = command.lower()
+            except ValueError:
+                pass
         
         # Detectar "calibration" y sugerir "calibrate"
         if cmd_lower.startswith('calibration '):
@@ -1249,7 +1552,7 @@ def register_global_terminal_callbacks(app):
             # Intentar obtener información del hardware
             if is_device_connected and device is not None:
                 try:
-                    hw_response = device_state.send_command('*idn')
+                    hw_response = device_state.send_command('*idn', owner='terminal')
                     response_children.append(
                         html.Div([
                             html.Span("  ", className="terminal-indent"),
@@ -1439,7 +1742,9 @@ def register_global_terminal_callbacks(app):
                 
                 # Iniciar streaming en thread separado
                 stream_timeout = 45.0 if cmd_lower_check == 'z' else 30.0
-                device_state.start_streaming_command(command, timeout=stream_timeout)
+                device_state.start_streaming_command(
+                    command, timeout=stream_timeout, owner='terminal_streaming'
+                )
                 
                 # Activar polling interval
                 streaming_state = {'active': True, 'command': command, 'received': 0}
@@ -1557,208 +1862,157 @@ def register_global_terminal_callbacks(app):
                         traceback.print_exc()
                         response = [f"Error: {e}"]
                 
-                # ===== MANEJO ESPECIAL: calibrate commit (requiere contraseña) =====
+                # ===== calibrate commit: interactivo o inline =====
                 elif cmd_lower_check.startswith('calibrate commit'):
-                    # Parsear argumentos: calibrate commit [password] [timestamp]
-                    parts = command.split()
-                    password = None
-                    timestamp = None
-                    
-                    if len(parts) >= 3:  # calibrate commit <password>
-                        password = parts[2]
-                    if len(parts) >= 4:  # calibrate commit <password> <timestamp>
-                        timestamp = parts[3]
-                    
-                    if password:
-                        # Usuario proporcionó contraseña - enviar todo el flujo (TeraTerm style)
-                        logger.info(f"[Terminal] Calibrate commit con contraseña proporcionada: '{password}' (TeraTerm style)")
-                        
-                        # Construir comando commit
-                        import time
-                        if timestamp:
-                            commit_cmd = f"calibrate commit {timestamp}"
+                    from lib.calibration_parser import parse_calibrate_commit_args
+                    from lib.calibration import (
+                        run_calibrate_commit_serial,
+                        start_password_prompt_command,
+                    )
+
+                    timestamp, inline_password = parse_calibrate_commit_args(command)
+                    try:
+                        if inline_password:
+                            ts = int(float(timestamp)) if timestamp else None
+                            response = run_calibrate_commit_serial(
+                                device_state.device,
+                                password=inline_password,
+                                timestamp=ts,
+                            )
+                            logger.info(
+                                f"[Terminal] calibrate commit OK ({len(response)} líneas)"
+                            )
                         else:
-                            commit_cmd = f"calibrate commit {int(time.time())}"
-                        
-                        logger.info(f"[Terminal] Enviando: {commit_cmd}")
-                        
-                        try:
-                            device = device_state.device
-                            
-                            # Limpiar buffers antes de comenzar
-                            device.serial.reset_input_buffer()
-                            device.serial.reset_output_buffer()
-                            
-                            # Enviar comando commit
-                            device.serial.write((commit_cmd + '\n').encode('utf-8'))
-                            device.serial.flush()
-                            
-                            # DETECCIÓN ACTIVA del prompt PASSWORD>
-                            response_buffer = bytearray()
-                            timeout = 5.0
-                            start_time = time.time()
-                            password_prompt_received = False
-                            
-                            while (time.time() - start_time) < timeout:
-                                if device.serial.in_waiting:
-                                    chunk = device.serial.read(device.serial.in_waiting)
-                                    response_buffer.extend(chunk)
-                                    
-                                    # Buscar el prompt de contraseña
-                                    buffer_str = response_buffer.decode('utf-8', errors='ignore')
-                                    if 'PASSWORD>' in buffer_str.upper():
-                                        password_prompt_received = True
-                                        logger.info(f"[Terminal] PASSWORD> detectado activamente")
-                                        # Pequeña pausa para datos finales
-                                        time.sleep(0.05)
-                                        if device.serial.in_waiting:
-                                            response_buffer.extend(device.serial.read(device.serial.in_waiting))
-                                        break
-                                else:
-                                    time.sleep(0.05)
-                            
-                            first_response = response_buffer.decode('utf-8', errors='ignore')
-                            logger.info(f"[Terminal] Respuesta después de commit: {repr(first_response[:200])}")
-                            
-                            # Verificar que recibimos PASSWORD>
-                            if not password_prompt_received:
-                                logger.warning(f"[Terminal] No se recibió PASSWORD>, respuesta: {first_response}")
-                            
-                            # Enviar contraseña (sin esperar prompt ADMX2001>)
-                            logger.info(f"[Terminal] Enviando contraseña...")
-                            device.serial.write((password + '\n').encode('utf-8'))
-                            device.serial.flush()
-                            
-                            # DETECCIÓN ACTIVA de respuesta final
-                            commit_response_buffer = bytearray()
-                            timeout = 5.0
-                            start_time = time.time()
-                            success_detected = False
-                            
-                            while (time.time() - start_time) < timeout:
-                                if device.serial.in_waiting:
-                                    chunk = device.serial.read(device.serial.in_waiting)
-                                    commit_response_buffer.extend(chunk)
-                                    
-                                    # Buscar confirmación
-                                    buffer_str = commit_response_buffer.decode('utf-8', errors='ignore')
-                                    if 'success' in buffer_str.lower() or 'ADMX2001>' in buffer_str or 'invalid' in buffer_str.lower():
-                                        success_detected = True
-                                        logger.info(f"[Terminal] Respuesta final recibida")
-                                        # Pequeña pausa para datos finales
-                                        time.sleep(0.05)
-                                        if device.serial.in_waiting:
-                                            commit_response_buffer.extend(device.serial.read(device.serial.in_waiting))
-                                        break
-                                else:
-                                    time.sleep(0.05)
-                            
-                            commit_response = commit_response_buffer.decode('utf-8', errors='ignore')
-                            logger.info(f"[Terminal] Respuesta completa del commit: {repr(commit_response[:200])}")
-                            
-                            # Procesar respuesta
-                            from lib.utils import clean_response_line
-                            response = []
-                            for line in (first_response + commit_response).split('\n'):
-                                clean_line = clean_response_line(line)
-                                if clean_line:
-                                    # Filtrar eco del comando y timestamp
-                                    if clean_line.lower() != commit_cmd.lower() and not clean_line.isdigit():
-                                        response.append(clean_line)
-                            
-                            logger.info(f"[Terminal] Respuesta procesada: {len(response)} líneas")
-                            
-                        except Exception as e:
-                            logger.error(f"[Terminal] Error en commit: {e}")
-                            import traceback
-                            traceback.print_exc()
-                            response = [f"Error: {e}"]
-                    else:
-                        # Sin contraseña - flujo interactivo: generar timestamp y enviar
-                        logger.info(f"[Terminal] calibrate commit sin contraseña - modo interactivo (TeraTerm style)")
-                        
-                        import time
-                        timestamp = int(time.time())
-                        commit_cmd = f"calibrate commit {timestamp}"
-                        
-                        logger.info(f"[Terminal] Enviando comando con timestamp Unix: {commit_cmd}")
-                        
-                        try:
-                            device = device_state.device
-                            
-                            # Limpiar buffers antes de comenzar (TeraTerm style)
-                            device.serial.reset_input_buffer()
-                            device.serial.reset_output_buffer()
-                            
-                            # Enviar comando commit
-                            device.serial.write((commit_cmd + '\n').encode('utf-8'))
-                            device.serial.flush()
-                            logger.debug(f"[Terminal] Comando enviado: {commit_cmd}")
-                            
-                            # DETECCIÓN ACTIVA del prompt PASSWORD> (similar a TeraTerm)
-                            response_buffer = bytearray()
-                            timeout = 5.0
-                            start_time = time.time()
-                            password_prompt_received = False
-                            
-                            while (time.time() - start_time) < timeout:
-                                if device.serial.in_waiting:
-                                    chunk = device.serial.read(device.serial.in_waiting)
-                                    response_buffer.extend(chunk)
-                                    
-                                    # Buscar el prompt de contraseña (case-insensitive)
-                                    buffer_str = response_buffer.decode('utf-8', errors='ignore')
-                                    if 'PASSWORD>' in buffer_str.upper():
-                                        password_prompt_received = True
-                                        logger.info(f"[Terminal] PASSWORD> detectado activamente")
-                                        # Pequeña pausa para datos finales
-                                        time.sleep(0.05)
-                                        # Leer cualquier dato adicional
-                                        if device.serial.in_waiting:
-                                            response_buffer.extend(device.serial.read(device.serial.in_waiting))
-                                        break
-                                else:
-                                    # No hay datos, breve pausa
-                                    time.sleep(0.05)
-                            
-                            # Decodificar buffer
-                            response_text = response_buffer.decode('utf-8', errors='ignore')
-                            
-                            if not password_prompt_received:
-                                logger.warning(f"[Terminal] No se recibió PASSWORD> en {timeout}s")
-                                logger.warning(f"[Terminal] Respuesta recibida: {repr(response_text)}")
-                            
-                            # Separar en líneas para mostrar
-                            response = [line.strip() for line in response_text.split('\n') if line.strip()]
-                            logger.info(f"[Terminal] Respuesta recibida: {len(response)} líneas (prompt detectado: {password_prompt_received})")
-                            
-                        except Exception as e:
-                            logger.error(f"[Terminal] Error en commit interactivo: {e}")
-                            import traceback
-                            traceback.print_exc()
-                            response = [f"Error: {e}"]
+                            if timestamp:
+                                commit_cmd = f"calibrate commit {timestamp}"
+                            else:
+                                commit_cmd = "calibrate commit"
+
+                            got_prompt = False
+                            response = None
+                            device_state.prepare_exclusive_access(stop_streaming_timeout=4.0)
+                            if not device_state._operation_lock.acquire(
+                                blocking=True, timeout=30.0
+                            ):
+                                response = [
+                                    "Puerto ocupado; no se pudo iniciar calibrate commit."
+                                ]
+                            else:
+                                device_state._operation_lock_owner = 'terminal'
+                                try:
+                                    _, got_prompt = start_password_prompt_command(
+                                        device_state.device, commit_cmd
+                                    )
+                                finally:
+                                    device_state._operation_lock_owner = None
+                                    device_state._operation_lock.release()
+
+                            if got_prompt:
+                                password_state = {
+                                    'waiting': True,
+                                    'original_command': commit_cmd,
+                                }
+                                current_output.append(
+                                    html.Div([
+                                        html.Span("", className="text-warning"),
+                                        html.Span(
+                                            "PASSWORD> ",
+                                            className="terminal-response-warning fw-bold",
+                                        ),
+                                        html.Span(
+                                            "Ingrese la contraseña:",
+                                            className="text-muted fst-italic",
+                                        ),
+                                    ], className="terminal-line")
+                                )
+                                current_output.append(
+                                    html.Div([
+                                        html.Span("", className="text-info"),
+                                        html.Span(
+                                            "Contraseña predeterminada: ",
+                                            className="text-muted",
+                                        ),
+                                        html.Code(
+                                            "Analog123",
+                                            className="terminal-code text-success",
+                                        ),
+                                    ], className="terminal-line")
+                                )
+                                current_output.append(html.Div(className="terminal-separator"))
+                                if len(current_output) > 500:
+                                    current_output = current_output[-500:]
+                                return (
+                                    current_output,
+                                    "",
+                                    history_store,
+                                    {'active': False, 'command': ''},
+                                    True,
+                                    password_state,
+                                )
+                            if response is None:
+                                response = [
+                                    f"No se recibió PASSWORD> tras '{commit_cmd}'"
+                                ]
+                    except Exception as e:
+                        logger.error(f"[Terminal] calibrate commit falló: {e}")
+                        response = [f"Error: {e}"]
                 
                 # Determinar timeout según el comando
                 elif cmd_lower_check.startswith('calibrate') or cmd_lower_check == '*idn' or cmd_lower_check == 'z':
-                    timeout = 30.0
-                    logger.info(f"[Terminal] ⏱ Usando timeout extendido: {timeout}s")
-                    response = device_state.send_command(command, timeout=timeout, lock_timeout=5.0)
+                    is_cal_measurement = any(
+                        x in cmd_lower_check
+                        for x in ('calibrate open', 'calibrate short', 'calibrate rt')
+                    )
+                    timeout = 120.0 if is_cal_measurement else 30.0
+                    lock_timeout = 90.0
+
+                    if is_cal_measurement:
+                        device_state.prepare_exclusive_access(stop_streaming_timeout=8.0)
+                        current_output.append(
+                            html.Div([
+                                html.Span("", className="text-info"),
+                                html.Span(
+                                    "Enviando al ADMX2001 (puede tardar con frecuencia baja)...",
+                                    className="text-muted fst-italic"
+                                )
+                            ], className="terminal-line")
+                        )
+
+                    logger.info(
+                        f"[Terminal] ⏱ timeout={timeout}s lock_timeout={lock_timeout}s"
+                    )
+                    response = device_state.send_command(
+                        command,
+                        timeout=timeout,
+                        lock_timeout=lock_timeout,
+                        preempt_streaming=is_cal_measurement,
+                        owner='terminal',
+                    )
                 else:
                     # Comandos rápidos, usar timeout default
-                    response = device_state.send_command(command, lock_timeout=5.0)
+                    response = device_state.send_command(
+                        command, lock_timeout=15.0, owner='terminal'
+                    )
                 
                 logger.info(f"[Terminal] ◀ Recibido: {len(response) if response else 0} líneas")
 
-                # Reintento automático para calibración si llegó vacío (evita falsos 'sin respuesta')
-                if (not response) and cmd_lower_check.startswith('calibrate') and (not cmd_lower_check.startswith('calibrate commit')) and (not cmd_lower_check.startswith('calibrate erase')):
-                    logger.warning(f"[Terminal] Respuesta vacía en calibración. Reintentando: '{command}'")
-                    try:
-                        import time
-                        time.sleep(0.15)
-                        response = device_state.send_command(command, timeout=45.0, lock_timeout=8.0)
-                        logger.info(f"[Terminal] ◀ Reintento calibración: {len(response) if response else 0} líneas")
-                    except Exception as retry_error:
-                        logger.warning(f"[Terminal] Reintento de calibración falló: {retry_error}")
+                # Calibración vacía: no reenviar aquí (bloquea el lock si otro callback sigue activo).
+                # admx2001 ya espera más allá del eco VT100 y reintenta en send_command.
+                if (not response) and any(
+                    x in cmd_lower_check
+                    for x in ('calibrate open', 'calibrate short', 'calibrate rt')
+                ):
+                    current_output.append(
+                        html.Div([
+                            html.Span("⚠ ", className="text-warning"),
+                            html.Span(
+                                "Sin datos de medición (solo eco del terminal). "
+                                "Espere 1–2 min y no pulse el comando varias veces. "
+                                "Configure frequency/magnitude/average antes de calibrate.",
+                                className="text-muted fst-italic"
+                            )
+                        ], className="terminal-line")
+                    )
                 
                 # Log completo de la respuesta para comandos de calibración
                 if cmd_lower_check.startswith('calibrate'):
@@ -1976,12 +2230,39 @@ def register_global_terminal_callbacks(app):
                 else:
                     # Respuesta None o vacía desde el dispositivo
                     logger.warning(f"[Terminal] Dispositivo retornó respuesta vacía o None para comando: '{command}'")
+                    if cmd_lower_check == 'calibrate list':
+                        current_output.append(
+                            html.Div([
+                                html.Span("  ", className="terminal-indent"),
+                                html.Span(
+                                    "No hay calibraciones almacenadas en el dispositivo.",
+                                    className="terminal-response-line text-muted"
+                                )
+                            ], className="terminal-line")
+                        )
+                        current_output.append(html.Div(className="terminal-separator"))
+                        if len(current_output) > 500:
+                            current_output = current_output[-500:]
+                        return current_output, "", history_store, {'active': False, 'command': ''}, True, password_state
+
                     current_output.append(
                         html.Div([
                             html.Span("  ", className="terminal-indent"),
                             html.Span("(sin respuesta del dispositivo)", className="terminal-empty-response text-muted")
                         ], className="terminal-line")
                     )
+                    if 'calibrate rt' in cmd_lower_check:
+                        current_output.append(
+                            html.Div([
+                                html.Span("", className="text-warning"),
+                                html.Span(
+                                    "LOAD tarda con average/tdelay altos o frecuencia baja. "
+                                    "Ejecute antes calibrate open y calibrate short. "
+                                    "Espere hasta 2 minutos.",
+                                    className="text-muted fst-italic"
+                                )
+                            ], className="terminal-line")
+                        )
                     current_output.append(
                         html.Div([
                             html.Span("", className="text-info"),
@@ -2005,6 +2286,18 @@ def register_global_terminal_callbacks(app):
                 # Mensaje más amigable si es error de conexión
                 if "not connected" in error_msg.lower() or "no conectado" in error_msg.lower():
                     error_msg = "Dispositivo desconectado. Reconecte desde el Dashboard."
+                elif "ocupado" in error_msg.lower():
+                    busy_parts = []
+                    if device_state.is_streaming_in_progress():
+                        busy_parts.append("streaming CLI activo")
+                    if device_state.is_sweep_in_progress():
+                        busy_parts.append("barrido en curso")
+                    hint = (
+                        " Detenga el barrido/streaming o espere a que termine el wizard de calibración."
+                        if busy_parts
+                        else " Espere unos segundos y reintente; otro hilo está usando el puerto serie."
+                    )
+                    error_msg = f"{error_msg}.{hint}"
                 current_output.append(
                     html.Div([
                         html.Span("", className="terminal-error-icon"),
@@ -2267,27 +2560,105 @@ def register_global_i18n_callbacks(app):
         return result
 
     # ── 3. Translations store → aplicar en el DOM (clientside) ─────────────────
-    # Usa ClientsideFunction para registrar la función desde i18n_client.js, evitando
-    # problemas de Dash 3 con callbacks inline que colisionan con nombres JS reservados.
-    # La función window.dash_clientside.zoria.applyI18n está definida en assets/js/i18n_client.js.
-    from dash import ClientsideFunction
+    # Inline (no ClientsideFunction): dash_renderer reinicializa window.dash_clientside
+    # después de i18n_client.js y borraría window.dash_clientside.zoria.*.
     app.clientside_callback(
-        ClientsideFunction(namespace='zoria', function_name='applyI18n'),
+        """
+        function(payload) {
+            if (!payload || !payload['_lang']) {
+                return window.dash_clientside.no_update;
+            }
+            try {
+                if (window.ZORIA_I18N && typeof window.ZORIA_I18N.apply === 'function') {
+                    window.ZORIA_I18N.apply(payload['_lang'], payload);
+                }
+            } catch (e) {
+                console.error('[i18n] applyI18n failed:', e);
+            }
+            return window.dash_clientside.no_update;
+        }
+        """,
         Output('lang-apply-done', 'data'),
         Input('lang-translations-store', 'data'),
-        prevent_initial_call=False,
+        prevent_initial_call=True,
     )
 
     # ── 4. Theme store → aplicar data-theme en <html> (clientside) ─────────────
-    # Sincroniza theme-store con el atributo data-theme del elemento <html>
-    # para activar los CSS custom properties del design system.
-    # Función definida en assets/js/i18n_client.js como window.dash_clientside.zoria.applyTheme
     app.clientside_callback(
-        ClientsideFunction(namespace='zoria', function_name='applyTheme'),
+        """
+        function(theme) {
+            var newTheme = (theme === 'light') ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            return newTheme;
+        }
+        """,
         Output('theme-dom-sync', 'data'),
         Input('theme-store', 'data'),
         prevent_initial_call=False,
     )
+
+
+def _resolve_registered_page_layout(path_id: str = ""):
+    """Resuelve layout y título de una página registrada en Dash Pages."""
+    from dash._pages import _path_to_page
+
+    page, path_variables = _path_to_page(path_id.strip("/") or "")
+    if page == {}:
+        return html.H1("404 - Page not found"), DEFAULT_CONFIG["title"]
+
+    layout = page.get("layout", "")
+    title = page.get("title", DEFAULT_CONFIG["title"])
+    if callable(layout):
+        layout = layout(**(path_variables or {}))
+    if callable(title):
+        title = title(**(path_variables or {}))
+    return layout, title
+
+
+def register_spa_bootstrap_callback(app):
+    """
+    Carga la página SPA según la URL actual al arrancar.
+
+    Con prevent_initial_callbacks=True el router interno de Dash Pages no
+    ejecuta la carga inicial. Este bootstrap (allow_duplicate) rellena
+    _pages_content una vez; la navegación posterior la gestiona Pages.
+    """
+    from dash import Input, Output
+    from dash.exceptions import PreventUpdate
+
+    app.clientside_callback(
+        """
+        function(n) {
+            if (n === undefined || n === null) {
+                return window.dash_clientside.no_update;
+            }
+            return {
+                pathname: window.location.pathname || '/',
+                search: window.location.search || ''
+            };
+        }
+        """,
+        Output('spa-bootstrap-route', 'data'),
+        Input('spa-bootstrap-interval', 'n_intervals'),
+        prevent_initial_call=True,
+    )
+
+    @app.callback(
+        Output('_pages_content', 'children', allow_duplicate=True),
+        Output('_pages_store', 'data', allow_duplicate=True),
+        Input('spa-bootstrap-route', 'data'),
+        prevent_initial_call=False,
+    )
+    def bootstrap_spa_page(route):
+        if not route:
+            raise PreventUpdate
+
+        from dash._pages import _parse_query_string
+
+        path_id = (route.get('pathname') or '/').strip('/') or ''
+        query_parameters = _parse_query_string(route.get('search') or '')
+        layout, title = _resolve_registered_page_layout(path_id)
+        return layout, {'title': title}
 
 
 def set_global_device(device, is_connected=False):
@@ -2373,6 +2744,15 @@ def create_app() -> DashSPA:
             assets_folder=DEFAULT_CONFIG["assets_folder"],
             title=DEFAULT_CONFIG["title"],
             update_title=None,
+            on_error=_zoria_on_callback_error,
+        )
+        _configure_dash_index(app)
+        config = get_app_config()
+        app.enable_dev_tools(
+            debug=config["debug"],
+            dev_tools_ui=False,
+            # Evita @errorhandler(Exception) de Dash → HTML del debugger Werkzeug en el overlay
+            dev_tools_prune_errors=False,
         )
         
         # Configurar favicon
@@ -2383,10 +2763,11 @@ def create_app() -> DashSPA:
         
         # Configurar servidor Flask
         app.server.config["SECRET_KEY"] = config["secret_key"]
-        
-        # Configurar modo debug
+        _configure_flask_safety(app)
+
+        # Dash dev tools (props_check, etc.) — sin debugger HTML de Werkzeug
         if config["debug"]:
-            logger.info(" Modo DEBUG activado")
+            logger.info(" Modo DEBUG Dash activado (Werkzeug debugger desactivado)")
         
         logger.info(" Registrando páginas...")
         
@@ -2398,6 +2779,7 @@ def create_app() -> DashSPA:
             from pages.calibration.calibration_page import register_calibration_page
             from pages.about.about_page import register_about_page
             from pages.config.config_page import register_config_page
+            from pages.documentation.documentation_page import register_documentation_page
             from pages.common.terminal_component import global_terminal_component
             from dash import html
             
@@ -2415,6 +2797,9 @@ def create_app() -> DashSPA:
             
             register_config_page(app)
             logger.info("  Config registrado")
+
+            register_documentation_page(app)
+            logger.info("  Documentación registrada")
             
             # Registrar callbacks globales de conexión
             register_global_connection_callbacks(app)
@@ -2427,6 +2812,9 @@ def create_app() -> DashSPA:
             # Registrar callbacks globales de i18n (multilenguaje)
             register_global_i18n_callbacks(app)
             logger.info("  i18n multilenguaje registrado")
+
+            register_spa_bootstrap_callback(app)
+            logger.info("  Bootstrap SPA por URL registrado")
             
         except ImportError as e:
             logger.error(f"Error registrando páginas: {e}")
@@ -2450,7 +2838,12 @@ def create_app() -> DashSPA:
             dcc.Store(id='theme-dom-sync', data='dark'),  # Output del callback que sincroniza data-theme al <html>
             # Config preferences (persisten en localStorage)
             dcc.Store(id='autoconn-store', storage_type='local', data=True),
+            # Medidas de barrido (persisten en localStorage entre recargas y páginas)
+            dcc.Store(id='sweep-data-store', storage_type='local', data=None),
+            dcc.Store(id='phase-negative-store', storage_type='local', data=False),
             # Intervals globales
+            dcc.Store(id='spa-bootstrap-route'),
+            dcc.Interval(id='spa-bootstrap-interval', interval=50, max_intervals=1, n_intervals=0),
             dcc.Interval(id='ports-interval', interval=2000, n_intervals=0),  # Detección de puertos
             dcc.Interval(id='connection-monitor-interval', interval=5000, n_intervals=0),  # Monitor activo de conexión (cada 5s)
             # Terminal global
@@ -2492,12 +2885,12 @@ def main():
         logger.info(f" Iniciando servidor en http://{config['host']}:{config['port']}")
         logger.info(f"⏹  Para detener presione Ctrl+C")
         
-        # Ejecutar aplicación
+        # Ejecutar aplicación (debug=False evita overlay Werkzeug en BrokenPipe)
         app.run(
             host=config["host"],
             port=config["port"],
             debug=False,
-            use_reloader=False
+            use_reloader=config["use_reloader"],
         )
         
     except KeyboardInterrupt:

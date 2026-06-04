@@ -34,6 +34,17 @@
   if (_needsBlock) {
     document.documentElement.classList.add('i18n-pending');
   }
+  /* Tema: aplicar antes de paint (theme-dom-sync clientside evita initial_call) */
+  try {
+    var _earlyThemeRaw = localStorage.getItem('theme-store');
+    if (_earlyThemeRaw) {
+      var _earlyTheme = JSON.parse(_earlyThemeRaw);
+      document.documentElement.setAttribute(
+        'data-theme',
+        _earlyTheme === 'light' ? 'light' : 'dark'
+      );
+    }
+  } catch (e) {}
   /* Safety net: si en 1200 ms no se quitó la clase, la quitamos solos */
   var _fouc_timeout = _needsBlock ? setTimeout(function () {
     document.documentElement.classList.remove('i18n-pending');
@@ -561,26 +572,32 @@
     }
   });
 
-  /* ── 8. Función registrada en window.dash_clientside para Dash ─────────── */
-  window.dash_clientside = window.dash_clientside || {};
-  window.dash_clientside.zoria = window.dash_clientside.zoria || {};
-  window.dash_clientside.zoria.applyI18n = function (payload) {
-    if (!payload) return window.dash_clientside.no_update;
-    var lang = payload['_lang'];
-    if (!lang) return window.dash_clientside.no_update;
-    try {
-      applyTranslations(lang, payload);
-    } catch (e) {
-      console.error('[i18n] applyI18n failed:', e);
-    }
-    return window.dash_clientside.no_update;
-  };
+  /* ── 8. Funciones dash_clientside (re-registrar tras dash_renderer) ───── */
+  function registerDashClientsideZoria() {
+    window.dash_clientside = window.dash_clientside || {};
+    window.dash_clientside.zoria = window.dash_clientside.zoria || {};
+    window.dash_clientside.zoria.applyI18n = function (payload) {
+      if (!payload) return window.dash_clientside.no_update;
+      var lang = payload['_lang'];
+      if (!lang) return window.dash_clientside.no_update;
+      try {
+        applyTranslations(lang, payload);
+      } catch (e) {
+        console.error('[i18n] applyI18n failed:', e);
+      }
+      return window.dash_clientside.no_update;
+    };
+    window.dash_clientside.zoria.applyTheme = function (theme) {
+      var newTheme = (theme === 'light') ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      return newTheme;
+    };
+  }
 
-  window.dash_clientside.zoria.applyTheme = function (theme) {
-    var newTheme = (theme === 'light') ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', newTheme);
-    return newTheme;
-  };
+  registerDashClientsideZoria();
+  window.addEventListener('load', registerDashClientsideZoria);
+  setTimeout(registerDashClientsideZoria, 0);
+  setTimeout(registerDashClientsideZoria, 250);
 
   /* ── 9. Keyboard shortcuts ─────────────────────────────────────────────── */
   document.addEventListener('keydown', function (e) {

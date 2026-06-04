@@ -17,6 +17,76 @@
     box-shadow: 0 0 0 0.2rem var(--z-color-primary-subtle, rgba(0, 123, 255, 0.25));
 }
 
+/* ── Progreso inline del barrido ─────────────────────────────────────────── */
+.sweep-progress-row {
+    border-top: 1px solid var(--z-color-border-subtle, rgba(255, 255, 255, 0.08));
+}
+
+.sweep-trigger-hint {
+    font-size: 0.75rem;
+}
+
+.sweep-progress-panel {
+    padding: 0.25rem 0 0;
+    margin-top: 0.1rem;
+}
+
+.sweep-progress-track {
+    height: 4px;
+    border-radius: 999px;
+    background: var(--z-color-border-subtle, rgba(255, 255, 255, 0.12));
+    overflow: hidden;
+}
+
+.sweep-progress-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--z-color-primary, #3b82f6), #60a5fa);
+    transition: width 0.25s ease;
+    min-width: 0;
+}
+
+.sweep-progress-pct {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--z-color-text-secondary, #94a3b8);
+    font-variant-numeric: tabular-nums;
+}
+
+.sweep-progress-freq {
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+}
+
+[data-theme="light"] .sweep-progress-track {
+    background: rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="light"] .sweep-progress-fill {
+    background: linear-gradient(90deg, #2563eb, #3b82f6);
+}
+
+.sweep-progress-panel .sweep-status-bar {
+    margin-top: 0.25rem;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.sweep-progress-panel .sweep-status-bar.running,
+.sweep-progress-panel .sweep-status-bar.completed,
+.sweep-progress-panel .sweep-status-bar.error {
+    background: transparent !important;
+    border: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sweep-progress-fill {
+        transition: none;
+    }
+}
+
 /* ── Botones de acción del barrido ───────────────────────────────────────── */
 .sweep-action-btn {
     display: inline-flex;

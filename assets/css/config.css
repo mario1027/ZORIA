@@ -255,6 +255,20 @@
 
 .theme-option__icon {
     font-size: 1.5rem;
+    color: var(--z-color-text-secondary);
+}
+
+.theme-option--active .theme-option__icon {
+    color: var(--z-color-primary);
+}
+
+.cfg-save-row {
+    border-top: 1px solid var(--z-color-border);
+    margin-top: 0.5rem;
+}
+
+.config-page-root .main-content {
+    background: var(--z-color-bg-primary);
 }
 
 .theme-option__label {

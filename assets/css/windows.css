@@ -179,19 +179,45 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background 0.15s ease, transform 0.15s ease;
     background: rgba(255, 255, 255, 0.1);
-    color: white;
+    color: rgba(255, 255, 255, 0.75);
     font-size: 0.75rem;
 }
 
+/* Colores permanentes estilo semáforo */
+.window-control-btn.window-btn-close {
+    background: rgba(239, 68, 68, 0.22);
+    color: #fca5a5;
+}
+
+.window-control-btn.window-btn-minimize {
+    background: rgba(245, 158, 11, 0.22);
+    color: #fcd34d;
+}
+
+.window-control-btn.window-btn-maximize {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.6);
+}
+
 .window-control-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
     transform: scale(1.1);
 }
 
 .window-control-btn.window-btn-close:hover {
     background: #ef4444;
+    color: #ffffff;
+}
+
+.window-control-btn.window-btn-minimize:hover {
+    background: #f59e0b;
+    color: #ffffff;
+}
+
+.window-control-btn.window-btn-maximize:hover {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
 }
 
 .window-control-btn:disabled {

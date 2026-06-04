@@ -140,6 +140,41 @@ def create_simulator_page():
 def register_simulator_callbacks(app):
     """Registra los callbacks para la página del simulador"""
 
+    def _component_visibility(circuit_type):
+        """Muestra/oculta entradas R, L, C según el circuito."""
+        if not circuit_type or str(circuit_type).startswith('header'):
+            return {}, {}, {}
+        ct = circuit_type.upper()
+        show_r = 'R' in ct or ct in ('RC', 'RL', 'RLC')
+        show_l = 'L' in ct
+        show_c = 'C' in ct
+        hide = {'display': 'none'}
+        show = {}
+        return (
+            hide if not show_r else show,
+            hide if not show_l else show,
+            hide if not show_c else show,
+        )
+
+    @app.callback(
+        Output('circuit-description', 'children'),
+        Output('circuit-formula', 'children'),
+        Output('resistance-card', 'style'),
+        Output('inductance-card', 'style'),
+        Output('capacitance-card', 'style'),
+        Input('circuit-type', 'value'),
+        prevent_initial_call=False,
+    )
+    def update_circuit_meta(circuit_type):
+        info = get_circuit_info()
+        if not circuit_type or str(circuit_type).startswith('header'):
+            circuit_type = 'RC_series'
+        meta = info.get(circuit_type, {})
+        desc = meta.get('description', '')
+        formula = meta.get('formula', '')
+        r_style, l_style, c_style = _component_visibility(circuit_type)
+        return desc, formula, r_style, l_style, c_style
+
     @app.callback(
         Output("calculate-btn", "n_clicks"),
         [Input("circuit-type", "value")],

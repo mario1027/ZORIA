@@ -54,8 +54,28 @@ Thumbs.db
 *.log
 *.csv
 data/
-.opencode
+.opencode/
 opencode.json
+.claude/
 
-# Local metadata
+# Documentation (screenshots, manual, generated)
+docs/
+
+# Graphify analysis
+graphify-out/
+
+# Temp and generated files
+*.tmp
+*.bak
+*.pyc
+.pytest_cache/
+*.prof
+profile*.json
+hw.timing.profile.json
+
+# Local metadata (not part of repo)
 .github/
+
+# Desktop launcher files
+launch.sh
+*.desktop

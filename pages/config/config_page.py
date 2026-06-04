@@ -117,17 +117,17 @@ def preferences_section():
             _flabel('config.chart_theme', 'fas fa-palette'),
             html.Div([
                 html.Button([
-                    html.Span('', className='theme-option__icon d-block'),
+                    html.I(className="fas fa-moon theme-option__icon d-block"),
                     html.Span('', className='theme-option__label',
                               **{'data-i18n': 'config.theme_dark'}),
                 ], id='cfg-theme-dark-btn', className='theme-option',
-                   n_clicks=0, **{'data-theme': 'dark'}),
+                   n_clicks=0, **{'data-theme': 'dark'}, type='button'),
                 html.Button([
-                    html.Span('', className='theme-option__icon d-block'),
+                    html.I(className="fas fa-sun theme-option__icon d-block"),
                     html.Span('', className='theme-option__label',
                               **{'data-i18n': 'config.theme_light'}),
                 ], id='cfg-theme-light-btn', className='theme-option',
-                   n_clicks=0, **{'data-theme': 'light'}),
+                   n_clicks=0, **{'data-theme': 'light'}, type='button'),
             ], className='theme-toggle-options'),
         ], className='mb-4'),
 
@@ -160,55 +160,43 @@ layout = html.Div([
     mobileNavBar(),
 
     html.Main([
-        html.Div([
-            # ── Header (igual que dashboard/simulador) ────────────
-            html.Div([
-                html.Div([
-                    html.H2([
-                        html.I(className='fas fa-sliders-h me-2'),
-                        html.Span('', **{'data-i18n': 'config.page_title'}),
-                    ], className='h3 mb-0'),
-                    html.P('', className='text-muted mb-0 mt-1',
-                           **{'data-i18n': 'config.page_subtitle'}),
-                ], className='col-12 col-md-8 mb-2 mb-md-0'),
-            ], className='row align-items-center py-4'),
+        html.Div(className="config-page container-fluid px-4 pb-5", children=[
+            html.Div(className="config-hero row align-items-center mb-4", children=[
+                html.Div(className="col-auto", children=[
+                    html.Div(html.I(className="fas fa-sliders-h"), className="config-hero-icon"),
+                ]),
+                html.Div(className="col", children=[
+                    html.H2(html.Span('', **{'data-i18n': 'config.page_title'}), className="config-hero-title"),
+                    html.P(html.Span('', **{'data-i18n': 'config.page_subtitle'}), className="config-hero-subtitle mb-0"),
+                ]),
+            ]),
 
-            # ── Cards ─────────────────────────────────────────────
             html.Div([
-                html.Div([language_section()],    className='col-12 col-xl-7'),
-                html.Div([preferences_section()], className='col-12 col-xl-5'),
+                html.Div([language_section()], className='col-12 col-xl-7 mb-4'),
+                html.Div([preferences_section()], className='col-12 col-xl-5 mb-4'),
             ], className='row'),
 
             dcc.Store(id='cfg-init', data=0),
-            # storage_type='memory' → nunca persiste entre navegaciones, siempre
-            # se inicializa limpio desde los stores globales (lang-store, theme-store,
-            # autoconn-store). Esto evita que sessionStorage devuelva un valor
-            # obsoleto antes de que el callback de init se ejecute.
-            dcc.Store(id='cfg-pending-lang',     storage_type='memory', data=None),
-            dcc.Store(id='cfg-pending-theme',    storage_type='memory', data=None),
+            dcc.Store(id='cfg-pending-lang', storage_type='memory', data=None),
+            dcc.Store(id='cfg-pending-theme', storage_type='memory', data=None),
             dcc.Store(id='cfg-pending-autoconn', storage_type='memory', data=None),
             dcc.Store(id='cfg-cards-sync', data=0),
 
-            # ── Botón Guardar (fila separada, ancho completo) ──────────────
-            html.Div([
-                html.Div([
-                    html.Button([
-                        html.I(className='fas fa-save me-2'),
-                        html.Span('', **{'data-i18n': 'config.save_btn'}),
-                    ], id='cfg-save-btn',
-                       className='btn btn-primary btn-lg px-5',
-                       n_clicks=0),
-                    html.Div(id='cfg-save-feedback', className='mt-3 text-center'),
-                ], className='d-flex flex-column align-items-center py-4'),
-            ], className='row'),
-        ], className='container-fluid px-4 pb-4'),
-
+            html.Div(className="cfg-save-row text-center py-4", children=[
+                html.Div(id='cfg-unsaved-indicator', className='mb-3', style={'display': 'none'}),
+                html.Button([
+                    html.I(className='fas fa-save me-2'),
+                    html.Span('', **{'data-i18n': 'config.save_btn'}),
+                ], id='cfg-save-btn', className='btn btn-primary btn-lg px-5', n_clicks=0, type='button'),
+                html.Div(id='cfg-save-feedback', className='mt-3'),
+            ]),
+        ]),
     ], className='main-content w-100'),
 
     footer(),
     floating_terminal_button(),
 
-], className='sc-chart d-flex flex-column min-vh-100')
+], className='sc-chart d-flex flex-column min-vh-100 config-page-root')
 
 
 # ══════════════════════════════════════════════════════════════
@@ -220,8 +208,8 @@ def register_callbacks(app):
 
     # ──────────────────────────────────────────────────────────────────────────
     # 1. INIT: Al cargar /config, copia los valores guardados a los stores
-    #    pendientes (memory). storage_type='memory' garantiza que este callback
-    #    siempre gana — no hay valor previo en sessionStorage que lo pise.
+    #    pendientes (memory). Debe ser clientside: lang-store/theme-store viven
+    #    en localStorage y solo están hidratados en el navegador al arrancar.
     # ──────────────────────────────────────────────────────────────────────────
     app.clientside_callback(
         """
