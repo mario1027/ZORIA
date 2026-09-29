@@ -20,27 +20,27 @@ import base64
 import io
 import pandas as pd
 
-from lib import (
+from zoria.lib import (
     ADMX2001, DisplayMode, SweepType, SweepScale, ImpedanceRange,
     ValidationError, ConnectionError as ADMX2001ConnectionError
 )
-from lib.utils import (
+from zoria.lib.utils import (
     clean_response_line,
     gain_settings_from_impedance_table,
     get_preferred_usb_serial_ports,
     is_likely_admx_port,
 )
-from lib.design_tokens import get_theme as get_design_theme, create_empty_figure
-from lib.i18n import t as i18n_t
+from zoria.lib.design_tokens import get_theme as get_design_theme, create_empty_figure
+from zoria.lib.i18n import t as i18n_t
 
 # Importar componentes comunes compartidos
-from pages.common.sidebar import sideBar
-from pages.common.mobile_nav import mobileNavBar
-from pages.common.footer import footer
-from pages.common.floating_terminal_button import floating_terminal_button
+from zoria.pages.common.sidebar import sideBar
+from zoria.pages.common.mobile_nav import mobileNavBar
+from zoria.pages.common.footer import footer
+from zoria.pages.common.floating_terminal_button import floating_terminal_button
 
 # Importar estado global del dispositivo
-from lib.device_state import device_state
+from zoria.lib.device_state import device_state
 
 # ==================== CONFIGURACIÓN GLOBAL ====================
 
@@ -836,7 +836,7 @@ def sweep_worker(config):
 
         # Configurar dispositivo para barrido
         if device_state.device:
-            from lib.enums import SweepType, SweepScale
+            from zoria.lib.enums import SweepType, SweepScale
             import numpy as np
 
             # Configurar display mode PRIMERO (modo 6 = R, X coordenadas rectangulares)
@@ -882,7 +882,7 @@ def sweep_worker(config):
             def execute_frequency_sweep_once(run_index=1, total_runs=1):
                 nonlocal configured_magnitude, sweep_phase
 
-                from lib.utils import estimate_sweep_time, max_points_per_segment
+                from zoria.lib.utils import estimate_sweep_time, max_points_per_segment
 
                 # SEGMENTACIÓN DINÁMICA: el tamaño máximo de segmento depende de la
                 # frecuencia más baja del rango para evitar timeouts a bajas frecuencias.
@@ -2263,7 +2263,7 @@ def register_callbacks(app):
     )
     def update_sweep_time_estimate(f_start, f_end, n_pts, scale, mdelay, tdelay):
         """Calcula y muestra el tiempo estimado del barrido en la UI."""
-        from lib.utils import estimate_sweep_time, max_points_per_segment
+        from zoria.lib.utils import estimate_sweep_time, max_points_per_segment
         try:
             f_start  = float(f_start  or 100)
             f_end    = float(f_end    or 100000)
@@ -3625,7 +3625,7 @@ True, [html.I(className="fas fa-check-circle me-2"), i18n_t('conn.connected')],
                 return dict(content=csv_content, filename=filename, type='text/csv')
 
             # Usar la función de utils para guardar CSV
-            from lib.utils import save_sweep_data_to_csv
+            from zoria.lib.utils import save_sweep_data_to_csv
             
             # Crear datos en el formato esperado por la función
             sweep_data = {
@@ -3665,7 +3665,7 @@ True, [html.I(className="fas fa-check-circle me-2"), i18n_t('conn.connected')],
         """Actualiza la lista de archivos CSV disponibles cuando se abre el modal"""
         if modal_style and modal_style.get('display') == 'block':
             try:
-                from lib.utils import list_csv_files
+                from zoria.lib.utils import list_csv_files
                 csv_files = list_csv_files()
                 
                 if not csv_files:

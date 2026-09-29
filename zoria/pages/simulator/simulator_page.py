@@ -8,7 +8,7 @@ from dash_spa import register_page
 import plotly.graph_objects as go
 import numpy as np
 
-from pages.simulator.components import (
+from zoria.pages.simulator.components import (
     circuit_selector_card,
     resistance_input_card,
     inductance_input_card,
@@ -18,13 +18,13 @@ from pages.simulator.components import (
     nyquist_plot_card,
     impedance_info_card
 )
-from pages.simulator.impedance_calculator import ImpedanceCalculator, get_circuit_info
-from pages.common.sidebar import sideBar
-from pages.common.mobile_nav import mobileNavBar
-from pages.common.footer import footer
-from pages.common.terminal_component import global_terminal_component
-from pages.common.floating_terminal_button import floating_terminal_button
-from lib.design_tokens import get_theme as get_design_theme
+from zoria.pages.simulator.impedance_calculator import ImpedanceCalculator, get_circuit_info
+from zoria.pages.common.sidebar import sideBar
+from zoria.pages.common.mobile_nav import mobileNavBar
+from zoria.pages.common.footer import footer
+from zoria.pages.common.terminal_component import global_terminal_component
+from zoria.pages.common.floating_terminal_button import floating_terminal_button
+from zoria.lib.design_tokens import get_theme as get_design_theme
 
 # Función helper para prints seguros (maneja BrokenPipeError)
 def safe_print(message):

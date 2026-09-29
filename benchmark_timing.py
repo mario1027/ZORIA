@@ -93,10 +93,10 @@ def run_benchmark(port: str, average: int, include_slow: bool = False) -> None:
     Los tiempos se guardan automáticamente en hw_timing_profile.json mediante
     update_from_sweep() que ya está implementado en perform_sweep().
     """
-    from lib.admx2001 import ADMX2001
-    from lib.enums import DisplayMode, SweepType, SweepScale
-    from lib.hw_timing_profile import HardwareTimingProfile, DEFAULT_PROFILE_PATH
-    from lib.utils import _acquisition_time_ms
+    from zoria.lib.admx2001 import ADMX2001
+    from zoria.lib.enums import DisplayMode, SweepType, SweepScale
+    from zoria.lib.hw_timing_profile import HardwareTimingProfile, DEFAULT_PROFILE_PATH
+    from zoria.lib.utils import _acquisition_time_ms
 
     profile = HardwareTimingProfile()
 
@@ -236,8 +236,8 @@ def run_benchmark(port: str, average: int, include_slow: bool = False) -> None:
 
 def show_profile() -> None:
     """Muestra el perfil de timing guardado."""
-    from lib.hw_timing_profile import HardwareTimingProfile, DEFAULT_PROFILE_PATH
-    from lib.utils import _acquisition_time_ms
+    from zoria.lib.hw_timing_profile import HardwareTimingProfile, DEFAULT_PROFILE_PATH
+    from zoria.lib.utils import _acquisition_time_ms
 
     profile = HardwareTimingProfile()
 
@@ -267,7 +267,7 @@ def show_profile() -> None:
 
 def detect_port() -> str:
     """Auto-detecta el puerto del ADMX2001."""
-    from lib.utils import find_admx2001_devices, get_preferred_usb_serial_ports
+    from zoria.lib.utils import find_admx2001_devices, get_preferred_usb_serial_ports
     import serial.tools.list_ports
 
     # Primero intentar con el detector específico

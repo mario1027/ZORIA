@@ -96,7 +96,7 @@ def suite_a_segmentation():
     """Verifica la lógica de segmentación de barridos por tramo de frecuencia."""
     section('SUITE A-1: Segmentación de frecuencias')
 
-    from lib.utils import max_points_per_segment
+    from zoria.lib.utils import max_points_per_segment
 
     # ── A1.1: Tramo sub-Hz (0.2 Hz) ─────────────────────────────────────
     try:
@@ -159,7 +159,7 @@ def suite_a_acquisition_time():
     """Verifica los tiempos de adquisición por tramo."""
     section('SUITE A-2: Tiempos de adquisición por tramo')
 
-    from lib.utils import _acquisition_time_ms
+    from zoria.lib.utils import _acquisition_time_ms
 
     cases = [
         # (freq Hz, min_ms, max_ms, description)
@@ -189,7 +189,7 @@ def suite_a_timeout_calculation():
     """Verifica los timeouts de segmento calculados para cada tramo."""
     section('SUITE A-3: Cálculo de timeouts por tramo')
 
-    from lib.utils import estimate_sweep_time
+    from zoria.lib.utils import estimate_sweep_time
 
     # Cada tramo debe tener timeout >= tiempo estimado
     tramos = [
@@ -224,7 +224,7 @@ def suite_a_full_sweep_segments():
     """Verifica la segmentación de un barrido completo 0.2 Hz – 10 MHz."""
     section('SUITE A-4: Segmentación de barrido completo 0.2 Hz – 10 MHz')
 
-    from lib.utils import max_points_per_segment
+    from zoria.lib.utils import max_points_per_segment
     import numpy as np
 
     start, end, points = 0.2, 10_000_000.0, 100
@@ -281,7 +281,7 @@ def suite_a_full_sweep_segments():
     # Imprimir tabla de segmentos
     print(f'\n  {"Seg":>4}  {"Start":>12}  {"End":>12}  {"Ptos":>5}  {"Estimado":>12}')
     print(f'  {"─"*4}  {"─"*12}  {"─"*12}  {"─"*5}  {"─"*12}')
-    from lib.utils import estimate_sweep_time
+    from zoria.lib.utils import estimate_sweep_time
     for i, (sf, ef, sp) in enumerate(segments):
         info = estimate_sweep_time(sf, ef, sp)
         print(f'  {i+1:>4}  {sf:>12.4g}  {ef:>12.4g}  {sp:>5}  {info["human_readable"]:>12}')
@@ -361,7 +361,7 @@ def suite_a_error_handling():
     """Verifica la recuperación ante errores por tramo."""
     section('SUITE A-6: Manejo de errores y recuperación')
 
-    from lib.exceptions import MeasurementError
+    from zoria.lib.exceptions import MeasurementError
 
     # ── A6.1: Error de saturación devuelve excepción con mensaje correcto ─
     try:
@@ -417,8 +417,8 @@ def suite_a_hw_timing_profile():
     """Verifica el perfil de timing HW — guardado, interpolación y uso."""
     section('SUITE A-7: Perfil de timing hardware (hw_timing_profile)')
 
-    from lib.hw_timing_profile import HardwareTimingProfile
-    from lib.utils import _acquisition_time_ms
+    from zoria.lib.hw_timing_profile import HardwareTimingProfile
+    from zoria.lib.utils import _acquisition_time_ms
 
     # ── A7.1: Sin datos → caer en teórico ─────────────────────────────
     try:
@@ -542,9 +542,9 @@ def _run_single_band_sweep(device, f_start, f_end, n_pts, desc):
     """
     Ejecuta un barrido en el tramo dado y devuelve (ok, n_received, elapsed_s, error_msg).
     """
-    from lib.admx2001 import ADMX2001
-    from lib.enums import SweepType, SweepScale, DisplayMode
-    from lib.utils import estimate_sweep_time
+    from zoria.lib.admx2001 import ADMX2001
+    from zoria.lib.enums import SweepType, SweepScale, DisplayMode
+    from zoria.lib.utils import estimate_sweep_time
 
     # Configurar dispositivo
     try:
@@ -627,7 +627,7 @@ def suite_b_data_integrity(device):
     """Verifica integridad de los datos recibidos (valores físicamente válidos)."""
     section('SUITE B-3: Integridad de datos adquiridos')
 
-    from lib.enums import SweepType, SweepScale, DisplayMode
+    from zoria.lib.enums import SweepType, SweepScale, DisplayMode
 
     # Medición de referencia a 1 kHz
     test_cases = [
@@ -650,7 +650,7 @@ def suite_b_data_integrity(device):
             f_start / 1000.0, f_end / 1000.0,
             SweepScale.LOG, n_pts
         )
-        from lib.utils import estimate_sweep_time
+        from zoria.lib.utils import estimate_sweep_time
         info = estimate_sweep_time(f_start, f_end, n_pts, scale='log')
         sweep_timeout = max(120, int(info['total_seconds'] * 4) + 60)
 
@@ -687,9 +687,9 @@ def suite_b_timing_profile_update(device):
     """Verifica que el perfil de timing se actualiza con datos reales del HW."""
     section('SUITE B-4: Actualización del perfil de timing con datos reales')
 
-    from lib.hw_timing_profile import get_profile
-    from lib.enums import SweepType, SweepScale, DisplayMode
-    from lib.utils import estimate_sweep_time
+    from zoria.lib.hw_timing_profile import get_profile
+    from zoria.lib.enums import SweepType, SweepScale, DisplayMode
+    from zoria.lib.utils import estimate_sweep_time
 
     profile_before = len(get_profile()._data)
 
@@ -726,8 +726,8 @@ def suite_b_zoria_segmentation_with_hw(device):
     """Simula la lógica completa del dashboard con hardware real."""
     section('SUITE B-5: Lógica de segmentación ZORIA con hardware real')
 
-    from lib.utils import max_points_per_segment, estimate_sweep_time
-    from lib.enums import SweepType, SweepScale, DisplayMode
+    from zoria.lib.utils import max_points_per_segment, estimate_sweep_time
+    from zoria.lib.enums import SweepType, SweepScale, DisplayMode
     import numpy as np
 
     # Barrido típico que usaría el dashboard: 100 pts, 100 Hz – 100 kHz
@@ -836,7 +836,7 @@ def main():
         # Detectar puerto
         port = args.port
         if port is None:
-            from lib.utils import find_admx2001_devices, get_preferred_usb_serial_ports
+            from zoria.lib.utils import find_admx2001_devices, get_preferred_usb_serial_ports
             admx = find_admx2001_devices()
             if admx:
                 port = admx[0]
@@ -851,7 +851,7 @@ def main():
         else:
             print(f'  Conectando a {port}…')
             try:
-                from lib.admx2001 import ADMX2001
+                from zoria.lib.admx2001 import ADMX2001
                 device = ADMX2001(port)
                 print(f'   Conectado a {port}\n')
 

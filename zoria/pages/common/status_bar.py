@@ -3,7 +3,7 @@ Status Bar ZORIA — Persistent top bar (24px)
 Device, acquisition, and live data indicators.
 """
 from dash import html
-from lib.i18n import t as i18n_t
+from zoria.lib.i18n import t as i18n_t
 
 
 def status_bar(lang: str = "es"):

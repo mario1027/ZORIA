@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 try:
-    from lib.admx2001 import ADMX2001
+    from zoria.lib.admx2001 import ADMX2001
     import serial.tools.list_ports
 except ImportError:
     print("Error: No se pueden importar módulos necesarios")

@@ -5,7 +5,7 @@ El dcc.Store(id='lang-store') se define en app.py (layout global).
 """
 
 from dash import html
-from lib.i18n import LANGUAGES, DEFAULT_LANG
+from zoria.lib.i18n import LANGUAGES, DEFAULT_LANG
 
 def language_picker() -> html.Div:
     """

@@ -5,7 +5,7 @@ Provides theme-aware color tokens for Plotly charts and Python-side
 components that cannot use CSS custom properties directly.
 
 Usage:
-    from lib.design_tokens import ZORIA_THEME
+    from zoria.lib.design_tokens import ZORIA_THEME
     fig = go.Figure()
     fig.update_layout(plot_bgcolor=ZORIA_THEME['dark']['chart_bg'])
 """
@@ -146,7 +146,7 @@ def create_empty_figure(title: str = None, theme: str = 'dark', hint: bool = Fal
         Figura Plotly vacía con estilo del tema.
     """
     import plotly.graph_objs as go
-    from lib.i18n import t as i18n_t
+    from zoria.lib.i18n import t as i18n_t
 
     if title is None:
         title = i18n_t('dash.empty_no_data')

@@ -8,3 +8,4 @@ dash-svg>=0.0.8
 dash-spa>=0.2.0
 requests>=2.25.0
 scipy>=1.7.0
+diskcache>=5.4.0

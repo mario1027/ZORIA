@@ -10,11 +10,11 @@ from datetime import datetime
 import json
 import logging
 import re
-from pages.common.sidebar import sideBar
-from pages.common.mobile_nav import mobileNavBar
-from pages.common.footer import footer
-from pages.common.floating_terminal_button import floating_terminal_button
-from lib.device_state import device_state
+from zoria.pages.common.sidebar import sideBar
+from zoria.pages.common.mobile_nav import mobileNavBar
+from zoria.pages.common.footer import footer
+from zoria.pages.common.floating_terminal_button import floating_terminal_button
+from zoria.lib.device_state import device_state
 
 
 logger = logging.getLogger(__name__)
@@ -63,7 +63,7 @@ def _merge_wizard_state(state):
 
 
 def _calculate_gain_values(r_load):
-    from lib.utils import gain_settings_from_impedance_table
+    from zoria.lib.utils import gain_settings_from_impedance_table
 
     try:
         resistance = max(float(r_load or 1000.0), 0.1)
@@ -148,7 +148,7 @@ def _looks_like_empty_calibration_noise(lines):
     if not normalized:
         return True
 
-    from lib.calibration_parser import INVALID_KEYWORDS
+    from zoria.lib.calibration_parser import INVALID_KEYWORDS
 
     meaningful_tokens = ('freq', 'frequency', 'ch0', 'ch1', 'res', 'resistance', '=', 'hz')
     for line in normalized:
@@ -1014,7 +1014,7 @@ def register_calibration_callbacks(app):
         state['config']['ch0'] = ch0
         state['config']['ch1'] = ch1
 
-        from lib.device_state import device_state
+        from zoria.lib.device_state import device_state
 
         device = device_state.device
         if device is None or not device_state.is_connected or not hasattr(device, 'calibration'):
@@ -1251,7 +1251,7 @@ def register_calibration_callbacks(app):
         prevent_initial_call=True,
     )
     def delete_calibrations_and_refresh(confirm_clicks):
-        from lib.device_state import device_state
+        from zoria.lib.device_state import device_state
 
         if not confirm_clicks:
             raise PreventUpdate
@@ -1299,8 +1299,8 @@ def register_calibration_callbacks(app):
     def refresh_calibrations_table(refresh_clicks, view_clicks):
         """Actualiza la tabla de calibraciones almacenadas desde el dispositivo"""
         
-        from lib.device_state import device_state
-        from lib.calibration_parser import (
+        from zoria.lib.device_state import device_state
+        from zoria.lib.calibration_parser import (
             parse_calibrate_list_lines,
             parse_calibrate_list_detail_lines,
             line_looks_like_firmware_error,

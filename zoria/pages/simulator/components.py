@@ -3,7 +3,7 @@ Componentes de formulario para el simulador RLC
 Usando el estilo de la plantilla Volt
 """
 from dash import html, dcc
-from pages.icons.hero import ICON
+from zoria.pages.icons.hero import ICON
 
 
 def circuit_selector_card():

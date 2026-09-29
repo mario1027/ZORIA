@@ -3,7 +3,7 @@ Terminal Dock ZORIA — Persistent bottom dock (~140px)
 Replaces the floating terminal FAB with an always-visible dock.
 """
 from dash import html, dcc
-from lib.i18n import t as i18n_t
+from zoria.lib.i18n import t as i18n_t
 
 
 def terminal_dock(lang: str = "es"):

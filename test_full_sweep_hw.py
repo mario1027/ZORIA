@@ -141,7 +141,7 @@ def _fmt_ms(ms):
 
 def _est_timeout(f_start, f_end, n_pts, scale='log', average=1, margin=5.0):
     """Calcula timeout realista: teórico × margin + overhead fijo 60s."""
-    from lib.utils import estimate_sweep_time
+    from zoria.lib.utils import estimate_sweep_time
     info = estimate_sweep_time(f_start, f_end, n_pts, scale=scale, average=average)
     return max(120.0, info['total_seconds'] * margin + 60.0)
 
@@ -183,8 +183,8 @@ def _run_sweep(device, f_start_hz, f_end_hz, n_pts, scale, average=1,
     Configura y ejecuta un barrido. Devuelve (results, elapsed_ms, error).
     Registra automáticamente en el perfil de timing HW.
     """
-    from lib.enums import SweepType, SweepScale, DisplayMode
-    from lib.utils import _acquisition_time_ms
+    from zoria.lib.enums import SweepType, SweepScale, DisplayMode
+    from zoria.lib.utils import _acquisition_time_ms
 
     if display_mode is None:
         display_mode = DisplayMode.R_X
@@ -274,7 +274,7 @@ def suite_c1_full_range(device, include_sub_hz=True):
         else:
             start = FULL_START
 
-        from lib.utils import estimate_sweep_time
+        from zoria.lib.utils import estimate_sweep_time
         info = estimate_sweep_time(start, FULL_END, n_pts, scale='log')
         est_str = info['human_readable']
         print(f'\n  {BOLD}{tag}{RESET}  {label}')
@@ -466,7 +466,7 @@ def suite_c4_n_variado(device):
     print(f'\n  {"Tag":<6}  {"N":>5}  {"Ptos":>5}  {"Tiempo":>10}  {"ms/pto":>8}  Estado')
     print(f'  {"─"*6}  {"─"*5}  {"─"*5}  {"─"*10}  {"─"*8}  {"─"*12}')
 
-    from lib.utils import max_count_for_span
+    from zoria.lib.utils import max_count_for_span
 
     for idx, n_pts in enumerate(N_VALUES):
         tag = f'C4.{idx+1}'
@@ -527,7 +527,7 @@ def suite_c5_log_vs_linear(device):
         )
         ms_pt = elapsed_ms / max(n_pts, 1)
 
-        from lib.utils import _acquisition_time_ms
+        from zoria.lib.utils import _acquisition_time_ms
         theoretical = _acquisition_time_ms(f_start)
 
         if err or results is None:
@@ -616,7 +616,7 @@ def suite_c7_large_n(device):
         (1_000.0,  100_000.0,    500,  'linear', '1 kHz – 100 kHz  LINEAR 500 pts'),
     ]
 
-    from lib.utils import max_count_for_span, estimate_sweep_time
+    from zoria.lib.utils import max_count_for_span, estimate_sweep_time
 
     for idx, (f_start, f_end, n_pts, scale, desc) in enumerate(LARGE_N_TESTS):
         tag = f'C7.{idx+1}'
@@ -654,7 +654,7 @@ def suite_c8_display_modes(device):
     """
     _section('SUITE C8: Display Modes — 10 kHz – 1 MHz, 5 pts')
 
-    from lib.enums import DisplayMode
+    from zoria.lib.enums import DisplayMode
 
     F_START = 10_000.0
     F_END   = 1_000_000.0
@@ -669,8 +669,8 @@ def suite_c8_display_modes(device):
         (DisplayMode.CP_RP,  'Cp,Rp (cap paralelo)'),
     ]
 
-    from lib.enums import SweepType, SweepScale
-    from lib.utils import estimate_sweep_time, _acquisition_time_ms
+    from zoria.lib.enums import SweepType, SweepScale
+    from zoria.lib.utils import estimate_sweep_time, _acquisition_time_ms
 
     print(f'\n  {"Tag":<7}  {"DisplayMode":<25}  {"Ptos":>4}  {"Tiempo":>8}  Estado')
     print(f'  {"─"*7}  {"─"*25}  {"─"*4}  {"─"*8}  {"─"*12}')
@@ -714,7 +714,7 @@ def suite_c8_display_modes(device):
 # ===========================================================================
 
 def _detect_port():
-    from lib.utils import find_admx2001_devices, get_preferred_usb_serial_ports
+    from zoria.lib.utils import find_admx2001_devices, get_preferred_usb_serial_ports
     admx = find_admx2001_devices()
     if admx:
         return admx[0]
@@ -760,7 +760,7 @@ def main():
 
     print(f'\n  Conectando a {port}…')
     try:
-        from lib.admx2001 import ADMX2001
+        from zoria.lib.admx2001 import ADMX2001
         device = ADMX2001(port)
         print(f'  {GREEN} Conectado a {port}{RESET}')
     except Exception as e:

@@ -3,7 +3,7 @@ lib/i18n.py  –  ZORIA Internationalization (i18n)
 Sistema de traducciones para ES, EN, PT, ZH, RU, DE.
 
 Uso:
-    from lib.i18n import t, LANGUAGES, DEFAULT_LANG
+    from zoria.lib.i18n import t, LANGUAGES, DEFAULT_LANG
     label = t('nav.dashboard', lang)
 """
 

@@ -15,12 +15,12 @@ import logging
 
 from dash import html, dcc, register_page, ctx, ALL
 from dash.exceptions import PreventUpdate
-from lib.i18n import LANGUAGES
+from zoria.lib.i18n import LANGUAGES
 
-from pages.common.sidebar import sideBar
-from pages.common.mobile_nav import mobileNavBar
-from pages.common.footer import footer
-from pages.common.floating_terminal_button import floating_terminal_button
+from zoria.pages.common.sidebar import sideBar
+from zoria.pages.common.mobile_nav import mobileNavBar
+from zoria.pages.common.footer import footer
+from zoria.pages.common.floating_terminal_button import floating_terminal_button
 
 logger = logging.getLogger(__name__)
 

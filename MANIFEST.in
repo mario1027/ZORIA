@@ -5,9 +5,11 @@ include CONTRIBUTING.md
 include requirements.txt
 include requirements-dev.txt
 
-recursive-include assets *
-recursive-include config *.ini
-recursive-include pages *.py
+# Datos del paquete (assets estáticos y configuración) — necesarios para que
+# la app funcione instalada con pip desde cualquier directorio de trabajo.
+graft zoria/assets
+graft zoria/config
+include zoria/hw_timing_profile.json
 
 exclude *.pyc
 exclude .DS_Store

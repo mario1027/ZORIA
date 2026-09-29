@@ -50,7 +50,7 @@ def _run_n(device, f_start_hz, f_end_hz, n_req, verbose=False):
     """
     Ejecuta un sweep con N=n_req. Devuelve (n_recibido, error_str|None).
     """
-    from lib.enums import SweepType, SweepScale, DisplayMode
+    from zoria.lib.enums import SweepType, SweepScale, DisplayMode
 
     _abort(device)
 
@@ -158,7 +158,7 @@ def main():
     ap.add_argument('--verbose', action='store_true')
     args = ap.parse_args()
 
-    from lib.admx2001 import ADMX2001
+    from zoria.lib.admx2001 import ADMX2001
 
     print(f'{BOLD}{"═"*68}{RESET}')
     print(f'{BOLD}  MAPEO LÍMITE N — EVAL-ADMX2001  port={args.port}{RESET}')

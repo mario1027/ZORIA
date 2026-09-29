@@ -3,9 +3,11 @@
 Verifica el estado de device_state
 """
 import sys
-sys.path.insert(0, '/home/mrmontero/Documents/zoria')
+from pathlib import Path
 
-from lib.device_state import device_state
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from zoria.lib.device_state import device_state
 
 print("="*70)
 print("ESTADO DE device_state")

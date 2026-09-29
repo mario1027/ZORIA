@@ -31,9 +31,31 @@ from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-# Directorio raíz del proyecto (un nivel arriba de lib/)
-_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_PROFILE_PATH = os.path.join(_PROJECT_ROOT, 'hw_timing_profile.json')
+# El perfil medido se ESCRIBE en un directorio escribible por el usuario:
+# site-packages puede ser de solo lectura cuando ZORIA se instala con pip.
+# El JSON incluido en el paquete actúa solo como semilla de solo lectura.
+_PACKAGE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_SEED_PROFILE_PATH = os.path.join(_PACKAGE_ROOT, 'hw_timing_profile.json')
+
+
+def _default_profile_path() -> str:
+    """Ruta por defecto (escribible) para el perfil de tiempos HW."""
+    if os.name == 'nt':
+        base = os.environ.get('APPDATA') or os.path.expanduser('~')
+        directory = os.path.join(base, 'ZORIA')
+    else:
+        base = os.environ.get('XDG_DATA_HOME') or os.path.expanduser('~/.local/share')
+        directory = os.path.join(base, 'zoria')
+    try:
+        os.makedirs(directory, exist_ok=True)
+        if os.access(directory, os.W_OK):
+            return os.path.join(directory, 'hw_timing_profile.json')
+    except OSError:
+        pass
+    return os.path.join(os.getcwd(), 'hw_timing_profile.json')
+
+
+DEFAULT_PROFILE_PATH = _default_profile_path()
 
 # Máximo de muestras a mantener por frecuencia
 _MAX_SAMPLES_PER_FREQ = 20
@@ -92,13 +114,20 @@ class HardwareTimingProfile:
     def load(self) -> None:
         """Carga el perfil desde disco (no lanza excepción si no existe)."""
         try:
-            if os.path.exists(self.path):
-                with open(self.path, 'r') as f:
+            path = self.path
+            # Si el archivo de usuario aún no existe, usar la semilla que
+            # viene empaquetada (solo lectura) como punto de partida.
+            if (not os.path.exists(path) or os.path.getsize(path) == 0) and \
+                    self.path == DEFAULT_PROFILE_PATH and \
+                    os.path.exists(_SEED_PROFILE_PATH):
+                path = _SEED_PROFILE_PATH
+            if os.path.exists(path) and os.path.getsize(path) > 0:
+                with open(path, 'r') as f:
                     raw = json.load(f)
                 self._data = {float(k): list(v) for k, v in raw.items()}
                 logger.debug(
                     f"Perfil de timing HW cargado: {len(self._data)} frecuencias "
-                    f"de {self.path}"
+                    f"de {path}"
                 )
         except Exception as e:
             logger.warning(f"No se pudo cargar perfil de timing HW: {e}")

@@ -6,10 +6,10 @@ from dash import html, dcc
 from dash_spa import register_page
 
 # Importar componentes comunes
-from pages.common.sidebar import sideBar
-from pages.common.mobile_nav import mobileNavBar
-from pages.common.footer import footer
-from pages.common.floating_terminal_button import floating_terminal_button
+from zoria.pages.common.sidebar import sideBar
+from zoria.pages.common.mobile_nav import mobileNavBar
+from zoria.pages.common.footer import footer
+from zoria.pages.common.floating_terminal_button import floating_terminal_button
 
 # Registrar la página
 register_page(
@@ -690,7 +690,7 @@ def content_software():
             html.H5("Ejemplos de Código Python", className="fw-bold mb-3", style={'color': 'var(--z-color-text-primary)'}, **{'data-i18n': 'doc.sw.h5.code_examples'}),
             
             html.H6("1. Conexión y Medición Simple:", className="fw-bold mb-2", style={'color': 'var(--z-color-text-primary)'}, **{'data-i18n': 'doc.sw.h6.ex1_simple'}),
-            html.Pre("""from lib import ADMX2001
+            html.Pre("""from zoria.lib import ADMX2001
 
 # Inicializar y conectar
 device = ADMX2001(port='/dev/ttyUSB0', baudrate=115200)
@@ -726,7 +726,7 @@ device.disconnect()
             }),
             
             html.H6("2. Barrido de Frecuencia Logarítmico:", className="fw-bold mb-2", style={'color': 'var(--z-color-text-primary)'}, **{'data-i18n': 'doc.sw.h6.ex2_sweep'}),
-            html.Pre("""from lib import ADMX2001, SweepType, SweepScale
+            html.Pre("""from zoria.lib import ADMX2001, SweepType, SweepScale
 
 device = ADMX2001(port='/dev/ttyUSB0')
 device.connect()
@@ -770,7 +770,7 @@ device.disconnect()
             }),
             
             html.H6("3. Uso del Simulador RLC:", className="fw-bold mb-2", style={'color': 'var(--z-color-text-primary)'}, **{'data-i18n': 'doc.sw.h6.ex3_rlc'}),
-            html.Pre("""from pages.simulator.impedance_calculator import ImpedanceCalculator
+            html.Pre("""from zoria.pages.simulator.impedance_calculator import ImpedanceCalculator
 
 # Crear calculadora con rango de frecuencia
 calc = ImpedanceCalculator(
@@ -3812,7 +3812,7 @@ layout.children.insert(0, dcc.Store(id='doc-i18n-dummy', storage_type='memory'))
 def register_callbacks(app):
     from dash import Input, Output, State, ALL, ctx
     from dash.exceptions import PreventUpdate
-    from pages.documentation.doc_search_index import search_documentation, DOC_SEARCH_INDEX
+    from zoria.pages.documentation.doc_search_index import search_documentation, DOC_SEARCH_INDEX
 
     @app.callback(
         Output('doc-search-results', 'children'),

@@ -538,7 +538,7 @@ class CalibrationManager:
         Returns:
             Lista de strings con información de calibraciones
         """
-        from lib.device_state import device_state
+        from zoria.lib.device_state import device_state
 
         if device_state.device is self.device and device_state.is_connected:
             return device_state.send_command(
@@ -552,10 +552,10 @@ class CalibrationManager:
 
     def list_calibrations_at_frequency(self, freq_khz) -> List[str]:
         """Lista calibraciones para una frecuencia concreta (``calibrate list <kHz>``)."""
-        from lib.calibration_parser import format_calibrate_list_khz
+        from zoria.lib.calibration_parser import format_calibrate_list_khz
 
         cmd = f"calibrate list {format_calibrate_list_khz(freq_khz)}"
-        from lib.device_state import device_state
+        from zoria.lib.device_state import device_state
 
         if device_state.device is self.device and device_state.is_connected:
             return device_state.send_command(
