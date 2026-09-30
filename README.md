@@ -43,6 +43,14 @@ ZORIA is an open-source web platform that transforms the **EVAL-ADMX2001** imped
 
 ### Installation
 
+#### From PyPI (recommended)
+
+```bash
+pip install zoria
+```
+
+#### From source
+
 1. **Clone the repository**
 ```bash
 git clone https://github.com/mario1027/ZORIA.git
@@ -55,14 +63,16 @@ python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
-3. **Install dependencies**
+3. **Install**
 ```bash
-pip install -r requirements.txt
+pip install .
 ```
 
 ### Running the Application
 
 ```bash
+zoria           # after `pip install zoria`
+# or, from a source checkout:
 python app.py
 ```
 
@@ -82,7 +92,7 @@ ZORIA implements a modular three-layer architecture for scalability and maintain
 
 ### 2. Backend (Python)
 ```
-lib/
+zoria/lib/
 ├── admx2001.py       # Main device control class with UART interface
 ├── calibration.py    # Calibration management (open/short/load)
 ├── utils.py          # Validation, parsing, and processing utilities
@@ -92,7 +102,7 @@ lib/
 
 ### 3. Frontend (Dash-SPA)
 ```
-pages/
+zoria/pages/
 ├── dashboard/        # Real-time measurement interface
 ├── simulator/        # RLC impedance calculator
 ├── documentation/    # Integrated user documentation
@@ -136,44 +146,79 @@ pages/
 
 ```
 ZORIA/
-├── app.py                      # Application entry point
+├── app.py                      # Legacy entry point (python app.py)
+├── pyproject.toml              # Packaging metadata (PyPI)
 ├── requirements.txt            # Python dependencies
-├── themes.py                   # Bootstrap theme configuration
 │
-├── lib/                        # ADMX2001 control library
-│   ├── __init__.py
-│   ├── admx2001.py            # Main device class
-│   ├── calibration.py         # Calibration manager
-│   ├── enums.py               # Constants and enums
-│   ├── exceptions.py          # Custom exceptions
-│   └── utils.py               # Utility functions
+├── zoria/                      # Installable package (pip install zoria)
+│   ├── __init__.py             # Package version (__version__)
+│   ├── app.py                  # Application entry point (zoria command)
+│   ├── themes.py               # Bootstrap theme configuration
+│   ├── spa_bootstrap.py        # Dash-SPA bootstrap
+│   ├── hw_timing_profile.json  # Hardware timing profile
+│   │
+│   ├── lib/                    # ADMX2001 control library
+│   │   ├── __init__.py
+│   │   ├── admx2001.py         # Main device class
+│   │   ├── calibration.py      # Calibration manager
+│   │   ├── calibration_parser.py
+│   │   ├── design_tokens.py
+│   │   ├── device_state.py
+│   │   ├── enums.py            # Constants and enums
+│   │   ├── exceptions.py       # Custom exceptions
+│   │   ├── hw_timing_profile.py
+│   │   ├── i18n.py             # Internationalization
+│   │   ├── rc_model.py         # RC equivalent-circuit model
+│   │   └── utils.py            # Utility functions
+│   │
+│   ├── pages/                  # Application pages
+│   │   ├── dashboard/          # Measurement dashboard
+│   │   │   └── dashboard_page.py
+│   │   ├── simulator/          # RLC simulator
+│   │   │   ├── simulator_page.py
+│   │   │   ├── impedance_calculator.py
+│   │   │   └── components.py
+│   │   ├── calibration/        # Calibration workflow
+│   │   │   └── calibration_page.py
+│   │   ├── documentation/      # Integrated docs
+│   │   │   ├── documentation_page.py
+│   │   │   └── doc_search_index.py
+│   │   ├── about/              # About / credits
+│   │   │   └── about_page.py
+│   │   ├── config/             # Configuration page
+│   │   │   └── config_page.py
+│   │   ├── database/           # Data persistence
+│   │   ├── system/             # System status
+│   │   ├── icons/              # Shared icon components
+│   │   │   ├── components.py
+│   │   │   └── hero.py
+│   │   └── common/             # Shared components
+│   │       ├── sidebar.py
+│   │       ├── mobile_nav.py
+│   │       ├── footer.py
+│   │       ├── bread_crumbs.py
+│   │       ├── terminal_dock.py
+│   │       ├── terminal_component.py
+│   │       └── language_picker.py
+│   │
+│   ├── assets/                 # Static resources
+│   │   ├── css/                # Custom stylesheets
+│   │   │   ├── navigation.css
+│   │   │   ├── mobile-nav.css
+│   │   │   └── sweep-controls.css
+│   │   ├── js/                 # Client-side behavior
+│   │   │   ├── draggable_windows.js
+│   │   │   ├── i18n_client.js
+│   │   │   └── keyboard_shortcuts.js
+│   │   ├── images/             # Images and logos
+│   │   ├── vendor/             # Third-party css, js and webfonts
+│   │   ├── logo.png
+│   │   └── logo-white.png
+│   │
+│   └── config/                 # Configuration files
+│       └── spa_config.ini
 │
-├── pages/                      # Application pages
-│   ├── dashboard/             # Measurement dashboard
-│   │   └── dashboard_page.py
-│   ├── simulator/             # RLC simulator
-│   │   ├── simulator_page.py
-│   │   ├── impedance_calculator.py
-│   │   └── components.py
-│   ├── documentation/         # Integrated docs
-│   │   └── documentation_page.py
-│   └── common/                # Shared components
-│       ├── sidebar.py
-│       ├── mobile_nav.py
-│       ├── footer.py
-│       └── bread_crumbs.py
-│
-├── assets/                     # Static resources
-│   ├── css/                   # Custom stylesheets
-│   │   ├── navigation.css
-│   │   ├── mobile-nav.css
-│   │   └── sweep-controls.css
-│   └── images/                # Images and logos
-│
-├── config/                     # Configuration files
-│   └── spa_config.ini
-│
-└── data/                       # Data storage (auto-generated)
+└── data/                       # Data storage (auto-generated, in CWD)
     └── sweep_data_*.csv       # Exported measurements
 ```
 
@@ -184,7 +229,7 @@ ZORIA/
 ### 1. Connect to Device
 
 ```python
-from lib import ADMX2001
+from zoria.lib import ADMX2001
 
 # Initialize and connect to device
 device = ADMX2001(port='/dev/ttyUSB0', baudrate=115200)
@@ -214,7 +259,7 @@ print(f"X = {measurement['imaginary']:.2f} Ω")
 ### 3. Execute Frequency Sweep
 
 ```python
-from lib import SweepType, SweepScale
+from zoria.lib import SweepType, SweepScale
 
 # Configure logarithmic frequency sweep
 device.configure_sweep(
@@ -235,7 +280,7 @@ device.export_csv('measurement_data.csv', results)
 ### 4. Use RLC Simulator
 
 ```python
-from pages.simulator.impedance_calculator import ImpedanceCalculator
+from zoria.pages.simulator.impedance_calculator import ImpedanceCalculator
 
 # Create calculator with frequency range
 calc = ImpedanceCalculator(
@@ -261,7 +306,7 @@ imag = nyquist_data['imaginary']
 ### 5. Calibration Procedures
 
 ```python
-from lib.calibration import CalibrationManager
+from zoria.lib.calibration import CalibrationManager
 
 # Initialize calibration manager
 cal_manager = CalibrationManager(device)
@@ -333,7 +378,7 @@ ZORIA supports all EVAL-ADMX2001 measurement modes:
 
 ### Serial Port Configuration
 
-Edit `config/spa_config.ini`:
+Edit `zoria/config/spa_config.ini`:
 
 ```ini
 [hardware]
