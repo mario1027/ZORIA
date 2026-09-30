@@ -3,7 +3,8 @@
 **Web-Based Interactive Dashboard for Impedance Analysis and Circuit Characterization**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![PyPI version](https://img.shields.io/pypi/v/zoria.svg)](https://pypi.org/project/zoria/)
+[![Python 3.8+](https://img.shields.io/pypi/pyversions/zoria.svg)](https://pypi.org/project/zoria/)
 [![Dash](https://img.shields.io/badge/Dash-SPA-green.svg)](https://dash.plotly.com/)
 
 ---
@@ -45,8 +46,17 @@ ZORIA is an open-source web platform that transforms the **EVAL-ADMX2001** imped
 
 #### From PyPI (recommended)
 
+ZORIA is published on PyPI as [`zoria`](https://pypi.org/project/zoria/):
+
 ```bash
 pip install zoria
+```
+
+This installs the package and the `zoria` console command on Linux, Windows and
+macOS. To upgrade to the latest release:
+
+```bash
+pip install --upgrade zoria
 ```
 
 #### From source
